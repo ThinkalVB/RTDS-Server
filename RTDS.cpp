@@ -2,13 +2,18 @@
 #include <thread>
 #include "Log.h"
 
-RTDS::RTDS(int maxTCPconn) : tcpEp(asio::ip::address_v6::any(), RTDS_PORT), tcpAcceptor(ioContext), worker(ioContext)
+#ifdef RTDS_DUAL_STACK
+RTDS::RTDS(unsigned short portNumber, int maxTCPconn) : tcpEp(asio::ip::address_v6::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+#else 
+RTDS::RTDS(unsigned short portNumber, int maxTCPconn) : tcpEp(asio::ip::address_v4::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+#endif
 {
 	#ifdef PRINT_LOG
 	Log::log("RTDS starting");
 	#endif
+
 	peerHandler.reserve(maxTCPconn);
-	threadCount = 0;
+	activeThreadCount = 0;
 }
 
 bool RTDS::startTCPserver()
@@ -48,9 +53,15 @@ bool RTDS::startTCPserver()
 	}
 
 	#ifdef PRINT_LOG
+	Log::log("TCP Accepting starting");
+	#endif
+	_keepAccepting = true;
+	_peerAcceptRoutine();
+
+	#ifdef PRINT_LOG
 	Log::log("TCP server started");
 	#endif
-	TCPserverRunning = true;
+	_tcpServerRunning = true;
 	return true;
 }
 
@@ -61,7 +72,6 @@ bool RTDS::addThread(int threadCount)
 		try {
 			std::thread ioThread(&RTDS::_ioThreadJob, this);
 			ioThread.detach();
-			threadCount++;
 			#ifdef PRINT_LOG
 			Log::log("New IO Thread added");
 			#endif
@@ -78,29 +88,10 @@ bool RTDS::addThread(int threadCount)
 	return true;
 }
 
-bool RTDS::startTCPaccepting()
-{
-	try {
-		std::thread ioThread(&RTDS::_acceptThreadJob, this);
-		ioThread.detach();
-		threadCount++;
-		#ifdef PRINT_LOG
-		Log::log("New Acceptor Thread added");
-		#endif
-	}
-	catch (std::runtime_error& ec)
-	{
-		#ifdef PRINT_LOG
-		Log::log("Cannot spawn Acceptor Thread", ec);
-		#endif
-		return false;
-	}
-	return false;
-}
-
 void RTDS::_ioThreadJob()
 {	
 	system::error_code ec;
+	activeThreadCount++;
 	ioContext.run(ec);
 	if (ec != system::errc::success)
 	{
@@ -108,45 +99,42 @@ void RTDS::_ioThreadJob()
 		Log::log("ioContext.run() failed", ec);
 		#endif
 	}
-	threadCount--;
+	activeThreadCount--;
 	return;
 }
 
-void RTDS::_acceptThreadJob()
+void RTDS::_peerAcceptRoutine()
 {
-	#ifdef PRINT_LOG
-	Log::log("TCP Accepting started");
-	#endif
-
-	system::error_code ec;
-	boost::asio::socket_base::keep_alive keepAlive(true);
-
-	TCPaccepting = true;
-	while (TCPserverRunning)
-	{
-		auto peerSocket = new asio::ip::tcp::socket(ioContext);
-		tcpAcceptor.accept(*peerSocket, ec);
-		if (ec != system::errc::success)
+	auto peerSocket = new asio::ip::tcp::socket(ioContext);
+	tcpAcceptor.async_accept(*peerSocket,
+		[peerSocket, this](boost::system::error_code ec)
 		{
-			peerSocket->close();
-			delete peerSocket;
-		}
-		else
-		{
-			#ifdef PRINT_LOG
-			Log::log("Incoming TCP connection", peerSocket);
-			#endif
-			peerSocket->set_option(keepAlive);
-			auto peer = new Peer(peerSocket);
-			peerHandler.push_back(peer);
-		}
-	}
-	TCPaccepting = false;
-	threadCount--;
+			if (ec != system::errc::success)
+			{
+				peerSocket->close();
+				delete peerSocket;
+			}
+			else
+			{
+				#ifdef PRINT_LOG
+				Log::log("Incoming TCP connection", peerSocket);
+				#endif
 
-	#ifdef PRINT_LOG
-	Log::log("TCP Accepting stopped");
-	#endif
+				boost::asio::socket_base::keep_alive keepAlive(true);
+				peerSocket->set_option(keepAlive, ec);
+				if (ec != system::errc::success)
+				{
+					#ifdef PRINT_LOG
+					Log::log("TCP set_option(keepAlive) failed : ", ec);
+					#endif
+				}
+
+				auto peer = new Peer(peerSocket);
+				peerHandler.push_back(peer);
+			}
+			if (_keepAccepting)
+				_peerAcceptRoutine();
+		});
 }
 
 bool RTDS::stopTCPserver()
@@ -177,18 +165,20 @@ bool RTDS::stopTCPserver()
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
 	#endif
-	TCPserverRunning = false;
+
+	_keepAccepting = false;
+	_tcpServerRunning = false;
 	return true;
 }
 
 RTDS::~RTDS()
 {
-	if (TCPserverRunning)
+	if (_tcpServerRunning)
 		stopTCPserver();
 	ioContext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	} while (!ioContext.stopped() && threadCount == 0);
+	} while (!ioContext.stopped() && activeThreadCount == 0);
 
 	#ifdef PRINT_LOG
 	Log::log("RTDS Exiting");

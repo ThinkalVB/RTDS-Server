@@ -20,14 +20,6 @@ void Peer::processData(const boost::system::error_code& ec, std::size_t size)
 Peer::~Peer()
 {
 	system::error_code ec;
-	peerSocket->cancel(ec);
-	if (ec != system::errc::success)
-	{
-		#ifdef PRINT_LOG
-		Log::log("Socket cannot cancel operations", ec);
-		#endif
-	}
-
 	peerSocket->close(ec);
 	if (ec != system::errc::success)
 	{

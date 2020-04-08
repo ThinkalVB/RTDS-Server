@@ -13,20 +13,19 @@ class RTDS
 	asio::ip::tcp::endpoint tcpEp;
 	asio::ip::tcp::acceptor tcpAcceptor;
 	std::vector<Peer*> peerHandler;
-	unsigned short threadCount;
+	unsigned short activeThreadCount;
 
-	bool TCPserverRunning = false;
-	bool TCPaccepting = false;
+	bool _tcpServerRunning = false;
+	bool _keepAccepting = true;
 
 	void _ioThreadJob();
-	void _acceptThreadJob();
+	void _peerAcceptRoutine();
 
 public:
 
-	RTDS(int = 200);
+	RTDS(unsigned short = RTDS_PORT, int = 100);
 	bool startTCPserver();
 	bool addThread(int threadCount = 1);
-	bool startTCPaccepting();
 	bool stopTCPserver();
 	~RTDS();
 };
