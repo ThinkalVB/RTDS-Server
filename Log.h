@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define PRINT_LOG
+#define RTDS_CLI_MODE
 using namespace boost;
 
 class Log

@@ -139,12 +139,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CmdInterpreter.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="Peer.cpp" />
     <ClCompile Include="RTDS.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CmdInterpreter.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Peer.h" />
     <ClInclude Include="RTDS.h" />

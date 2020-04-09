@@ -1,6 +1,7 @@
 #include "Peer.h"
 #include <boost/bind.hpp>
 #include <string_view>
+#include "CmdInterpreter.h"
 #include "Log.h"
 
 std::list<Peer*> Peer::peerPtrContainer;
@@ -9,6 +10,7 @@ std::mutex Peer::peerContainerLock;
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
 	peerSocket = socketPtr;
+	writeBuffer.reserve(RTDS_BUFF_SIZE);
 	startTime = posix_time::second_clock::local_time();
 	_peerReceiveData();
 }
@@ -23,18 +25,50 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 {
 	if (ec != system::errc::success)
 	{
+		#ifdef PRINT_LOG
+		Log::log("TCP Socket _processData() failed", peerSocket);
+		#endif
+
 		std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
 		peerPtrContainer.remove(this);
 		delete this;
 	}
 	else
 	{
-		auto commandString = std::string_view{ dataBuffer };
 		if (dataBuffer[size - 1] == ';')
 		{
-			dataBuffer[size] = '\0';
-			//auto commandEnd = commandString.find(' ');
+			dataBuffer[size - 1] = '\0';
+			CmdInterpreter::processCommand(*this);
 		}
+		else
+		{
+			writeBuffer = "bad_command";
+			_sendPeerData();
+		}
+	}
+}
+
+void Peer::_sendPeerData()
+{
+	peerSocket->async_send(asio::buffer(&writeBuffer[0], writeBuffer.size()), bind(&Peer::_sendData,
+		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+}
+
+void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
+{
+	if (ec != system::errc::success)
+	{
+		#ifdef PRINT_LOG
+		Log::log("TCP Socket _sendData() failed", peerSocket);
+		#endif
+
+		std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
+		peerPtrContainer.remove(this);
+		delete this;
+	}
+	else
+	{
+		writeBuffer.clear();
 		_peerReceiveData();
 	}
 }
