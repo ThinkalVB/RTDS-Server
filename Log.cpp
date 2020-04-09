@@ -1,6 +1,9 @@
 #include "Log.h"
 #include <boost/date_time.hpp>
+
+#ifdef RTDS_CLI_MODE
 #include <iostream>
+#endif
 
 using namespace boost;
 
@@ -24,7 +27,9 @@ void Log::startLog(std::string fileName)
 		logFile.open(fileName, std::ios::out);
 	}catch(...)
 	{
+		#ifdef RTDS_CLI_MODE
 		std::cout << "Logging failed";
+		#endif
 	}
 	goodToLog = true;
 }
@@ -39,7 +44,9 @@ void Log::log(std::string message, const std::runtime_error& ec)
 			logFile << message << " " << ec.what() << std::endl;
 		}catch (...)
 		{
+			#ifdef RTDS_CLI_MODE
 			std::cout << "Logging failed";
+			#endif
 		}
 	}
 }
@@ -54,7 +61,9 @@ void Log::log(std::string message, const system::error_code& ec)
 			logFile << message << " " << ec.value() << " " << ec.message() << std::endl;
 		}catch (...)
 		{
+			#ifdef RTDS_CLI_MODE
 			std::cout << "Logging failed";
+			#endif
 		}
 	}
 }
@@ -72,7 +81,9 @@ void Log::log(std::string message, const asio::ip::tcp::socket* peerSocket)
 			logFile << message << " " << IPaddress.to_string() << " " << portNumber << std::endl;
 		}catch (...)
 		{
+			#ifdef RTDS_CLI_MODE
 			std::cout << "Logging failed";
+			#endif
 		}
 	}
 }
@@ -87,7 +98,9 @@ void Log::log(std::string message)
 			logFile << message << std::endl;
 		}catch (...)
 		{
+			#ifdef RTDS_CLI_MODE
 			std::cout << "Logging failed";
+			#endif
 		}
 	}
 }

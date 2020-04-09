@@ -7,12 +7,14 @@ int main()
 	Log::startLog("log.txt");
 	#endif
 	{
-		RTDS RTDSserver(500);
+		RTDS RTDSserver;
 		RTDSserver.addThread(5);
 		RTDSserver.startTCPserver();
 
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(20000));
+		while (true)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(20000));
+		}
 	}
 	#ifdef PRINT_LOG
 	Log::stopLog();

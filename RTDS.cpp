@@ -1,18 +1,20 @@
 #include "RTDS.h"
 #include <thread>
+#include "Peer.h"
 #include "Log.h"
 
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(unsigned short portNumber, int maxTCPconn) : tcpEp(asio::ip::address_v6::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v6::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
 #else 
-RTDS::RTDS(unsigned short portNumber, int maxTCPconn) : tcpEp(asio::ip::address_v4::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v4::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
 #endif
 {
 	#ifdef PRINT_LOG
 	Log::log("RTDS starting");
 	#endif
 
-	peerHandler.reserve(maxTCPconn);
+	tcpServerRunning = false;
+	keepAccepting = true;
 	activeThreadCount = 0;
 }
 
@@ -26,7 +28,7 @@ bool RTDS::startTCPserver()
 	tcpAcceptor.open(tcpEp.protocol(), ec);
 	if (ec != system::errc::success)
 	{
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("Failed to open TCP acceptor", ec);
 		#endif
 		return false;
@@ -36,7 +38,7 @@ bool RTDS::startTCPserver()
 	if (ec != system::errc::success)
 	{
 		tcpAcceptor.close();
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("Failed to bind TCP acceptor", ec);
 		#endif
 		return false;
@@ -46,7 +48,7 @@ bool RTDS::startTCPserver()
 	if (ec != system::errc::success)
 	{
 		tcpAcceptor.close();
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("TCP acceptor cannot listen to port", ec);
 		#endif
 		return false;
@@ -55,13 +57,13 @@ bool RTDS::startTCPserver()
 	#ifdef PRINT_LOG
 	Log::log("TCP Accepting starting");
 	#endif
-	_keepAccepting = true;
+	keepAccepting = true;
 	_peerAcceptRoutine();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server started");
 	#endif
-	_tcpServerRunning = true;
+	tcpServerRunning = true;
 	return true;
 }
 
@@ -79,7 +81,7 @@ bool RTDS::addThread(int threadCount)
 		}
 		catch (std::runtime_error& ec)
 		{
-			#ifdef PRINT_LOG
+			#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 			Log::log("Cannot spawn IO Thread", ec);
 			#endif
 			return false;
@@ -95,7 +97,7 @@ void RTDS::_ioThreadJob()
 	ioContext.run(ec);
 	if (ec != system::errc::success)
 	{
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("ioContext.run() failed", ec);
 		#endif
 	}
@@ -106,6 +108,7 @@ void RTDS::_ioThreadJob()
 void RTDS::_peerAcceptRoutine()
 {
 	auto peerSocket = new asio::ip::tcp::socket(ioContext);
+
 	tcpAcceptor.async_accept(*peerSocket,
 		[peerSocket, this](boost::system::error_code ec)
 		{
@@ -124,61 +127,90 @@ void RTDS::_peerAcceptRoutine()
 				peerSocket->set_option(keepAlive, ec);
 				if (ec != system::errc::success)
 				{
-					#ifdef PRINT_LOG
+					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 					Log::log("TCP set_option(keepAlive) failed : ", ec);
 					#endif
 				}
 
-				auto peer = new Peer(peerSocket);
-				peerHandler.push_back(peer);
+				try
+				{
+					auto peer = new Peer(peerSocket);
+					std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
+					Peer::peerPtrContainer.push_back(peer);
+				}
+				catch (std::bad_alloc)
+				{
+					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
+					Log::log("Peer memmory bad allocation");
+					#endif
+					peerSocket->close();
+					delete peerSocket;
+				}
+				catch (...)
+				{
+					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
+					Log::log("Peer pushback to container failed");
+					#endif
+					peerSocket->close();
+					delete peerSocket;
+				}
 			}
-			if (_keepAccepting)
+			if (keepAccepting)
 				_peerAcceptRoutine();
 		});
 }
 
-bool RTDS::stopTCPserver()
+void RTDS::_stopIoContext()
+{
+	ioContext.stop();
+	do {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	} while (!ioContext.stopped() && activeThreadCount == 0);
+}
+
+void RTDS::_stopTCPacceptor()
 {
 	system::error_code ec;
 	tcpAcceptor.cancel(ec);
 	if (ec != system::errc::success)
 	{
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("TCP acceptor cannot cancel operations", ec);
 		#endif
-		return false;
 	}
 
 	tcpAcceptor.close(ec);
 	if (ec != system::errc::success)
 	{
-		#ifdef PRINT_LOG
+		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("TCP acceptor cannot close", ec);
 		#endif
-		return false;
 	}
+}
 
-	for (int i = 0; i < peerHandler.size(); i++)
-		delete peerHandler[i];
-	peerHandler.clear();
+void RTDS::stopTCPserver()
+{
+	_stopTCPacceptor();
+	_stopIoContext();
+
+	std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
+	for (auto lstItr = Peer::peerPtrContainer.rbegin(); lstItr != Peer::peerPtrContainer.rend(); lstItr++)
+		delete* lstItr;
+	Peer::peerPtrContainer.clear();
+
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
 	#endif
 
-	_keepAccepting = false;
-	_tcpServerRunning = false;
-	return true;
+	keepAccepting = false;
+	tcpServerRunning = false;
 }
 
 RTDS::~RTDS()
 {
-	if (_tcpServerRunning)
+	if (tcpServerRunning)
 		stopTCPserver();
-	ioContext.stop();
-	do {
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-	} while (!ioContext.stopped() && activeThreadCount == 0);
 
 	#ifdef PRINT_LOG
 	Log::log("RTDS Exiting");

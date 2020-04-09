@@ -18,7 +18,9 @@ Make sure firewalls are set to allow traffic from the appliation.
 This RTDS server is designed for single directory use hence won't support REGISTER and SWITCH commands.  
 Initially support for TCP on port 349 only.  
 Port number, thread count and maximum connection limit can be set dynamically.  
-For logs, use #define PRINT_LOG in the header files for which the logs are needed.  
+For logs, use #define PRINT_LOG in the cpp files for which the logs are needed.  
+For Errors only, use #define PRINT_ERROR in the cpp files for which the ERRORS are needed.  
+For getting CLI iostrem output, use #define RTDS_CLI_MODE.
 Logs will be put into log.txt - the name can be changed as per user need.  
 Initial version only support IPv4, IPV6 can be targeted using #define RTDS_DUAL_STACK in RTDS.cpp during compilation.  
 Feel free to modify and use it - and please do contribute to make it better.

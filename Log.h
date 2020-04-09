@@ -1,11 +1,11 @@
 #pragma once
+#include <boost/asio.hpp>
 #include <fstream>
 #include <mutex>
 #include <string.h>
-#include <boost/asio.hpp>
 
-using namespace boost;
 #define PRINT_LOG
+using namespace boost;
 
 class Log
 {
