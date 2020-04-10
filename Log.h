@@ -3,9 +3,18 @@
 #include <fstream>
 #include <mutex>
 #include <string.h>
+/* #define goes here since all of the cpp file contains Log.h */
+#define DEBUG
+/* #define RTDS_DUAL_STACK */
 
+#ifdef DEBUG
 #define PRINT_LOG
 #define RTDS_CLI_MODE
+#else
+#define PRINT_ERROR
+#endif
+
+
 using namespace boost;
 
 class Log

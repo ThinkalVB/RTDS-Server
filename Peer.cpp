@@ -1,5 +1,6 @@
 #include "Peer.h"
 #include <boost/bind.hpp>
+#include <cppcodec/base64_rfc4648.hpp>
 #include <string_view>
 #include "CmdInterpreter.h"
 #include "Log.h"
@@ -15,9 +16,15 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 
 	remoteEp = socketPtr->remote_endpoint();
 	if (remoteEp.address().is_v4())
+	{
 		CmdInterpreter::makeSourcePairV4(remoteEp, remoteEp.port(), sourcePair);
+		UID = cppcodec::base64_rfc4648::encode(sourcePair, 6);
+	}
 	else
-		CmdInterpreter::makeSourcePairV6(remoteEp, remoteEp.port(), sourcePair);	
+	{
+		CmdInterpreter::makeSourcePairV6(remoteEp, remoteEp.port(), sourcePair);
+		UID = cppcodec::base64_rfc4648::encode(sourcePair, 18);
+	}
 	_peerReceiveData();
 }
 

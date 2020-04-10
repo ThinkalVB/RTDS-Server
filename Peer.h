@@ -2,7 +2,6 @@
 #include <boost/asio.hpp>
 #include <boost/date_time.hpp>
 #include <list>
-#include <string>
 
 using namespace boost;
 constexpr unsigned short RTDS_BUFF_SIZE = 300;
@@ -15,6 +14,7 @@ class Peer
 	asio::ip::tcp::socket* peerSocket;
 	posix_time::ptime startTime;
 	asio::ip::tcp::endpoint remoteEp;
+	std::string UID;
 	uint8_t sourcePair[18];
 
 	char dataBuffer[RTDS_BUFF_SIZE];
@@ -30,6 +30,5 @@ public:
 	~Peer();
 
 	friend class RTDS;
-	friend class asio::ip::address;
 	friend class CmdInterpreter;
 };
