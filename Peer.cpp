@@ -12,6 +12,12 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	peerSocket = socketPtr;
 	writeBuffer.reserve(RTDS_BUFF_SIZE);
 	startTime = posix_time::second_clock::local_time();
+
+	remoteEp = socketPtr->remote_endpoint();
+	if (remoteEp.address().is_v4())
+		CmdInterpreter::makeSourcePairV4(remoteEp, remoteEp.port(), sourcePair);
+	else
+		CmdInterpreter::makeSourcePairV6(remoteEp, remoteEp.port(), sourcePair);	
 	_peerReceiveData();
 }
 
@@ -50,7 +56,7 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 
 void Peer::_sendPeerData()
 {
-	peerSocket->async_send(asio::buffer(&writeBuffer[0], writeBuffer.size()), bind(&Peer::_sendData,
+	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 

@@ -12,9 +12,11 @@ class Peer
 	static std::list<Peer*> peerPtrContainer;
 	static std::mutex peerContainerLock;
 
-
 	asio::ip::tcp::socket* peerSocket;
 	posix_time::ptime startTime;
+	asio::ip::tcp::endpoint remoteEp;
+	uint8_t sourcePair[18];
+
 	char dataBuffer[RTDS_BUFF_SIZE];
 	std::string writeBuffer;
 
@@ -28,5 +30,6 @@ public:
 	~Peer();
 
 	friend class RTDS;
+	friend class asio::ip::address;
 	friend class CmdInterpreter;
 };

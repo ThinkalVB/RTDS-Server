@@ -6,10 +6,10 @@ CLIENT  ------------------------------->  SERVER
 
 
 
-UID(max 16 characters)
+UID(max 24 characters)
 		Address		PortNumber
 Ipv4_uid 	32bit	+ 	16bit		48bit		Base64[A-Z a-z 0-9 + /]		8 characters
-Ipv6_uid	64bit	+	16bit		80bit		Base32[A-Z 2-7]			16 characters
+Ipv6_uid	128bit	+	16bit		144bit		Base64[A-Z a-z 0-9 + /]		24 characters
 
 IP Version(max 2 characters)
 V4	IP version 4
@@ -19,7 +19,7 @@ IP Address(max 39 characters)
 IPv4	Doted decimal notation		15 characters
 	Binary notation			4 characters
 IPv6	Hexadecimal notation		39 characters
-	Binary notation			8 characters
+	Binary notation			16 characters
 
 Port Number(max 5 characters)
 IPv4/6	Decimal	representation		5 characters

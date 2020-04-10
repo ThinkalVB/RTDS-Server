@@ -1,4 +1,6 @@
 #include "CmdInterpreter.h"
+#include <iostream>
+#include <vector>
 
 void CmdInterpreter::processCommand(Peer& peer)
 {
@@ -19,11 +21,45 @@ void CmdInterpreter::processCommand(Peer& peer)
 
 void CmdInterpreter::ping(Peer& peer)
 {
-	auto peerIpAddress = peer.peerSocket->remote_endpoint().address();
-	auto peerPortNumber = peer.peerSocket->remote_endpoint().port();
-	if (peerIpAddress.is_v4())
+	if (peer.remoteEp.address().is_v4())
 		peer.writeBuffer = "v4 ";
 	else
 		peer.writeBuffer = "v6 ";
-	peer.writeBuffer = peer.writeBuffer + peerIpAddress.to_string() + " " + std::to_string(peerPortNumber);
+	peer.writeBuffer = peer.writeBuffer + peer.remoteEp.address().to_string() +
+		" " + std::to_string(peer.remoteEp.port());
+}
+
+void CmdInterpreter::makeSourcePairV4(asio::ip::tcp::endpoint& remoteEp, unsigned short portNum, unsigned char(&sourcePair)[18])
+{
+	auto addressClass = remoteEp.address().to_v4();
+	auto ipBin = addressClass.to_uint();
+	memcpy(&sourcePair[0], &ipBin, 4);
+	memcpy(&sourcePair[4], &portNum, 2);
+}
+
+void CmdInterpreter::makeSourcePairV6(asio::ip::tcp::endpoint& remoteEp, unsigned short portNum, unsigned char(&sourcePair)[18])
+{
+	auto addressClass = remoteEp.address().to_v6();
+	auto ipBin = addressClass.to_bytes();
+	memcpy(&sourcePair[0], &ipBin[0], 16);
+	memcpy(&sourcePair[16], &portNum, 2);
+}
+bool CmdInterpreter::validIPaddress(std::string ipAddress, unsigned short portNum)
+{
+	system::error_code ec;
+	asio::ip::make_address(ipAddress, ec);
+	if (ec != system::errc::success)
+	{
+		#ifdef PRINT_LOG
+		Log::log("Bad IP address");
+		#endif
+		return false;
+	}
+	else
+	{
+		if (portNum <= 65535)
+			return true;
+		else
+			return false;
+	}
 }
