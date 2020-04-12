@@ -28,22 +28,20 @@ void CmdInterpreter::ping(Peer& peer)
 		" " + std::to_string(peer.remoteEp.port());
 }
 
-void CmdInterpreter::makeSourcePairV4(asio::ip::tcp::endpoint& remoteEp, unsigned short portNum, uint8_t(&sourcePair)[18])
+void CmdInterpreter::makeSourcePairV4(const asio::ip::address_v4& ipAddress, unsigned short portNum, uint8_t(&sourcePair)[6])
 {
-	auto addressClass = remoteEp.address().to_v4();
-	auto ipBin = addressClass.to_bytes();
+	auto ipBin = ipAddress.to_bytes();
 	memcpy(&sourcePair[0], &ipBin[0], 4);
-	
+
 	#ifdef BOOST_ENDIAN_LITTLE_BYTE
 	byteSwap(portNum);
 	#endif
 	memcpy(&sourcePair[4], &portNum, 2);
 }
 
-void CmdInterpreter::makeSourcePairV6(asio::ip::tcp::endpoint& remoteEp, unsigned short portNum, uint8_t(&sourcePair)[18])
+void CmdInterpreter::makeSourcePairV6(const asio::ip::address_v6& ipAddress, unsigned short portNum, uint8_t(&sourcePair)[18])
 {
-	auto addressClass = remoteEp.address().to_v6();
-	auto ipBin = addressClass.to_bytes();
+	auto ipBin = ipAddress.to_bytes();
 	memcpy(&sourcePair[0], &ipBin[0], 16);
 
 	#ifdef BOOST_ENDIAN_LITTLE_BYTE
@@ -71,5 +69,4 @@ bool CmdInterpreter::validIPaddress(std::string ipAddress, unsigned short portNu
 			return false;
 	}
 }
-
 

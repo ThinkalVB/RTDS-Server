@@ -144,12 +144,16 @@
     <ClCompile Include="Peer.cpp" />
     <ClCompile Include="RTDS.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="SPentry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CmdInterpreter.h" />
+    <ClInclude Include="Enums.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Peer.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="RTDS.h" />
+    <ClInclude Include="SPentry.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

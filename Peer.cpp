@@ -12,19 +12,8 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
 	peerSocket = socketPtr;
 	writeBuffer.reserve(RTDS_BUFF_SIZE);
-	startTime = posix_time::second_clock::local_time();
 
 	remoteEp = socketPtr->remote_endpoint();
-	if (remoteEp.address().is_v4())
-	{
-		CmdInterpreter::makeSourcePairV4(remoteEp, remoteEp.port(), sourcePair);
-		UID = cppcodec::base64_rfc4648::encode(sourcePair, 6);
-	}
-	else
-	{
-		CmdInterpreter::makeSourcePairV6(remoteEp, remoteEp.port(), sourcePair);
-		UID = cppcodec::base64_rfc4648::encode(sourcePair, 18);
-	}
 	_peerReceiveData();
 }
 
