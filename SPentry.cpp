@@ -3,8 +3,8 @@
 #include "cppcodec/base64_rfc4648.hpp"
 #include <boost/date_time.hpp>
 
-const std::string SPentryV4::versionID = "v4 ";
-const std::string SPentryV6::versionID = "v6 ";
+const std::string SPentryV4::versionID = "v4";
+const std::string SPentryV6::versionID = "v6";
 
 SPentryV4::SPentryV4(asio::ip::address_v4 ipAdd, unsigned short portNum)
 {

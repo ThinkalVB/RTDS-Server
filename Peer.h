@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/asio.hpp>
+#include "SPentry.h"
 #include <list>
 
 using namespace boost;
@@ -12,6 +13,7 @@ class Peer
 
 	asio::ip::tcp::socket* peerSocket;
 	asio::ip::tcp::endpoint remoteEp;
+	SPentry peerEntry;
 
 	char dataBuffer[RTDS_BUFF_SIZE];
 	std::string writeBuffer;
@@ -21,10 +23,10 @@ class Peer
 
 	void _processData(const boost::system::error_code&, std::size_t);
 	void _sendData(const boost::system::error_code&, std::size_t);
-	~Peer();
 public:
 	Peer(asio::ip::tcp::socket*);
+	static void _removeAllPeers();
+	~Peer();
 
-	friend class RTDS;
 	friend class CmdInterpreter;
 };

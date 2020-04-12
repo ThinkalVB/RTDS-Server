@@ -10,6 +10,9 @@ int main()
 		RTDS RTDSserver;
 		RTDSserver.addThread(5);
 		RTDSserver.startTCPserver();
+		RTDSserver.stopTCPserver();
+		RTDSserver.startTCPserver();
+
 
 		while (true)
 		{

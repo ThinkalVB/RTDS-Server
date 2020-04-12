@@ -4,13 +4,14 @@
 #include <boost/asio.hpp>
 
 using namespace boost;
+class SPentryBase {
+protected:
+	SPentryBase() {}
+	~SPentryBase() {}
 
-class SPentryV4
-{
 	SourcePair sourcePair;
 	Permission permission;
 
-	static const std::string versionID;
 	std::string UID;
 	std::string ipAddress;
 	std::string portNumber;
@@ -18,24 +19,27 @@ class SPentryV4
 
 	unsigned int ttl;
 	posix_time::ptime startTime;
+};
+
+class SPentryV4 : private SPentryBase
+{
+	static const std::string versionID;
 public:
 	SPentryV4(asio::ip::address_v4, unsigned short);
+	friend class CmdInterpreter;
 };
 
 
-class SPentryV6
+class SPentryV6 :private SPentryBase
 {
-	SourcePair sourcePair;
-	Permission permission;
-
 	static const std::string versionID;
-	std::string UID;
-	std::string ipAddress;
-	std::string portNumber;
-	std::string description;
-
-	unsigned int ttl;
-	posix_time::ptime startTime;
 public:
 	SPentryV6(asio::ip::address_v6, unsigned short);
+	friend class CmdInterpreter;
+};
+
+union SPentry
+{
+	SPentryV4* SPv4;
+	SPentryV6* SPv6;
 };

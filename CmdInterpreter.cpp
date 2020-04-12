@@ -21,11 +21,17 @@ void CmdInterpreter::processCommand(Peer& peer)
 void CmdInterpreter::ping(Peer& peer)
 {
 	if (peer.remoteEp.address().is_v4())
-		peer.writeBuffer = "v4 ";
+	{
+		peer.writeBuffer += peer.peerEntry.SPv4->versionID + " ";
+		peer.writeBuffer += peer.peerEntry.SPv4->ipAddress + " ";
+		peer.writeBuffer += peer.peerEntry.SPv4->portNumber;
+	}
 	else
-		peer.writeBuffer = "v6 ";
-	peer.writeBuffer = peer.writeBuffer + peer.remoteEp.address().to_string() +
-		" " + std::to_string(peer.remoteEp.port());
+	{
+		peer.writeBuffer += peer.peerEntry.SPv6->versionID + " ";
+		peer.writeBuffer += peer.peerEntry.SPv6->ipAddress + " ";
+		peer.writeBuffer += peer.peerEntry.SPv6->portNumber;
+	}
 }
 
 void CmdInterpreter::makeSourcePairV4(const asio::ip::address_v4& ipAddress, unsigned short portNum, uint8_t(&sourcePair)[6])
@@ -69,4 +75,3 @@ bool CmdInterpreter::validIPaddress(std::string ipAddress, unsigned short portNu
 			return false;
 	}
 }
-

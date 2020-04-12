@@ -12,14 +12,13 @@ RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v4::any(), portN
 	#ifdef PRINT_LOG
 	Log::log("RTDS starting");
 	#endif
-
-	tcpServerRunning = false;
-	keepAccepting = true;
-	activeThreadCount = 0;
 }
 
 bool RTDS::startTCPserver()
 {
+	tcpServerRunning = false;
+	activeThreadCount = 0;
+
 	#ifdef PRINT_LOG
 	Log::log("TCP server initiating");
 	#endif
@@ -53,12 +52,7 @@ bool RTDS::startTCPserver()
 		#endif
 		return false;
 	}
-
-	#ifdef PRINT_LOG
-	Log::log("TCP Accepting starting");
-	#endif
-	keepAccepting = true;
-	_peerAcceptRoutine();
+	startAccepting();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server started");
@@ -88,6 +82,20 @@ bool RTDS::addThread(int threadCount)
 		}
 	}
 	return true;
+}
+
+void RTDS::startAccepting()
+{
+	#ifdef PRINT_LOG
+	Log::log("TCP Accepting starting");
+	#endif
+	keepAccepting = true;
+	_peerAcceptRoutine();
+}
+
+void RTDS::stopAccepting()
+{
+	keepAccepting = false;
 }
 
 void RTDS::_ioThreadJob()
@@ -135,21 +143,11 @@ void RTDS::_peerAcceptRoutine()
 				try
 				{
 					auto peer = new Peer(peerSocket);
-					std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
-					Peer::peerPtrContainer.push_back(peer);
 				}
 				catch (std::bad_alloc)
 				{
 					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 					Log::log("Peer memmory bad allocation");
-					#endif
-					peerSocket->close();
-					delete peerSocket;
-				}
-				catch (...)
-				{
-					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
-					Log::log("Peer pushback to container failed");
 					#endif
 					peerSocket->close();
 					delete peerSocket;
@@ -164,7 +162,7 @@ void RTDS::_stopIoContext()
 {
 	ioContext.stop();
 	do {
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} while (!ioContext.stopped() && activeThreadCount == 0);
 }
 
@@ -191,13 +189,8 @@ void RTDS::_stopTCPacceptor()
 void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
-	_stopIoContext();
-
-	std::lock_guard<std::mutex> lock(Peer::peerContainerLock);
-	for (auto lstItr = Peer::peerPtrContainer.rbegin(); lstItr != Peer::peerPtrContainer.rend(); lstItr++)
-		delete* lstItr;
-	Peer::peerPtrContainer.clear();
-
+	ioContext.reset();
+	Peer::_removeAllPeers();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
@@ -211,7 +204,7 @@ RTDS::~RTDS()
 {
 	if (tcpServerRunning)
 		stopTCPserver();
-
+	_stopIoContext();
 	#ifdef PRINT_LOG
 	Log::log("RTDS Exiting");
 	#endif
