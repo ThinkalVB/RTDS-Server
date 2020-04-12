@@ -1,13 +1,13 @@
-[23:53::0:33	]RTDS starting
-[23:53::0:33	]New IO Thread added
-[23:53::0:33	]New IO Thread added
-[23:53::0:33	]New IO Thread added
-[23:53::0:33	]New IO Thread added
-[23:53::0:33	]New IO Thread added
-[23:53::0:33	]TCP server initiating
-[23:53::0:33	]TCP Accepting starting
-[23:53::0:33	]TCP server started
-[23:53::0:33	]TCP server stopped
-[23:53::0:33	]TCP server initiating
-[23:53::0:33	]TCP Accepting starting
-[23:53::0:33	]TCP server started
+[0:40::0:56	]RTDS starting
+[0:40::0:56	]New IO Thread added
+[0:40::0:56	]New IO Thread added
+[0:40::0:56	]New IO Thread added
+[0:40::0:56	]New IO Thread added
+[0:40::0:56	]New IO Thread added
+[0:40::0:56	]TCP server initiating
+[0:40::0:56	]TCP Accepting starting
+[0:40::0:56	]TCP server started
+[0:40::0:56	]TCP server stopped
+[0:40::0:56	]TCP server initiating
+[0:40::0:56	]TCP Accepting starting
+[0:40::0:56	]TCP server started

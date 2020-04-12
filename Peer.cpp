@@ -60,7 +60,7 @@ void Peer::_sendPeerData()
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 
-void Peer::_removeAllPeers()
+void Peer::removeAllPeers()
 {
 	for (auto lstItr = peerPtrContainer.rbegin(); lstItr != peerPtrContainer.rend(); lstItr++)
 		delete* lstItr;

@@ -190,7 +190,7 @@ void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
 	ioContext.reset();
-	Peer::_removeAllPeers();
+	Peer::removeAllPeers();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
