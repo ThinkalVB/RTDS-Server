@@ -18,11 +18,8 @@ bool Log::goodToLog = false;
 
 void Log::_printTime()
 {
-	auto localTime = posix_time::second_clock::local_time();
-	logFile << "[" << localTime.time_of_day().hours();
-	logFile << ":" << localTime.time_of_day().minutes() << ":";
-	logFile << ":" << localTime.time_of_day().fractional_seconds() << ":";
-	logFile << localTime.time_of_day().seconds() << "\t]";
+	auto localTime = posix_time::microsec_clock::local_time();
+	logFile << "[" << posix_time::to_simple_string(localTime) << "]  ";
 }
 
 void Log::startLog(std::string fileName)
@@ -42,8 +39,8 @@ void Log::log(std::string message, const std::runtime_error& ec)
 	std::lock_guard<std::mutex> lock(writeLock);
 	if (goodToLog)
 	{
+		_printTime();
 		try {
-			_printTime();
 			logFile << message << " " << ec.what() << std::endl;
 		}catch (...)
 		{
@@ -67,13 +64,13 @@ void Log::log(std::string message, const system::error_code& ec)
 	}
 }
 
-void Log::log(std::string message, const asio::ip::tcp::socket* peerSocket)
+void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr)
 {
 	std::lock_guard<std::mutex> lock(writeLock);
 	if (goodToLog)
 	{
 		try {
-			auto remoteEp = peerSocket->remote_endpoint();
+			auto remoteEp = socketPtr->remote_endpoint();
 			auto IPaddress = remoteEp.address();
 			auto portNumber = remoteEp.port();
 			_printTime();
