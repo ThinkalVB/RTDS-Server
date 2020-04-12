@@ -1,9 +1,9 @@
-#include "Peer.h"
+#include "peer.h"
 #include <boost/bind.hpp>
 #include <cppcodec/base64_rfc4648.hpp>
 #include <string_view>
-#include "CmdInterpreter.h"
-#include "Log.h"
+#include "cmd_interpreter.h"
+#include "log.h"
 
 std::list<Peer*> Peer::peerPtrContainer;
 std::mutex Peer::peerContainerLock;

@@ -1,5 +1,5 @@
-#include "SPentry.h"
-#include "CmdInterpreter.h"
+#include "sp_entry.h"
+#include "cmd_interpreter.h"
 #include "cppcodec/base64_rfc4648.hpp"
 #include <boost/date_time.hpp>
 

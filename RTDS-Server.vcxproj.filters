@@ -15,45 +15,42 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Log.cpp">
+    <ClCompile Include="cmd_interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Peer.cpp">
+    <ClCompile Include="log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RTDS.cpp">
+    <ClCompile Include="peer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source.cpp">
+    <ClCompile Include="rtds.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CmdInterpreter.cpp">
+    <ClCompile Include="source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SPentry.cpp">
+    <ClCompile Include="sp_entry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Log.h">
+    <ClInclude Include="cmd_interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Peer.h">
+    <ClInclude Include="common.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RTDS.h">
+    <ClInclude Include="log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CmdInterpreter.h">
+    <ClInclude Include="peer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SPentry.h">
+    <ClInclude Include="rtds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Enums.hpp">
+    <ClInclude Include="sp_entry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

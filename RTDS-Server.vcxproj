@@ -18,6 +18,22 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="cmd_interpreter.cpp" />
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="peer.cpp" />
+    <ClCompile Include="rtds.cpp" />
+    <ClCompile Include="source.cpp" />
+    <ClCompile Include="sp_entry.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cmd_interpreter.h" />
+    <ClInclude Include="common.hpp" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="peer.h" />
+    <ClInclude Include="rtds.h" />
+    <ClInclude Include="sp_entry.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{2AF58A5F-BD51-46FD-9455-AF04502307A1}</ProjectGuid>
@@ -138,23 +154,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="CmdInterpreter.cpp" />
-    <ClCompile Include="Log.cpp" />
-    <ClCompile Include="Peer.cpp" />
-    <ClCompile Include="RTDS.cpp" />
-    <ClCompile Include="Source.cpp" />
-    <ClCompile Include="SPentry.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CmdInterpreter.h" />
-    <ClInclude Include="Enums.hpp" />
-    <ClInclude Include="Log.h" />
-    <ClInclude Include="Peer.h" />
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="RTDS.h" />
-    <ClInclude Include="SPentry.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

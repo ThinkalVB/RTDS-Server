@@ -1,7 +1,7 @@
-#include "RTDS.h"
+#include "rtds.h"
 #include <thread>
-#include "Peer.h"
-#include "Log.h"
+#include "peer.h"
+#include "log.h"
 
 #ifdef RTDS_DUAL_STACK
 RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v6::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)

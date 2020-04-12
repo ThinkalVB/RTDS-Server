@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/asio.hpp>
-#include "SPentry.h"
+#include "sp_entry.h"
 #include <list>
 
 using namespace boost;

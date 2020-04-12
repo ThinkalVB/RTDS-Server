@@ -1,5 +1,5 @@
-#include "CmdInterpreter.h"
-#include "Log.h"
+#include "cmd_interpreter.h"
+#include "log.h"
 
 void CmdInterpreter::processCommand(Peer& peer)
 {
