@@ -14,7 +14,6 @@
 #define PRINT_ERROR
 #endif
 
-
 using namespace boost;
 
 class Log

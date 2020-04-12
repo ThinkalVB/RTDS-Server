@@ -48,7 +48,7 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 		}
 		else
 		{
-			writeBuffer = "bad_command";
+			writeBuffer = Response::BAD_COMMAND;
 			_sendPeerData();
 		}
 	}

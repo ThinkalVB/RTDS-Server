@@ -148,7 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CmdInterpreter.h" />
-    <ClInclude Include="Enums.h" />
+    <ClInclude Include="Enums.hpp" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="Peer.h" />
     <ClInclude Include="resource.h" />

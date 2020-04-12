@@ -1,6 +1,6 @@
 #pragma once
 #include "Peer.h"
-#include "Enums.h"
+#include "Enums.hpp"
 
 class CmdInterpreter
 {

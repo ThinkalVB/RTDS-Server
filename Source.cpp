@@ -4,7 +4,7 @@
 int main()
 {
 	#ifdef PRINT_LOG
-	Log::startLog("log.txt");
+	Log::startLog("logs.txt");
 	#endif
 	{
 		RTDS RTDSserver;

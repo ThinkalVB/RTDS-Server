@@ -6,14 +6,14 @@ void CmdInterpreter::processCommand(Peer& peer)
 	auto commandString = std::string_view{ peer.dataBuffer };
 	if (commandString.find(' ') == std::string::npos)
 	{
-		if (commandString == "ping")
+		if (commandString == Command::COM_PING)
 			CmdInterpreter::ping(peer);
 		else
-			peer.writeBuffer = "bad_command";
+			peer.writeBuffer = Response::BAD_COMMAND;
 	}
 	else
 	{
-		peer.writeBuffer = "bad_command";
+		peer.writeBuffer = Response::BAD_COMMAND;
 	}
 	peer._sendPeerData();
 }

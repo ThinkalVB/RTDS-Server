@@ -20,7 +20,7 @@ class RTDS
  *
  * @details
  * Run ioContext.run() function. 
- * This call will block all the threads calling this function till the ioContext is stopped.
+ * This function call will block all the threads untill the RTDS class object is distroyed.
  ********************************************************************************************/
 	void _ioThreadJob();
  /*******************************************************************************************
@@ -88,12 +88,12 @@ public:
 * @brief Stop the TCP server
 *
 * @details
-* Stop TCP acceptor, stop the ioContext, wait for all the threads to exit.
+* Stop TCP acceptor, reset the ioContext [ threads won't exit ][ all pending jobs discarded]
 * Delete all peers in the container(free the memmory). Clear the container.
 ********************************************************************************************/
 	void stopTCPserver();
 /*******************************************************************************************
-* @brief Stop the TCP server, if it is running
+* @brief Stop the TCP server, if it is running and stop the ioContext [ threads will exit ]
 ********************************************************************************************/
 	~RTDS();
 };

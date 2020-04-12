@@ -1,5 +1,5 @@
 #pragma once
-#include "Enums.h"
+#include "Enums.hpp"
 #include <string>
 #include <boost/asio.hpp>
 
