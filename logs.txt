@@ -1,9 +1,9 @@
-[2020-Apr-13 02:22:14.459978]  RTDS starting
-[2020-Apr-13 02:22:14.460975]  New IO Thread added
-[2020-Apr-13 02:22:14.461973]  New IO Thread added
-[2020-Apr-13 02:22:14.465962]  New IO Thread added
-[2020-Apr-13 02:22:14.465962]  New IO Thread added
-[2020-Apr-13 02:22:14.467958]  New IO Thread added
-[2020-Apr-13 02:22:14.467958]  TCP server initiating
-[2020-Apr-13 02:22:14.468955]  TCP Accepting starting
-[2020-Apr-13 02:22:14.468955]  TCP server started
+[2020-Apr-13 23:03:20.227047]  RTDS starting
+[2020-Apr-13 23:03:20.228008]  New IO Thread added
+[2020-Apr-13 23:03:20.229006]  New IO Thread added
+[2020-Apr-13 23:03:20.234990]  New IO Thread added
+[2020-Apr-13 23:03:20.234990]  New IO Thread added
+[2020-Apr-13 23:03:20.235987]  New IO Thread added
+[2020-Apr-13 23:03:20.236983]  TCP server initiating
+[2020-Apr-13 23:03:20.236983]  TCP Accepting starting
+[2020-Apr-13 23:03:20.236983]  TCP server started

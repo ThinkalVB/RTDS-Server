@@ -13,7 +13,7 @@ class Peer
 
 	asio::ip::tcp::socket* peerSocket;			//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;			//!< Endpoint of the peerSocket with info on peer system
-	SPentry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
+	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
 
 	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
 	std::string writeBuffer;					//!< Buffer from which the response will be send
@@ -68,7 +68,7 @@ public:
 *
 * @details
 * Add this peer object to the container. Reserver buffer size and get the peer endpoint.
-* Create a SourcePortEntry SPentry with details associated with this socket.
+* Create a SourcePort Entry peerEntry with details associated with this peer.
 ********************************************************************************************/
 	Peer(asio::ip::tcp::socket*);
 /*******************************************************************************************

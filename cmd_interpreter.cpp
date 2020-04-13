@@ -22,15 +22,15 @@ void CmdInterpreter::ping(Peer& peer)
 {
 	if (peer.remoteEp.address().is_v4())
 	{
-		peer.writeBuffer += peer.peerEntry.SPv4->versionID + " ";
-		peer.writeBuffer += peer.peerEntry.SPv4->ipAddress + " ";
-		peer.writeBuffer += peer.peerEntry.SPv4->portNumber;
+		peer.writeBuffer += peer.peerEntry.Ev4->versionID + " ";
+		peer.writeBuffer += peer.peerEntry.Ev4->ipAddress + " ";
+		peer.writeBuffer += peer.peerEntry.Ev4->portNumber;
 	}
 	else
 	{
-		peer.writeBuffer += peer.peerEntry.SPv6->versionID + " ";
-		peer.writeBuffer += peer.peerEntry.SPv6->ipAddress + " ";
-		peer.writeBuffer += peer.peerEntry.SPv6->portNumber;
+		peer.writeBuffer += peer.peerEntry.Ev6->versionID + " ";
+		peer.writeBuffer += peer.peerEntry.Ev6->ipAddress + " ";
+		peer.writeBuffer += peer.peerEntry.Ev6->portNumber;
 	}
 }
 

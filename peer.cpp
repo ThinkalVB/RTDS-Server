@@ -18,9 +18,9 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	Peer::peerPtrContainer.push_back(this);
 
 	if (remoteEp.address().is_v4())
-		peerEntry.SPv4 = new SPentryV4(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry.Ev4 = new EntryV4(remoteEp.address().to_v4(), remoteEp.port());
 	else
-		peerEntry.SPv6 = new SPentryV6(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry.Ev6 = new EntryV6(remoteEp.address().to_v6(), remoteEp.port());
 	_peerReceiveData();
 }
 

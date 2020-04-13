@@ -4,42 +4,75 @@
 #include <boost/asio.hpp>
 
 using namespace boost;
-class SPentryBase {
+
+/*******************************************************************************************
+ * @brief Base class for every entry into the directory.
+ *
+ * @details
+ * Base class for the Entry for IPv4 and IPV6
+ ********************************************************************************************/
+class entryBase {
 protected:
-	SPentryBase() {}
-	~SPentryBase() {}
+	entryBase() {}
+	~entryBase() {}
 
-	SourcePair sourcePair;
-	Permission permission;
+	SourcePair sourcePair;						//!< Source Pair address (IPaddress + portNumber) Network Byte order.
+	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 
-	std::string UID;
-	std::string ipAddress;
-	std::string portNumber;
-	std::string description;
+	std::string UID;							//!< Base 64 encoding of the source pair address				
+	std::string ipAddress;						//!< IPaddress associated with the entry.
+	std::string portNumber;						//!< Port number associated with the entry.
+	std::string description;					//!< Description associated with the entry.
 
-	unsigned int ttl;
-	posix_time::ptime startTime;
+	unsigned int ttl;							//!< The Time To Live for the entry.
+	posix_time::ptime startTime;				//!< The time at which this entry was added to the directory.
 };
 
-class SPentryV4 : private SPentryBase
+/*******************************************************************************************
+ * @brief EntryV4 contains all data needed for an Entry of type IPV4
+ ********************************************************************************************/
+class EntryV4 : private entryBase
 {
-	static const std::string versionID;
+	static const std::string versionID;			//!< The version ID of the entry "v4" for IPV4
 public:
-	SPentryV4(asio::ip::address_v4, unsigned short);
+/*******************************************************************************************
+* @brief Initilaize the values of the entry 
+*
+* @param[in] ipAdd				IPv4 address associated with the entry
+* @param[in] portNum			Port number associated with the entry
+*
+* @details
+* Generate base64 UID, binary sourcePair address(host byte order)
+********************************************************************************************/
+	EntryV4(asio::ip::address_v4, unsigned short);
 	friend class CmdInterpreter;
 };
 
-
-class SPentryV6 :private SPentryBase
+/*******************************************************************************************
+ * @brief EntryV6 contains all data needed for an Entry of type IPV6
+ ********************************************************************************************/
+class EntryV6 :private entryBase
 {
-	static const std::string versionID;
+	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
 public:
-	SPentryV6(asio::ip::address_v6, unsigned short);
+/*******************************************************************************************
+* @brief Initilaize the values of the entry
+*
+* @param[in] ipAdd				IP64 address associated with the entry
+* @param[in] portNum			Port number associated with the entry
+*
+* @details
+* Generate base64 UID, binary sourcePair address(host byte order)
+********************************************************************************************/
+	EntryV6(asio::ip::address_v6, unsigned short);
 	friend class CmdInterpreter;
 };
 
-union SPentry
+/*******************************************************************************************
+ * @brief Union to hold the poiter to either EntryV4 or EntryV6
+ ********************************************************************************************/
+union Entry
 {
-	SPentryV4* SPv4;
-	SPentryV6* SPv6;
+	EntryV4* Ev4;
+	EntryV6* Ev6;
 };
