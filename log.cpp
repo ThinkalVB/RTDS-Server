@@ -25,13 +25,19 @@ void Log::_printTime()
 void Log::startLog(std::string fileName)
 {
 	std::lock_guard<std::mutex> lock(writeLock);
-	try {
-		logFile.open(fileName, std::ios::out);
-	}catch(...)
+	if (!goodToLog)
 	{
-		RTDS_CLI(std::cout << "Logging failed";)
+		try {
+			logFile.open(fileName, std::ios::out);
+		}
+		catch (...)
+		{
+			RTDS_CLI(std::cout << "Logging failed";)
+		}
+		goodToLog = true;
 	}
-	goodToLog = true;
+	else
+		return;
 }
 
 void Log::log(std::string message, const std::runtime_error& ec)

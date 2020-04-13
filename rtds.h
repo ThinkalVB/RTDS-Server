@@ -54,6 +54,7 @@ public:
 * @details
 * All the STL containers associated with this class are static in nature.
 * Add #define RTDS_DUAL_STACK in RTDS.h to compile the RTDS in IPv6 dual stack mode.
+* Start the logging system and put logs to "logs.txt" - you can change it here.
 ********************************************************************************************/
 	RTDS(unsigned short = RTDS_PORT);
 /*******************************************************************************************
@@ -67,7 +68,7 @@ public:
 ********************************************************************************************/
 	bool startTCPserver();
 /*******************************************************************************************
-* @brief Start the TCP server
+* @brief Add X number of threads to run ioContex.run()
 *
 * @param[in] threadCount		Add X more threads to execute RTDS asyn tasks.
 * @return						True if the threads are spwaned.
@@ -76,6 +77,13 @@ public:
 * Spawn child threads to run _ioThreadJob() and detach it from main thread.
 ********************************************************************************************/
 	bool addThread(int threadCount = 1);
+/*******************************************************************************************
+* @brief Add the calling thread to run ioContex.run()
+*
+* @details
+* The calling thread will be blocked untill this RTDS object is destroyed
+********************************************************************************************/
+	void addThisThread();
 /*******************************************************************************************
 * @brief Start accepting new connections
 ********************************************************************************************/
@@ -93,7 +101,11 @@ public:
 ********************************************************************************************/
 	void stopTCPserver();
 /*******************************************************************************************
-* @brief Stop the TCP server, if it is running and stop the ioContext [ threads will exit ]
+* @brief Stop the tcp server and ioContext
+*
+* @details
+* Stop the TCP server, if it is running and stop the ioContext [ threads will exit ]
+* Stop logging.
 ********************************************************************************************/
 	~RTDS();
 };

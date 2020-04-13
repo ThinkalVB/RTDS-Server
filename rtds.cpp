@@ -9,6 +9,10 @@ RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v6::any(), portN
 RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v4::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
 #endif
 {
+	#if defined(PRINT_LOG) || defined(PRINT_ERROR)
+	Log::startLog("logs.txt");
+	#endif
+
 	#ifdef PRINT_LOG
 	Log::log("RTDS starting");
 	#endif
@@ -82,6 +86,11 @@ bool RTDS::addThread(int threadCount)
 		}
 	}
 	return true;
+}
+
+void RTDS::addThisThread()
+{
+	_ioThreadJob();
 }
 
 void RTDS::startAccepting()
@@ -205,7 +214,12 @@ RTDS::~RTDS()
 	if (tcpServerRunning)
 		stopTCPserver();
 	_stopIoContext();
+
 	#ifdef PRINT_LOG
 	Log::log("RTDS Exiting");
+	#endif
+
+	#if defined(PRINT_LOG) || defined(PRINT_ERROR)
+	Log::stopLog();
 	#endif
 }
