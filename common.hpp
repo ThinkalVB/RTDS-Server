@@ -2,6 +2,9 @@
 #include <cstdint>
 #include <string>
 
+typedef uint8_t sourcePairV4[6];
+typedef uint8_t sourcePairV6[18];
+
 /*******************************************************************************************
 * @brief Enum class representing the levels of privilege
 *
@@ -21,14 +24,14 @@ enum class Permission : uint8_t
 * @brief Union class to store the Source Pair (Unique ID / address)
 *
 * @details
-* The source port address is represented in network byte order
+* The source pair address is represented in network byte order
 * V4SP				Source Port address (IPaddress [4Bytes]  + portNumber [2Bytes])
 * V6SP				Source Port address (IPaddress [16Bytes] + portNumber [2Bytes])
 ********************************************************************************************/
 union SourcePair
 {
-	uint8_t V4SP[6];
-	uint8_t V6SP[18];
+	sourcePairV4 V4SP;
+	sourcePairV6 V6SP;
 };
 
 /*******************************************************************************************

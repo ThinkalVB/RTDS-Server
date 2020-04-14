@@ -13,59 +13,61 @@ using namespace boost;
  ********************************************************************************************/
 class entryBase {
 protected:
-	entryBase() {}
-	~entryBase() {}
-
 	SourcePair sourcePair;						//!< Source Pair address (IPaddress + portNumber) Network Byte order.
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 
-	std::string UID;							//!< Base 64 encoding of the source pair address				
+	bool iswithPeer = false;					//!< True if this entry is associated with a peer.
+	bool isInDirectory = false;					//!< True if the entry is a directory entry.
+	unsigned int ttl;							//!< The Time To Live for the entry.
+	posix_time::ptime startTime;				//!< The time at which this entry was added to the directory.
+
+public:
+/*******************************************************************************************
+* @brief Make this entry part of a peer
+*
+* @details
+* Turn the isWithPeer to true which will prevent the directory from deleting this entry.
+********************************************************************************************/
+	void attachToPeer();
+/*******************************************************************************************
+* @brief Detach the entry from peer
+*
+* @details
+* Turn the isWithPeer to false so that directory can delete this entry after TTL.
+********************************************************************************************/
+	void detachFromPeer();
+	std::string UID;							//!< Base 64 encoding of the source pair address.		
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
 	std::string description;					//!< Description associated with the entry.
-
-	unsigned int ttl;							//!< The Time To Live for the entry.
-	posix_time::ptime startTime;				//!< The time at which this entry was added to the directory.
 };
 
 /*******************************************************************************************
  * @brief EntryV4 contains all data needed for an Entry of type IPV4
  ********************************************************************************************/
-class EntryV4 : private entryBase
+class EntryV4 : public entryBase
 {
-	static const std::string versionID;			//!< The version ID of the entry "v4" for IPV4
-public:
 /*******************************************************************************************
-* @brief Initilaize the values of the entry 
-*
-* @param[in] ipAdd				IPv4 address associated with the entry
-* @param[in] portNum			Port number associated with the entry
-*
-* @details
-* Generate base64 UID, binary sourcePair address(host byte order)
+* @brief Make IPV4 Entry object
 ********************************************************************************************/
-	EntryV4(asio::ip::address_v4, unsigned short);
-	friend class CmdInterpreter;
+	EntryV4() {}
+public:
+	static const std::string versionID;			//!< The version ID of the entry "v4" for IPV4
+	friend class Directory;
 };
 
 /*******************************************************************************************
  * @brief EntryV6 contains all data needed for an Entry of type IPV6
  ********************************************************************************************/
-class EntryV6 :private entryBase
+class EntryV6 : public entryBase
 {
-	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
-public:
 /*******************************************************************************************
-* @brief Initilaize the values of the entry
-*
-* @param[in] ipAdd				IP64 address associated with the entry
-* @param[in] portNum			Port number associated with the entry
-*
-* @details
-* Generate base64 UID, binary sourcePair address(host byte order)
+* @brief Make IPV6 Entry object
 ********************************************************************************************/
-	EntryV6(asio::ip::address_v6, unsigned short);
-	friend class CmdInterpreter;
+	EntryV6() {}
+public:
+	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
+	friend class Directory;
 };
 
 /*******************************************************************************************

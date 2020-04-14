@@ -69,6 +69,7 @@ public:
 * @details
 * Add this peer object to the container. Reserver buffer size and get the peer endpoint.
 * Create a SourcePort Entry peerEntry with details associated with this peer.
+* Set the flag isWithPeer to true so that Directory won't delete this entry.
 ********************************************************************************************/
 	Peer(asio::ip::tcp::socket*);
 /*******************************************************************************************
@@ -77,6 +78,9 @@ public:
 	static void removeAllPeers();
 /*******************************************************************************************
 * @brief Close and delete peerSocket, remove this object from the container
+*
+* @details
+* Set the flag isWithPeer to false so that Directory may delete this entry.
 ********************************************************************************************/
 	~Peer();
 

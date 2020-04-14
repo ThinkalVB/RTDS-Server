@@ -30,6 +30,9 @@
     <ClCompile Include="source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="directory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="sp_entry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="rtds.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="directory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="sp_entry.h">

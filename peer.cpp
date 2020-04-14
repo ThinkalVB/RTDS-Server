@@ -1,7 +1,6 @@
 #include "peer.h"
 #include <boost/bind.hpp>
-#include <cppcodec/base64_rfc4648.hpp>
-#include <string_view>
+#include "directory.h"
 #include "cmd_interpreter.h"
 #include "log.h"
 
@@ -18,9 +17,15 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	Peer::peerPtrContainer.push_back(this);
 
 	if (remoteEp.address().is_v4())
-		peerEntry.Ev4 = new EntryV4(remoteEp.address().to_v4(), remoteEp.port());
+	{
+		peerEntry.Ev4 = Directory::makeV4Entry(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry.Ev4->attachToPeer();
+	}
 	else
-		peerEntry.Ev6 = new EntryV6(remoteEp.address().to_v6(), remoteEp.port());
+	{
+		peerEntry.Ev6 = Directory::makeV6Entry(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry.Ev6->attachToPeer();
+	}
 	_peerReceiveData();
 }
 
@@ -96,6 +101,12 @@ Peer::~Peer()
 		Log::log("TCP Socket cannot close", ec);
 		#endif
 	}
+
+	if (remoteEp.address().is_v4())
+		peerEntry.Ev4->detachFromPeer();
+	else
+		peerEntry.Ev6->detachFromPeer();
+
 	std::lock_guard<std::mutex> lock(peerContainerLock);
 	peerPtrContainer.remove(this);
 	delete peerSocket;
