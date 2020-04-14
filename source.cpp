@@ -7,6 +7,5 @@ int main()
 	RTDSserver.addThread(5);
 	RTDSserver.startTCPserver();
 	RTDSserver.addThisThread();
-
 	return 0;
 }

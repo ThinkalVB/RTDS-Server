@@ -1,37 +1,41 @@
 #pragma once
 #include <cstdint>
+#include <array>
 #include <string>
 
-typedef uint8_t sourcePairV4[6];
-typedef uint8_t sourcePairV6[18];
+typedef std::array<uint8_t, 6> sourcePairV4;
+typedef std::array<uint8_t, 18> sourcePairV6;
 
 /*******************************************************************************************
 * @brief Enum class representing the levels of privilege
 *
 * @details
-* LIBERAL_ENTRY		All Peers with any IP address and port number will have authority
-* PROTECTED_ENTRY	All Peers with the same IP address will have authority
-* RESTRICTED		Only peer with the same IP address and port number have authority
+* LIBERAL_ENTRY		All Peers with any IP address and port number will have authority.
+* PROTECTED_ENTRY	All Peers with the same IP address will have authority.
+* RESTRICTED_ENTRY	Only peer with the same IP address and port number have authority.
 ********************************************************************************************/
-enum class Permission : uint8_t
+enum class Privilege : char
 {
-	LIBERAL_ENTRY,
-	PROTECTED_ENTRY,
-	RESTRICTED_ENTRY
+	LIBERAL_ENTRY		= 'l',
+	PROTECTED_ENTRY		= 'p',
+	RESTRICTED_ENTRY	= 'r'
 };
 
 /*******************************************************************************************
-* @brief Union class to store the Source Pair (Unique ID / address)
+* @brief Enum class represeting maximum TTL of different entrys
 *
 * @details
-* The source pair address is represented in network byte order
-* V4SP				Source Port address (IPaddress [4Bytes]  + portNumber [2Bytes])
-* V6SP				Source Port address (IPaddress [16Bytes] + portNumber [2Bytes])
+* CONNECTED_TTL		This entry won't expire hence value -1.
+* LIBERAL_TTL		This entry can survice upto 10 minutes.
+* PROTECTED_TTL		This entry can survive upto 30 minutes.
+* RESTRICTED_TTL	This entry can survive upto 60 minutes.
 ********************************************************************************************/
-union SourcePair
+enum class TTL : short
 {
-	sourcePairV4 V4SP;
-	sourcePairV6 V6SP;
+	CONNECTED_TTL	= -1,
+	LIBERAL_TTL		= 10,
+	PROTECTED_TTL	= 30,
+	RESTRICTED_TTL	= 60
 };
 
 /*******************************************************************************************
@@ -89,3 +93,20 @@ namespace Command {
 	const std::string COM_LEAVE		= "leave";
 	const std::string COM_EXIT		= "exit";
 }
+
+/*******************************************************************************************
+* @brief Individual privilage for different operation
+*
+* @details
+* This structure store the minimum individual privilage levels needed by the command issuing authority
+* to do the remove, change or charge operations.
+* remove		Remove the entry from directory.
+* change		Change the values in permission or description.
+* charge		Extend the life time of an entry.
+********************************************************************************************/
+struct Permission
+{
+	Privilege remove;
+	Privilege change;
+	Privilege charge;
+};

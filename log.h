@@ -53,12 +53,20 @@ public:
 ********************************************************************************************/
     static void log(std::string, const system::error_code&);
 /*******************************************************************************************
-* @brief Print details about the socket
+* @brief Print details about the socket error
 *
 * @param[in] message            Message from RTDS
 * @param[in] socketPtr          Pointer to the socket
 ********************************************************************************************/
     static void log(std::string, const asio::ip::tcp::socket*);
+/*******************************************************************************************
+* @brief Print details about the socket error
+*
+* @param[in] message            Message from RTDS
+* @param[in] socketPtr          Pointer to the socket
+* @param[in] ec                 Runtime error
+********************************************************************************************/
+    static void log(std::string, const asio::ip::tcp::socket*, const std::error_code& ec);
 /*******************************************************************************************
 * @brief Print the message
 *

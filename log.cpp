@@ -81,7 +81,28 @@ void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr)
 			auto portNumber = remoteEp.port();
 			_printTime();
 			logFile << message << " " << IPaddress.to_string() << " " << portNumber << std::endl;
-		}catch (...)
+		}
+		catch (...)
+		{
+			RTDS_CLI(std::cout << "Logging failed";)
+		}
+	}
+}
+
+void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr, const std::error_code& ec)
+{
+	std::lock_guard<std::mutex> lock(writeLock);
+	if (goodToLog)
+	{
+		try {
+			auto remoteEp = socketPtr->remote_endpoint();
+			auto IPaddress = remoteEp.address();
+			auto portNumber = remoteEp.port();
+			_printTime();
+			logFile << message << " " << IPaddress.to_string() << " " << portNumber << " ";
+			logFile << ec.message() << std::endl;
+		}
+		catch (...)
 		{
 			RTDS_CLI(std::cout << "Logging failed";)
 		}

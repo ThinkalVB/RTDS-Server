@@ -34,7 +34,7 @@ void CmdInterpreter::ping(Peer& peer)
 	}
 }
 
-void CmdInterpreter::makeSourcePairV4(const asio::ip::address_v4& ipAddress, unsigned short portNum, uint8_t(&sourcePair)[6])
+void CmdInterpreter::makeSourcePair(const asio::ip::address_v4& ipAddress, unsigned short portNum, sourcePairV4& sourcePair)
 {
 	auto ipBin = ipAddress.to_bytes();
 	memcpy(&sourcePair[0], &ipBin[0], 4);
@@ -45,7 +45,7 @@ void CmdInterpreter::makeSourcePairV4(const asio::ip::address_v4& ipAddress, uns
 	memcpy(&sourcePair[4], &portNum, 2);
 }
 
-void CmdInterpreter::makeSourcePairV6(const asio::ip::address_v6& ipAddress, unsigned short portNum, uint8_t(&sourcePair)[18])
+void CmdInterpreter::makeSourcePair(const asio::ip::address_v6& ipAddress, unsigned short portNum, sourcePairV6& sourcePair)
 {
 	auto ipBin = ipAddress.to_bytes();
 	memcpy(&sourcePair[0], &ipBin[0], 16);
@@ -54,24 +54,4 @@ void CmdInterpreter::makeSourcePairV6(const asio::ip::address_v6& ipAddress, uns
 	byteSwap(portNum);
 	#endif
 	memcpy(&sourcePair[16], &portNum, 2);
-}
-
-bool CmdInterpreter::validIPaddress(std::string ipAddress, unsigned short portNum)
-{
-	system::error_code ec;
-	asio::ip::make_address(ipAddress, ec);
-	if (ec != system::errc::success)
-	{
-		#ifdef PRINT_LOG
-		Log::log("Bad IP address");
-		#endif
-		return false;
-	}
-	else
-	{
-		if (portNum <= 65535)
-			return true;
-		else
-			return false;
-	}
 }

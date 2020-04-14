@@ -97,9 +97,17 @@ public:
 *
 * @details
 * Stop TCP acceptor, reset the ioContext [ threads won't exit ][ all pending jobs discarded]
-* Delete all peers in the container(free the memmory). Clear the container.
 ********************************************************************************************/
 	void stopTCPserver();
+/*******************************************************************************************
+* @brief Get the total number of peers
+*
+* @return						Total number of peers
+*
+* @details
+* Gives total number of open sockets listening to a remote system.
+********************************************************************************************/
+	unsigned short getPeerCount();
 /*******************************************************************************************
 * @brief Stop the tcp server and ioContext
 *

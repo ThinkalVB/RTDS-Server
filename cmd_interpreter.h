@@ -8,9 +8,8 @@ class CmdInterpreter
 public:
 	static void processCommand(Peer&);
 
-	static void makeSourcePairV4(const asio::ip::address_v4&, unsigned short, uint8_t(&sourcePair)[6]);
-	static void makeSourcePairV6(const asio::ip::address_v6&, unsigned short, uint8_t(&sourcePair)[18]);
-	static bool validIPaddress(std::string, unsigned short = 0);
+	static void makeSourcePair(const asio::ip::address_v4&, unsigned short, sourcePairV4&);
+	static void makeSourcePair(const asio::ip::address_v6&, unsigned short, sourcePairV6&);
 };
 
 template <typename T>

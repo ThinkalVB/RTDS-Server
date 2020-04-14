@@ -4,8 +4,7 @@
 #include "cmd_interpreter.h"
 #include "log.h"
 
-std::list<Peer*> Peer::peerPtrContainer;
-std::mutex Peer::peerContainerLock;
+unsigned short Peer::peerCount = 0;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
@@ -13,20 +12,18 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	writeBuffer.reserve(RTDS_BUFF_SIZE);
 	remoteEp = socketPtr->remote_endpoint();
 
-	std::lock_guard<std::mutex> lock(peerContainerLock);
-	Peer::peerPtrContainer.push_back(this);
-
 	if (remoteEp.address().is_v4())
 	{
-		peerEntry.Ev4 = Directory::makeV4Entry(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry.Ev4 = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
 		peerEntry.Ev4->attachToPeer();
 	}
 	else
 	{
-		peerEntry.Ev6 = Directory::makeV6Entry(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry.Ev6 = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
 		peerEntry.Ev6->attachToPeer();
 	}
 	_peerReceiveData();
+	peerCount++;
 }
 
 void Peer::_peerReceiveData()
@@ -40,7 +37,7 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket _processData() failed", peerSocket);
+		Log::log("TCP Socket _processData() failed", peerSocket, ec);
 		#endif
 		delete this;
 	}
@@ -65,19 +62,12 @@ void Peer::_sendPeerData()
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 
-void Peer::removeAllPeers()
-{
-	for (auto lstItr = peerPtrContainer.rbegin(); lstItr != peerPtrContainer.rend(); lstItr++)
-		delete* lstItr;
-	Peer::peerPtrContainer.clear();
-}
-
 void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 {
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket _sendData() failed", peerSocket);
+		Log::log("TCP Socket _sendData() failed", peerSocket, ec);
 		#endif
 		delete this;
 	}
@@ -86,6 +76,11 @@ void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 		writeBuffer.clear();
 		_peerReceiveData();
 	}
+}
+
+unsigned short Peer::getPeerCount()
+{
+	return peerCount;
 }
 
 Peer::~Peer()
@@ -98,7 +93,7 @@ Peer::~Peer()
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket cannot close", ec);
+		Log::log("TCP Socket cannot close", peerSocket, ec);
 		#endif
 	}
 
@@ -106,8 +101,6 @@ Peer::~Peer()
 		peerEntry.Ev4->detachFromPeer();
 	else
 		peerEntry.Ev6->detachFromPeer();
-
-	std::lock_guard<std::mutex> lock(peerContainerLock);
-	peerPtrContainer.remove(this);
+	peerCount--;
 	delete peerSocket;
 }

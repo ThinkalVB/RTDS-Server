@@ -105,6 +105,7 @@ void RTDS::startAccepting()
 void RTDS::stopAccepting()
 {
 	keepAccepting = false;
+	tcpAcceptor.cancel();
 }
 
 void RTDS::_ioThreadJob()
@@ -141,11 +142,19 @@ void RTDS::_peerAcceptRoutine()
 				#endif
 
 				boost::asio::socket_base::keep_alive keepAlive(true);
+				asio::socket_base::enable_connection_aborted connAbortSignal(true);
 				peerSocket->set_option(keepAlive, ec);
 				if (ec != system::errc::success)
 				{
 					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 					Log::log("TCP set_option(keepAlive) failed : ", ec);
+					#endif
+				}
+				peerSocket->set_option(connAbortSignal, ec);
+				if (ec != system::errc::success)
+				{
+					#if defined(PRINT_LOG) || defined(PRINT_ERROR)
+					Log::log("TCP set_option(connAbortSignal) failed : ", ec);
 					#endif
 				}
 
@@ -199,7 +208,6 @@ void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
 	ioContext.reset();
-	Peer::removeAllPeers();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
@@ -207,6 +215,11 @@ void RTDS::stopTCPserver()
 
 	keepAccepting = false;
 	tcpServerRunning = false;
+}
+
+unsigned short RTDS::getPeerCount()
+{
+	return Peer::getPeerCount();
 }
 
 RTDS::~RTDS()
