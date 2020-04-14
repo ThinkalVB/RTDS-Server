@@ -24,14 +24,14 @@ Logs will be put into logs.txt - the name can be changed as per user need.
 Initial version only support IPv4, IPV6 can be targeted using #define RTDS_DUAL_STACK in RTDS.cpp during compilation.  
 Feel free to modify and use it - and please do contribute to make it better.
 
-### Coding Style 
+### Coding style 
 
 1) Camel Casing for all the variables.
 2) Data Structure names start with capital letter.
 3) Suitable abbrevations are used as per necessity.
 4) All private member functions andvariables should prefix _ "undescore" before name.
 
-## Build & Testing
+## Built With
 
 * [Packet Sender](https://packetsender.com/download/)
 * [ISO C++ 17 Standard](https://en.cppreference.com/w/cpp/17/)
