@@ -18,10 +18,16 @@ Make sure firewalls are set to allow traffic from the appliation.
 This RTDS server is designed for single directory use hence won't support REGISTER and SWITCH commands.  
 Initially support for TCP on port 349 only.  
 Port number, thread count and maximum connection limit can be set dynamically.  
+<<<<<<< HEAD
 For logs, use #define PRINT_LOG in the cpp files for which the logs are needed.  
 For Errors only, use #define PRINT_ERROR in the cpp files for which the ERRORS are needed.  
 For getting CLI iostrem output, use #define RTDS_CLI_MODE.
 Logs will be put into log.txt - the name can be changed as per user need.  
+=======
+Use #define PRINT_LOG for advanced log and #define PRINT_ERROR for errors only.  
+For getting CLI iostrem output, use #define RTDS_CLI_MODE.  
+Logs will be put into logs.txt - the name can be changed as per user need.  
+>>>>>>> 455ad4e9f30d2adb22320dcd032c61d65271a868
 Initial version only support IPv4, IPV6 can be targeted using #define RTDS_DUAL_STACK in RTDS.cpp during compilation.  
 Feel free to modify and use it - and please do contribute to make it better.
 
@@ -34,7 +40,13 @@ Feel free to modify and use it - and please do contribute to make it better.
 
 ## Built With
 
+<<<<<<< HEAD
 * [Visual Studio 2019](https://www.visualstudio.com/downloads/) 
+=======
+* [Packet Sender](https://packetsender.com/download/)
+* [ISO C++ 17 Standard](https://en.cppreference.com/w/cpp/17/)
+* [Visual Studio 2019](https://www.visualstudio.com/downloads/)
+>>>>>>> 455ad4e9f30d2adb22320dcd032c61d65271a868
 
 ## Contributing
 
@@ -60,4 +72,7 @@ RTDS is built to ensure the persistence and integrity of distributed services wi
 All RTDS commands and responses are strictly confined to ASCII character encoding.
 The RTDS server follows a command/response model in a strictly sequential order.
 RTDS supports mirroring which allows real time tracking of changes happening in a directory.
+<<<<<<< HEAD
 
+=======
+>>>>>>> 455ad4e9f30d2adb22320dcd032c61d65271a868
