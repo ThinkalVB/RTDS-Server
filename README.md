@@ -19,7 +19,7 @@ Make sure firewalls are set to allow traffic from the appliation.
 Initially support for TCP on port 349 only.  
 Port number, thread count and maximum connection limit can be set dynamically.  
 Use #define PRINT_LOG for advanced log and #define PRINT_ERROR for errors only.  
-For getting CLI iostrem output, use #define RTDS_CLI_MODE.
+For getting CLI iostrem output, use #define RTDS_CLI_MODE.  
 Logs will be put into logs.txt - the name can be changed as per user need.  
 Initial version only support IPv4, IPV6 can be targeted using #define RTDS_DUAL_STACK in RTDS.cpp during compilation.  
 Feel free to modify and use it - and please do contribute to make it better.
