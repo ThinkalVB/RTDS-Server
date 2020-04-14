@@ -33,8 +33,8 @@ Feel free to modify and use it - and please do contribute to make it better.
 
 ## Build and Test
 
-* [Packet Sender] (https://packetsender.com/download/)
-* [ISO C++ 17 Standard] (https://en.cppreference.com/w/cpp/17/)
+* [Packet Sender](https://packetsender.com/download/)
+* [ISO C++ 17 Standard](https://en.cppreference.com/w/cpp/17/)
 * [Visual Studio 2019](https://www.visualstudio.com/downloads/)
 
 ## Contributing
