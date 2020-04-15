@@ -33,25 +33,3 @@ void CmdInterpreter::ping(Peer& peer)
 		peer.writeBuffer += peer.peerEntry.Ev6->portNumber;
 	}
 }
-
-void CmdInterpreter::makeSourcePair(const asio::ip::address_v4& ipAddress, unsigned short portNum, sourcePairV4& sourcePair)
-{
-	auto ipBin = ipAddress.to_bytes();
-	memcpy(&sourcePair[0], &ipBin[0], 4);
-
-	#ifdef BOOST_ENDIAN_LITTLE_BYTE
-	byteSwap(portNum);
-	#endif
-	memcpy(&sourcePair[4], &portNum, 2);
-}
-
-void CmdInterpreter::makeSourcePair(const asio::ip::address_v6& ipAddress, unsigned short portNum, sourcePairV6& sourcePair)
-{
-	auto ipBin = ipAddress.to_bytes();
-	memcpy(&sourcePair[0], &ipBin[0], 16);
-
-	#ifdef BOOST_ENDIAN_LITTLE_BYTE
-	byteSwap(portNum);
-	#endif
-	memcpy(&sourcePair[16], &portNum, 2);
-}

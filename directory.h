@@ -9,6 +9,21 @@ class Directory
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into map
+	
+/*******************************************************************************************
+* @brief Return the maximum privilege the command issuing entry have
+*
+* @param[in] entry				The Entry in which the change is taking place.
+* @param[in] cmdEntry			The entry associated with the command issuing peer.
+* @return						The maximum privilage the comEntry have on entry.
+*
+* @details
+* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
+* Both have the same IPv6 address - return Privilege::PROTECTED_ENTRY;
+********************************************************************************************/
+	template <typename Entry>
+	static Privilege _maxPrivilege(Entry*, Entry*);
+
 public:
 /*******************************************************************************************
 * @brief Return a pointer to V4 Entry for the given IP4 address and port number
@@ -65,29 +80,34 @@ public:
 ********************************************************************************************/
 	static EntryV6* findEntry(asio::ip::address_v6&, unsigned short);
 /*******************************************************************************************
-* @brief Return the maximum privilege the command issuing entry have
+* @brief Add the entry to the directory [Only call if the entry is inserting itself]
 *
-* @param[in] entry				The Entry in which the change is taking place.
-* @param[in] cmdEntry			The entry associated with the command issuing peer.
-* @return						The maximum privilage the comEntry have on entry.
+* @param[in] entry				Pointer to V4Entry or V6Entry
 *
 * @details
-* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
-* Both have the same IPv4 address only - return Privilege::PROTECTED_ENTRY;
-* Both have the same IPv4 adddress and port number - return Privilege::RESTRICTED_ENTRY;
+* Lock the entry, make all permission - privilege = Privilege::PROTECTED_ENTRY (by default).
+* Set isInDIrectory flag to true indicating that the entry is now in the directory.
 ********************************************************************************************/
-	static Privilege maxPrivilege(EntryV4*, EntryV4*);
-/*******************************************************************************************
-* @brief Return the maximum privilege the command issuing entry have
-*
-* @param[in] entry				The Entry in which the change is taking place.
-* @param[in] cmdEntry			The entry associated with the command issuing peer.
-* @return						The maximum privilage the comEntry have on entry.
-*
-* @details
-* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
-* Both have the same IPv6 address only - return Privilege::PROTECTED_ENTRY;
-* Both have the same IPv6 adddress and port number - return Privilege::RESTRICTED_ENTRY;
-********************************************************************************************/
-	static Privilege maxPrivilege(EntryV6*, EntryV6*);
+	template <typename Entry>
+	static void addEntry(Entry*);
 };
+
+
+template <typename Entry>
+inline void Directory::addEntry(Entry* entry)
+{
+	std::lock_guard<std::mutex> lock(entry->accessLock);
+	entry->isInDirectory = true;
+	entry->permission.charge = Privilege::PROTECTED_ENTRY;
+	entry->permission.change = Privilege::PROTECTED_ENTRY;
+	entry->permission.remove = Privilege::PROTECTED_ENTRY;
+}
+
+template <typename Entry>
+inline Privilege Directory::_maxPrivilege(Entry* entry, Entry* cmdEntry)
+{
+	if (std::memcmp((void*)entry->sourcePair[0], (void*)cmdEntry->sourcePair[0], (entry->sourcePair.size() - 2)) == 0)
+		return Privilege::PROTECTED_ENTRY;
+	else
+		return Privilege::LIBERAL_ENTRY;
+}

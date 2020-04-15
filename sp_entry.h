@@ -15,16 +15,17 @@ class entryBase {
 protected:
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 	TTL timeToLive;								//!< Keep the time to live for this entry.
+	std::mutex accessLock;						//!< Lock these mutex when accessing data
 
 	bool iswithPeer = false;					//!< True if this entry is associated with a peer.
 	bool isInDirectory = false;					//!< True if the entry is a directory entry.
-	std::atomic< posix_time::ptime> addedTime;	//!< The time at which this entry was added to the directory.
+	posix_time::ptime addedTime;				//!< The time at which this entry was added to the directory.
 
 /*******************************************************************************************
 * @brief Charge the entry extending it's lifetime
 *
 * @details
-* Update the added time with the current time.
+* Update the addedTime with the current time if the entry is not online.
 ********************************************************************************************/
 	void chargeEntry();
 
@@ -72,6 +73,8 @@ public:
 	std::string description;					//!< Description associated with the entry.
 };
 
+
+
 /*******************************************************************************************
  * @brief EntryV4 contains all data needed for an Entry of type IPV4
  ********************************************************************************************/
@@ -87,6 +90,8 @@ public:
 	friend class Directory;
 };
 
+
+
 /*******************************************************************************************
  * @brief EntryV6 contains all data needed for an Entry of type IPV6
  ********************************************************************************************/
@@ -101,6 +106,8 @@ public:
 	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
 	friend class Directory;
 };
+
+
 
 /*******************************************************************************************
  * @brief Union to hold the poiter to either EntryV4 or EntryV6

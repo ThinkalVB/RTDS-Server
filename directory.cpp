@@ -86,37 +86,43 @@ EntryV6* Directory::findEntry(asio::ip::address_v6& ipAdd, unsigned short portNu
 		return nullptr;
 }
 
-Privilege Directory::maxPrivilege(EntryV4* entry, EntryV4* cmdEntry)
-{
-	if (std::memcmp((void*)entry->sourcePair[0], (void*)cmdEntry->sourcePair[0], 4) == 0)
-	{
-		if (std::memcmp((void*)entry->sourcePair[4], (void*)cmdEntry->sourcePair[4], 2) == 0)
-			return Privilege::RESTRICTED_ENTRY;
-		else
-			return Privilege::PROTECTED_ENTRY;
-	}
-	else
-		return Privilege::LIBERAL_ENTRY;
-}
-
-Privilege Directory::maxPrivilege(EntryV6* entry, EntryV6* cmdEntry)
-{
-	if (std::memcmp((void*)entry->sourcePair[0], (void*)cmdEntry->sourcePair[0], 16) == 0)
-	{
-		if (std::memcmp((void*)entry->sourcePair[16], (void*)cmdEntry->sourcePair[16], 2) == 0)
-			return Privilege::RESTRICTED_ENTRY;
-		else
-			return Privilege::PROTECTED_ENTRY;
-	}
-	else
-		return Privilege::LIBERAL_ENTRY;
-}
-
-
 /*
 void Directory::addEntry(EntryV4* entry,EntryV4* CmdEntry)
 {
-	entry->isInDirectory = true;
-	entry->chargeEntry();
+	if (entry == CmdEntry)
+	{
+		entry->accessLock.lock();
+		entry->permission.charge = Privilege::PROTECTED_ENTRY;
+		entry->permission.change = Privilege::PROTECTED_ENTRY;
+		entry->permission.remove = Privilege::PROTECTED_ENTRY;
+		entry->accessLock.unlock();
+	}
+	else
+	{
+		std::lock_guard<std::mutex> lock(entry->accessLock);
+		std::lock_guard<std::mutex> lock(CmdEntry->accessLock);
+
+		if (!entry->isInDirectory)
+		{
+			entry->isInDirectory = true;
+			entry->chargeEntry();
+			auto maxCmdEntryPrivilege = maxPrivilege(entry, CmdEntry);
+			if (maxCmdEntryPrivilege == Privilege::LIBERAL_ENTRY)
+			{
+				entry->permission.charge = Privilege::LIBERAL_ENTRY;
+				entry->permission.change = Privilege::LIBERAL_ENTRY;
+				entry->permission.remove = Privilege::LIBERAL_ENTRY;
+
+			}
+			else
+			{
+				entry->permission.charge = Privilege::PROTECTED_ENTRY;
+				entry->permission.change = Privilege::PROTECTED_ENTRY;
+				entry->permission.remove = Privilege::PROTECTED_ENTRY;
+			}
+		}
+
+	}
+
 }
 */

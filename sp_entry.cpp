@@ -44,5 +44,7 @@ bool entryBase::haveExpired()
 
 void entryBase::chargeEntry()
 {
-	addedTime = posix_time::second_clock::local_time();
+	std::lock_guard<std::mutex> lock(accessLock);
+	if (timeToLive != TTL::CONNECTED_TTL)
+		addedTime = posix_time::second_clock::local_time();
 }
