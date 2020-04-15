@@ -15,12 +15,12 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	if (remoteEp.address().is_v4())
 	{
 		peerEntry.Ev4 = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
-		peerEntry.Ev4->attachToPeer(); Directory::addEntry(peerEntry.Ev4);
+		peerEntry.Ev4->attachToPeer();
 	}
 	else
 	{
 		peerEntry.Ev6 = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
-		peerEntry.Ev6->attachToPeer(); Directory::addEntry(peerEntry.Ev6);
+		peerEntry.Ev6->attachToPeer();
 	}
 	_peerReceiveData();
 	peerCount++;

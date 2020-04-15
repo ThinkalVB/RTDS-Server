@@ -1,10 +1,16 @@
 #pragma once
 #include "peer.h"
-#include "common.hpp"
 
 class CmdInterpreter
 {
-	static void ping(Peer&);
+	static const std::string RESP[];
+	static const std::string COMM[];
+
+	template<typename EntryPtr>
+	static void ping(Peer&, EntryPtr*);
+
+	template<typename EntryPtr>
+	static void add(Peer& peer, EntryPtr* entry);
 public:
 	static void processCommand(Peer&);
 /*******************************************************************************************
@@ -27,6 +33,24 @@ public:
 	template <typename IPaddress,typename sourcePair>
 	static void makeSourcePair(const IPaddress&, unsigned short, sourcePair&);
 };
+
+template<typename EntryPtr>
+inline void CmdInterpreter::ping(Peer& peer, EntryPtr* entry)
+{
+	peer.writeBuffer += RESP[Response::SUCCESS] + " ";
+	peer.writeBuffer += entry->versionID + " ";
+	peer.writeBuffer += entry->ipAddress + " ";
+	peer.writeBuffer += entry->portNumber;
+}
+
+template<typename EntryPtr>
+inline void CmdInterpreter::add(Peer& peer, EntryPtr* entry)
+{
+	auto response = Directory::addEntry(entry);
+	std::lock_guard<std::mutex> lock(entry->accessLock);
+	peer.writeBuffer += RESP[response] + " ";
+	peer.writeBuffer += entry->UID;
+}
 
 template <typename Data>
 inline void CmdInterpreter::byteSwap(Data& portNumber)

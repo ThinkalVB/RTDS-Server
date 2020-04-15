@@ -39,7 +39,7 @@ enum class TTL : short
 };
 
 /*******************************************************************************************
-* @brief Response 
+* @brief Enum class for Response 
 *
 * @details
 * ok_success		Command is successful.
@@ -51,18 +51,20 @@ enum class TTL : short
 * wait_retry		Wait and try again after sometime.
 * no_privilege		Command doesn’t have the apt privilege.
 ********************************************************************************************/
-namespace Response{
-	const std::string REDUDANT_DATA =	"redudant_data";
-	const std::string SUCCESS		=	"ok_success";
-	const std::string NO_PRIVILAGE	=	"no_privilege";
-	const std::string BAD_COMMAND	=	"bad_command";
-	const std::string BAD_PARAM		=	"bad_param";
-	const std::string NO_EXIST		=	"no_exist";
-	const std::string WAIT_RETRY	=	"wait_retry";
-}
+enum Response : short
+{
+	REDUDANT_DATA	= 0,
+	SUCCESS			= 1,
+	NO_PRIVILAGE	= 2,
+	BAD_COMMAND		= 3,
+	BAD_PARAM		= 4,
+	NO_EXIST		= 5,
+	WAIT_RETRY		= 6
+};
+
 
 /*******************************************************************************************
-* @brief Response
+* @brief Enum class for Command
 *
 * @details
 * ping				Ping with the RTDS server.
@@ -80,19 +82,20 @@ namespace Response{
 * exit				Exit from the scope of the directory.
 * delete			Delete the directory.
 ********************************************************************************************/
-namespace Command {
-	const std::string COM_PING		= "ping";
-	const std::string COM_ADD		= "add";
-	const std::string COM_SEARCH	= "search";
-	const std::string COM_TTL		= "ttl";
-	const std::string COM_CHARGE	= "charge";
-	const std::string COM_UPDATE	= "update";
-	const std::string COM_REMOVE	= "remove";
-	const std::string COM_COUNT		= "count";
-	const std::string COM_MIRROR	= "mirror";
-	const std::string COM_LEAVE		= "leave";
-	const std::string COM_EXIT		= "exit";
-}
+enum Command : short
+{
+	COM_PING	= 0,
+	COM_ADD		= 1,
+	COM_SEARCH	= 2,
+	COM_TTL		= 3,
+	COM_CHARGE	= 4,
+	COM_UPDATE	= 5,
+	COM_REMOVE	= 6,
+	COM_COUNT	= 7,
+	COM_MIRROR	= 8,
+	COM_LEAVE	= 9,
+	COM_EXIT	= 10
+};
 
 /*******************************************************************************************
 * @brief Individual privilage for different operation

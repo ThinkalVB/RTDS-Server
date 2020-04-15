@@ -21,8 +21,8 @@ class Directory
 * If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
 * Both have the same IPv6 address - return Privilege::PROTECTED_ENTRY;
 ********************************************************************************************/
-	template <typename Entry>
-	static Privilege _maxPrivilege(Entry*, Entry*);
+	template <typename EntryPtr>
+	static Privilege _maxPrivilege(EntryPtr*, EntryPtr*);
 
 public:
 /*******************************************************************************************
@@ -85,26 +85,32 @@ public:
 * @param[in] entry				Pointer to V4Entry or V6Entry
 *
 * @details
-* Lock the entry, make all permission - privilege = Privilege::PROTECTED_ENTRY (by default).
+* Add the entry only if it's not in the directory aka isInDirectory = false
+* Make all permission - privilege = Privilege::PROTECTED_ENTRY (by default).
 * Set isInDIrectory flag to true indicating that the entry is now in the directory.
 ********************************************************************************************/
-	template <typename Entry>
-	static void addEntry(Entry*);
+	template <typename EntryPtr>
+	static Response addEntry(EntryPtr*);
 };
 
 
-template <typename Entry>
-inline void Directory::addEntry(Entry* entry)
+template <typename EntryPtr>
+inline Response Directory::addEntry(EntryPtr* entry)
 {
-	std::lock_guard<std::mutex> lock(entry->accessLock);
-	entry->isInDirectory = true;
-	entry->permission.charge = Privilege::PROTECTED_ENTRY;
-	entry->permission.change = Privilege::PROTECTED_ENTRY;
-	entry->permission.remove = Privilege::PROTECTED_ENTRY;
+	if (entry->isInDirectory)
+		return Response::REDUDANT_DATA;
+	else
+	{
+		entry->isInDirectory = true;
+		entry->permission.charge = Privilege::PROTECTED_ENTRY;
+		entry->permission.change = Privilege::PROTECTED_ENTRY;
+		entry->permission.remove = Privilege::PROTECTED_ENTRY;
+		return Response::SUCCESS;
+	}
 }
 
-template <typename Entry>
-inline Privilege Directory::_maxPrivilege(Entry* entry, Entry* cmdEntry)
+template <typename EntryPtr>
+inline Privilege Directory::_maxPrivilege(EntryPtr* entry, EntryPtr* cmdEntry)
 {
 	if (std::memcmp((void*)entry->sourcePair[0], (void*)cmdEntry->sourcePair[0], (entry->sourcePair.size() - 2)) == 0)
 		return Privilege::PROTECTED_ENTRY;

@@ -15,7 +15,6 @@ class entryBase {
 protected:
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 	TTL timeToLive;								//!< Keep the time to live for this entry.
-	std::mutex accessLock;						//!< Lock these mutex when accessing data
 
 	bool iswithPeer = false;					//!< True if this entry is associated with a peer.
 	bool isInDirectory = false;					//!< True if the entry is a directory entry.
@@ -66,13 +65,12 @@ public:
 ********************************************************************************************/
 	bool haveExpired();
 
-
+	std::mutex accessLock;						//!< Lock these mutex when accessing data
 	std::string UID;							//!< Base 64 encoding of the source pair address.	
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
 	std::string description;					//!< Description associated with the entry.
 };
-
 
 
 /*******************************************************************************************
@@ -91,7 +89,6 @@ public:
 };
 
 
-
 /*******************************************************************************************
  * @brief EntryV6 contains all data needed for an Entry of type IPV6
  ********************************************************************************************/
@@ -106,7 +103,6 @@ public:
 	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
 	friend class Directory;
 };
-
 
 
 /*******************************************************************************************
