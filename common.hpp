@@ -31,7 +31,6 @@ enum class Privilege : char
 ********************************************************************************************/
 enum class TTL : short
 {
-	CONNECTED_TTL	= -1,
 	LIBERAL_TTL		= 10,
 	PROTECTED_TTL	= 30,
 	RESTRICTED_TTL	= 60

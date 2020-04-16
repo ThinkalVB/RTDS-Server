@@ -9,6 +9,13 @@ class CmdInterpreter
 
 	template<typename EntryPtr>
 	static void __add(Peer& peer, EntryPtr* entry);
+	static void _add(Peer&);
+
+	static void _search(Peer&);
+	static void _charge(Peer&);
+	static void _ttl(Peer&);
+	static void _count(Peer&);
+	static void _exit(Peer&);
 public:
 	static const std::string RESP[];
 	static const std::string COMM[];
@@ -51,10 +58,11 @@ inline void CmdInterpreter::__ping(Peer& peer, EntryPtr* entry)
 template<typename EntryPtr>
 inline void CmdInterpreter::__add(Peer& peer, EntryPtr* entry)
 {
+	/*
 	auto response = Directory::addEntry(entry);
 	std::lock_guard<std::mutex> lock(entry->accessLock);
 	peer.writeBuffer += RESP[(short)response] + " ";
-	peer.writeBuffer += entry->UID;
+	peer.writeBuffer += entry->UID; */
 }
 
 template <typename Data>

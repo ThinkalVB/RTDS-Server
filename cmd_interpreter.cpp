@@ -37,13 +37,23 @@ void CmdInterpreter::processCommand(Peer& peer)
 		if (commandString == COMM[(short)Command::PING])
 			_ping(peer);
 		else if (commandString == COMM[(short)Command::EXIT])
-			peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+			_exit(peer);
+		else if (commandString == COMM[(short)Command::ADD])
+			_add(peer);
 		else if (commandString == COMM[(short)Command::MIRROR])
-		{}	// To be implimented
+		{
+		}
 		else if (commandString == COMM[(short)Command::COUNT])
-		{}	// To be implimented
+			_count(peer);
 		else if (commandString == COMM[(short)Command::LEAVE])
-		{}	// To be implimented
+		{
+		}
+		else if (commandString == COMM[(short)Command::TTL])
+			_ttl(peer);
+		else if (commandString == COMM[(short)Command::CHARGE])
+			_charge(peer);
+		else if (commandString == COMM[(short)Command::SEARCH])
+			_search(peer);
 	}
 
 
@@ -62,4 +72,41 @@ inline void CmdInterpreter::_ping(Peer& peer)
 		__ping(peer, peer.peerEntry.Ev4);
 	else
 		__ping(peer, peer.peerEntry.Ev6);
+}
+
+void CmdInterpreter::_add(Peer& peer)
+{
+	auto response = Directory::addEntry(peer.peerEntry.Ev);
+	std::lock_guard<std::mutex> lock(peer.peerEntry.Ev->accessLock);
+	peer.writeBuffer += RESP[(short)response] + " ";
+	peer.writeBuffer += peer.peerEntry.Ev->UID;
+}
+
+void CmdInterpreter::_search(Peer& peer)
+{
+	if(!peer.peerEntry.Ev->inDirectory())
+		peer.writeBuffer += RESP[(short)Response::NO_EXIST] + " ";
+}
+
+void CmdInterpreter::_charge(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
+}
+
+void CmdInterpreter::_ttl(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
+}
+
+void CmdInterpreter::_count(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.writeBuffer += std::to_string(Directory::getEntryCount());
+}
+
+void CmdInterpreter::_exit(Peer& peer)
+{
+	peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
 }

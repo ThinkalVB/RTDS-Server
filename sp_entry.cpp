@@ -5,20 +5,23 @@ const std::string EntryV6::versionID = "v6";
 
 void entryBase::attachToPeer()
 {
-	timeToLive = TTL::CONNECTED_TTL;
+	timeToLive = TTL::RESTRICTED_TTL;
 	iswithPeer = true;
 }
 
 void entryBase::detachFromPeer()
 {
-	timeToLive = TTL::RESTRICTED_TTL;
 	iswithPeer = false;
+	_chargeEntry();
 }
 
 bool entryBase::haveExpired(short& expireIn)
 {
-	if (timeToLive == TTL::CONNECTED_TTL)
+	if (iswithPeer)
+	{
+		expireIn = (short)TTL::RESTRICTED_TTL;
 		return false;
+	}
 	auto timeNow = posix_time::second_clock::local_time();
 	auto diffTime = timeNow - addedTime;
 	if (diffTime.minutes() > (short)timeToLive)
@@ -32,7 +35,7 @@ bool entryBase::haveExpired(short& expireIn)
 
 bool entryBase::haveExpired()
 {
-	if (timeToLive == TTL::CONNECTED_TTL)
+	if (iswithPeer)
 		return false;
 	auto timeNow = posix_time::second_clock::local_time();
 	auto diffTime = timeNow - addedTime;
@@ -42,9 +45,13 @@ bool entryBase::haveExpired()
 		return false;
 }
 
+bool entryBase::inDirectory()
+{
+	return isInDirectory;
+}
+
 void entryBase::_chargeEntry()
 {
 	std::lock_guard<std::mutex> lock(accessLock);
-	if (timeToLive != TTL::CONNECTED_TTL)
-		addedTime = posix_time::second_clock::local_time();
+	addedTime = posix_time::second_clock::local_time();
 }

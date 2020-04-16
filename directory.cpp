@@ -7,6 +7,12 @@ std::map<sourcePairV6, EntryV6*> Directory::V6EntryMap;
 
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
+unsigned int Directory::entryCount = 0;
+
+unsigned int Directory::getEntryCount()
+{
+	return entryCount;
+}
 
 EntryV4* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
 {
@@ -61,10 +67,10 @@ EntryV4* Directory::findEntry(asio::ip::address_v4& ipAdd, unsigned short portNu
 	auto entry = V4EntryMap.find(sourcePair);
 	if (entry != V4EntryMap.end())
 	{
-		if (entry->second->haveExpired())
-			return nullptr;
-		else
+		if (entry->second->isInDirectory && !entry->second->haveExpired())
 			return entry->second;
+		else
+			return nullptr;
 	}
 	else
 		return nullptr;
@@ -77,10 +83,10 @@ EntryV6* Directory::findEntry(asio::ip::address_v6& ipAdd, unsigned short portNu
 	auto entry = V6EntryMap.find(sourcePair);
 	if (entry != V6EntryMap.end())
 	{
-		if (entry->second->haveExpired())
-			return nullptr;
-		else
+		if (entry->second->isInDirectory || !entry->second->haveExpired())
 			return entry->second;
+		else
+			return nullptr;
 	}
 	else
 		return nullptr;

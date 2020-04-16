@@ -7,8 +7,9 @@ class Directory
 	static std::map<sourcePairV4, EntryV4*> V4EntryMap;		//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
 	static std::map<sourcePairV6, EntryV6*> V6EntryMap;		//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
 
-	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into map
-	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into map
+	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
+	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
+	static unsigned int entryCount;							//!< Count the number on entries in the directory
 	
 /*******************************************************************************************
 * @brief Return the maximum privilege the command issuing entry have
@@ -28,6 +29,12 @@ class Directory
 	static Privilege _maxPrivilege(EntryPtrT1*, EntryPtrT2*);
 
 public:
+/*******************************************************************************************
+* @brief Return the number of entries in the directory
+*
+* @return						The total number on entries in directory.
+********************************************************************************************/
+	static unsigned int getEntryCount();
 /*******************************************************************************************
 * @brief Return a pointer to V4 Entry for the given IP4 address and port number
 *
@@ -85,13 +92,13 @@ public:
 /*******************************************************************************************
 * @brief Add the entry to the directory [Only call if the entry is inserting itself]
 *
-* @param[in] entry				Pointer to V4Entry or V6Entry
+* @param[in] entry				Pointer to V4Entry || V6Entry || entryBase
 * @return						The reponse for the issued command
 *
 * @details
-* Add the entry only if it's not in the directory aka isInDirectory = false
-* Make all permission - privilege = Privilege::PROTECTED_ENTRY (by default).
-* Set isInDIrectory flag to true indicating that the entry is now in the directory.
+* Add the entry only if it's not in the directory aka isInDirectory = false.
+* Make all permission - privilege = Privilege::PROTECTED_ENTRY (by default). 
+* Set isInDIrectory = true indicating that the entry is now in the directory. Increment entry count.
 ********************************************************************************************/
 	template <typename EntryPtr>
 	static Response addEntry(EntryPtr*);
@@ -105,6 +112,7 @@ inline Response Directory::addEntry(EntryPtr* entry)
 		return Response::REDUDANT_DATA;
 	else
 	{
+		entryCount++;
 		entry->isInDirectory = true;
 		entry->permission.charge = Privilege::PROTECTED_ENTRY;
 		entry->permission.change = Privilege::PROTECTED_ENTRY;

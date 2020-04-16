@@ -30,6 +30,12 @@ protected:
 
 public:
 /*******************************************************************************************
+* @brief Return true if the entry is in directory
+*
+* @return						True if entry is in directory.
+********************************************************************************************/
+	bool inDirectory();
+/*******************************************************************************************
 * @brief Make this entry part of a peer
 *
 * @details
@@ -70,6 +76,8 @@ public:
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
 	std::string description;					//!< Description associated with the entry.
+	
+	friend class Directory;
 };
 
 
@@ -110,6 +118,7 @@ public:
  ********************************************************************************************/
 union Entry
 {
+	entryBase* Ev;
 	EntryV4* Ev4;
 	EntryV6* Ev6;
 };
