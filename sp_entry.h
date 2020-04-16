@@ -26,7 +26,7 @@ protected:
 * @details
 * Update the addedTime with the current time if the entry is not online.
 ********************************************************************************************/
-	void chargeEntry();
+	void _chargeEntry();
 
 public:
 /*******************************************************************************************

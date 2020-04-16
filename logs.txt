@@ -1,12 +1,24 @@
-[2020-Apr-16 03:46:18.943165]  RTDS starting
-[2020-Apr-16 03:46:18.943165]  New IO Thread added
-[2020-Apr-16 03:46:18.947154]  New IO Thread added
-[2020-Apr-16 03:46:18.949148]  New IO Thread added
-[2020-Apr-16 03:46:18.950146]  New IO Thread added
-[2020-Apr-16 03:46:18.952140]  New IO Thread added
-[2020-Apr-16 03:46:18.952140]  TCP server initiating
-[2020-Apr-16 03:46:18.952140]  TCP Accepting starting
-[2020-Apr-16 03:46:18.952140]  TCP server started
-[2020-Apr-16 03:47:10.944086]  Incoming TCP connection 127.0.0.1 61585
-[2020-Apr-16 03:53:39.840776]  TCP Socket _processData() failed 127.0.0.1 61585 End of file
-[2020-Apr-16 03:53:39.840776]  TCP Socket closing 127.0.0.1 61585
+[2020-Apr-16 06:57:57.985889]  RTDS starting
+[2020-Apr-16 06:57:57.986886]  New IO Thread added
+[2020-Apr-16 06:57:57.987884]  New IO Thread added
+[2020-Apr-16 06:57:57.990877]  New IO Thread added
+[2020-Apr-16 06:57:57.992872]  New IO Thread added
+[2020-Apr-16 06:57:57.992872]  New IO Thread added
+[2020-Apr-16 06:57:57.992872]  TCP server initiating
+[2020-Apr-16 06:57:57.993869]  TCP Accepting starting
+[2020-Apr-16 06:57:57.993869]  TCP server started
+[2020-Apr-16 06:59:09.445745]  Incoming TCP connection 127.0.0.1 62720
+[2020-Apr-16 06:59:13.368070]  TCP Socket _processData() failed 127.0.0.1 62720 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-16 06:59:13.369001]  TCP Socket closing 127.0.0.1 62720
+[2020-Apr-16 06:59:32.274132]  Incoming TCP connection 127.0.0.1 62723
+[2020-Apr-16 06:59:40.605216]  TCP Socket _processData() failed 127.0.0.1 62723 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-16 06:59:40.605216]  TCP Socket closing 127.0.0.1 62723
+[2020-Apr-16 07:00:31.013257]  Incoming TCP connection 127.0.0.1 62734
+[2020-Apr-16 07:00:31.912852]  Incoming TCP connection 127.0.0.1 62735
+[2020-Apr-16 07:00:38.065613]  Incoming TCP connection 127.0.0.1 62736
+[2020-Apr-16 07:01:11.220344]  TCP Socket _processData() failed 127.0.0.1 62734 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-16 07:01:11.220344]  TCP Socket closing 127.0.0.1 62734
+[2020-Apr-16 07:01:17.477948]  TCP Socket _processData() failed 127.0.0.1 62736 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-16 07:01:17.477948]  TCP Socket closing 127.0.0.1 62736
+[2020-Apr-16 07:01:22.357929]  TCP Socket _processData() failed 127.0.0.1 62735 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-16 07:01:22.357929]  TCP Socket closing 127.0.0.1 62735

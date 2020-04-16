@@ -31,32 +31,35 @@ const std::string CmdInterpreter::COMM[] =
 void CmdInterpreter::processCommand(Peer& peer)
 {
 	auto commandString = std::string_view{ peer.dataBuffer };
-	if (commandString.find(' ') == std::string::npos)					
+	auto commEnd = commandString.find(' ');
+	if (commEnd == std::string::npos)										/* Command is a single word command */	
 	{													
-		/* Command is a single word command */
-		if (commandString == COMM[Command::COM_PING])
-		{
-			if(peer.remoteEp.address().is_v4())
-				CmdInterpreter::ping(peer, peer.peerEntry.Ev4);
-			else
-				CmdInterpreter::ping(peer, peer.peerEntry.Ev6);
-		}
-		else if (commandString == COMM[Command::COM_ADD])
-		{
-			if (peer.remoteEp.address().is_v4())
-				CmdInterpreter::add(peer, peer.peerEntry.Ev4);
-			else
-				CmdInterpreter::add(peer, peer.peerEntry.Ev6);
-		}
-		else
-		{
-			peer.writeBuffer = RESP[Response::BAD_COMMAND];
-		}
+		if (commandString == COMM[(short)Command::PING])
+			_ping(peer);
+		else if (commandString == COMM[(short)Command::EXIT])
+			peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+		else if (commandString == COMM[(short)Command::MIRROR])
+		{}	// To be implimented
+		else if (commandString == COMM[(short)Command::COUNT])
+		{}	// To be implimented
+		else if (commandString == COMM[(short)Command::LEAVE])
+		{}	// To be implimented
 	}
+
+
+
 	else
 	{	
 		/* Command is a multi word command */
-		peer.writeBuffer = RESP[Response::BAD_COMMAND];
+		peer.writeBuffer = RESP[(short)Response::BAD_COMMAND];
 	}
 	peer._sendPeerData();
+}
+
+inline void CmdInterpreter::_ping(Peer& peer)
+{
+	if (peer.remoteEp.address().is_v4())
+		__ping(peer, peer.peerEntry.Ev4);
+	else
+		__ping(peer, peer.peerEntry.Ev6);
 }

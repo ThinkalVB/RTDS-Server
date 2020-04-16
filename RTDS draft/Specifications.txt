@@ -32,20 +32,23 @@ l	Liberal
 
 Description(max 200+2 characters)
 
-Command(max 8 characters)
-SWITCH
-REGISTER
-PING
-SEARCH
-ADD
-TTL
-CHARGE
-UPDATE
-REMOVE
-COUNT
-MIRROR
-LEAVE
-EXIT
-DELETE
+Command(max 6 characters)
+No Arguments
+	PING
+	COUNT
+	MIRROR
+	LEAVE
+	EXIT
+Variadic Arguments (0 or more)
+	TTL
+	CHARGE
+	REMOVE
+	SEARCH
+	ADD
+	UPDATE
+
+
+
+
 
 

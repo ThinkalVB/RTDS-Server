@@ -42,7 +42,7 @@ bool entryBase::haveExpired()
 		return false;
 }
 
-void entryBase::chargeEntry()
+void entryBase::_chargeEntry()
 {
 	std::lock_guard<std::mutex> lock(accessLock);
 	if (timeToLive != TTL::CONNECTED_TTL)

@@ -24,6 +24,9 @@ class Directory
 	template <typename EntryPtr>
 	static Privilege _maxPrivilege(EntryPtr*, EntryPtr*);
 
+	template <typename EntryPtrT1,typename EntryPtrT2>
+	static Privilege _maxPrivilege(EntryPtrT1*, EntryPtrT2*);
+
 public:
 /*******************************************************************************************
 * @brief Return a pointer to V4 Entry for the given IP4 address and port number
@@ -83,6 +86,7 @@ public:
 * @brief Add the entry to the directory [Only call if the entry is inserting itself]
 *
 * @param[in] entry				Pointer to V4Entry or V6Entry
+* @return						The reponse for the issued command
 *
 * @details
 * Add the entry only if it's not in the directory aka isInDirectory = false
@@ -116,4 +120,10 @@ inline Privilege Directory::_maxPrivilege(EntryPtr* entry, EntryPtr* cmdEntry)
 		return Privilege::PROTECTED_ENTRY;
 	else
 		return Privilege::LIBERAL_ENTRY;
+}
+
+template<typename EntryPtrT1, typename EntryPtrT2>
+inline Privilege Directory::_maxPrivilege(EntryPtrT1* entry, EntryPtrT2* cmdEntry)
+{
+	return Privilege::LIBERAL_ENTRY;
 }

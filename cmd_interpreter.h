@@ -3,15 +3,20 @@
 
 class CmdInterpreter
 {
+	template<typename EntryPtr>
+	static void __ping(Peer&, EntryPtr*);
+	static void _ping(Peer&);
+
+	template<typename EntryPtr>
+	static void __add(Peer& peer, EntryPtr* entry);
+public:
 	static const std::string RESP[];
 	static const std::string COMM[];
-
-	template<typename EntryPtr>
-	static void ping(Peer&, EntryPtr*);
-
-	template<typename EntryPtr>
-	static void add(Peer& peer, EntryPtr* entry);
-public:
+/*******************************************************************************************
+* @brief Process the commands from peer system
+*
+* @param[in] peer				The peer system from which the command is comming.
+********************************************************************************************/
 	static void processCommand(Peer&);
 /*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )
@@ -35,20 +40,20 @@ public:
 };
 
 template<typename EntryPtr>
-inline void CmdInterpreter::ping(Peer& peer, EntryPtr* entry)
+inline void CmdInterpreter::__ping(Peer& peer, EntryPtr* entry)
 {
-	peer.writeBuffer += RESP[Response::SUCCESS] + " ";
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.writeBuffer += entry->versionID + " ";
 	peer.writeBuffer += entry->ipAddress + " ";
 	peer.writeBuffer += entry->portNumber;
 }
 
 template<typename EntryPtr>
-inline void CmdInterpreter::add(Peer& peer, EntryPtr* entry)
+inline void CmdInterpreter::__add(Peer& peer, EntryPtr* entry)
 {
 	auto response = Directory::addEntry(entry);
 	std::lock_guard<std::mutex> lock(entry->accessLock);
-	peer.writeBuffer += RESP[response] + " ";
+	peer.writeBuffer += RESP[(short)response] + " ";
 	peer.writeBuffer += entry->UID;
 }
 

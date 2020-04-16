@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <array>
-#include <string>
 
 typedef std::array<uint8_t, 6> sourcePairV4;
 typedef std::array<uint8_t, 18> sourcePairV6;
@@ -51,7 +50,7 @@ enum class TTL : short
 * wait_retry		Wait and try again after sometime.
 * no_privilege		Command doesn’t have the apt privilege.
 ********************************************************************************************/
-enum Response : short
+enum class Response
 {
 	REDUDANT_DATA	= 0,
 	SUCCESS			= 1,
@@ -82,19 +81,19 @@ enum Response : short
 * exit				Exit from the scope of the directory.
 * delete			Delete the directory.
 ********************************************************************************************/
-enum Command : short
+enum class Command
 {
-	COM_PING	= 0,
-	COM_ADD		= 1,
-	COM_SEARCH	= 2,
-	COM_TTL		= 3,
-	COM_CHARGE	= 4,
-	COM_UPDATE	= 5,
-	COM_REMOVE	= 6,
-	COM_COUNT	= 7,
-	COM_MIRROR	= 8,
-	COM_LEAVE	= 9,
-	COM_EXIT	= 10
+	PING	= 0,
+	ADD		= 1,
+	SEARCH	= 2,
+	TTL		= 3,
+	CHARGE	= 4,
+	UPDATE	= 5,
+	REMOVE	= 6,
+	COUNT	= 7,
+	MIRROR	= 8,
+	LEAVE	= 9,
+	EXIT	= 10
 };
 
 /*******************************************************************************************
