@@ -13,12 +13,22 @@ using namespace boost;
  ********************************************************************************************/
 class entryBase {
 protected:
+	static const std::string VER[];				//!< All version code in string.
+	static const char PRI[];				    //!< All version code in string.	
+
+	Version version;							//!< Version of the derived class IPV4 or IPV6.
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 	TTL timeToLive;								//!< Keep the time to live for this entry.
 
 	bool iswithPeer = false;					//!< True if this entry is associated with a peer.
 	bool isInDirectory = false;					//!< True if the entry is a directory entry.
-	posix_time::ptime addedTime;				//!< The time at which this entry was added to the directory.
+	posix_time::ptime lastChargT;				//!< The time at which this entry was last charged.
+
+	std::mutex accessLock;						//!< Lock these mutex when accessing or modfying data.
+	std::string UID;							//!< Base 64 encoding of the source pair address.	
+	std::string ipAddress;						//!< IPaddress associated with the entry.
+	std::string portNumber;						//!< Port number associated with the entry.
+	std::string description;					//!< Description associated with the entry.
 
 /*******************************************************************************************
 * @brief Charge the entry extending it's lifetime
@@ -27,7 +37,21 @@ protected:
 * Update the addedTime with the current time if the entry is not online.
 ********************************************************************************************/
 	void _chargeEntry();
-
+/*******************************************************************************************
+* @brief Check if the entry have expired
+*
+* @return						True if the entry have expired.
+*
+* @details
+* Take the time difference between timeNow and addedTime and check if expired.
+********************************************************************************************/
+	bool _haveExpired();
+/*******************************************************************************************
+* @brief Return the time passed after the last charge [Not thread safe]
+*
+* @return						Time in minutes, passed after last charge.
+********************************************************************************************/
+	short _getTimePassed();
 public:
 /*******************************************************************************************
 * @brief Return true if the entry is in directory
@@ -52,31 +76,51 @@ public:
 ********************************************************************************************/
 	void detachFromPeer();
 /*******************************************************************************************
-* @brief Check if the entry have expired
+* @brief Print the UID to the string buffer
 *
-* @param[out] expireIn			Return hom many minutes after which this entry will expire.
-* @return						True if the entry have expired.
+* @param[out] strBuffer			String buffer to which the data will be written.
 *
 * @details
-* Take the time difference between timeNow and addedTime and check if expired.
+* Do not use print functions in combinations. All print functions must be Individualistic.
 ********************************************************************************************/
-	bool haveExpired(short&);
+	void printUID(std::string&);
 /*******************************************************************************************
-* @brief Check if the entry have expired
+* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
 *
-* @return						True if the entry have expired.
+* @param[out] strBuffer			String buffer to which the data will be written.
 *
 * @details
-* Take the time difference between timeNow and addedTime and check if expired.
+* Do not use print functions in combinations. All print functions must be Individualistic.
 ********************************************************************************************/
-	bool haveExpired();
-
-	std::mutex accessLock;						//!< Lock these mutex when accessing data
-	std::string UID;							//!< Base 64 encoding of the source pair address.	
-	std::string ipAddress;						//!< IPaddress associated with the entry.
-	std::string portNumber;						//!< Port number associated with the entry.
-	std::string description;					//!< Description associated with the entry.
-	
+	void printExpand(std::string&);
+/*******************************************************************************************
+* @brief Print the UID to the string buffer.
+*
+* @param[out] strBuffer			String buffer to which the data will be written.
+*
+* @details
+* Do not use print functions in combinations. All print functions must be Individualistic.
+********************************************************************************************/
+	void printEntryCount(std::string&);
+/*******************************************************************************************
+* @brief Print the brief info - IPversion, IPaddress, PortNumber
+*
+* @param[out] strBuffer			String buffer to which the data will be written.
+*
+* @details
+* Do not use print functions in combinations. All print functions must be Individualistic.
+********************************************************************************************/
+	void printBrief(std::string&);
+/*******************************************************************************************
+* @brief Print the time To Live for the entry
+*
+* @param[out] strBuffer			String buffer to which the data will be written.
+*
+* @details
+* Do not use print functions in combinations. All print functions must be Individualistic.
+* Find the difference between the current time and the lastChargeT time. Check if it's beyond the TTL.
+********************************************************************************************/
+	void printTTL(std::string&);
 	friend class Directory;
 };
 
@@ -89,10 +133,9 @@ class EntryV4 : public entryBase
 /*******************************************************************************************
 * @brief Make IPV4 Entry object
 ********************************************************************************************/
-	EntryV4() {}
+	EntryV4();
 	sourcePairV4 sourcePair;					//!< Source Pair address (IPaddress + portNumber) Network Byte order.
 public:
-	static const std::string versionID;			//!< The version ID of the entry "v4" for IPV4
 	friend class Directory;
 };
 
@@ -105,10 +148,9 @@ class EntryV6 : public entryBase
 /*******************************************************************************************
 * @brief Make IPV6 Entry object
 ********************************************************************************************/
-	EntryV6() {}
+	EntryV6();
 	sourcePairV6 sourcePair;					//!< Source Pair address (IPaddress + portNumber) Network Byte order.
 public:
-	static const std::string versionID;			//!< The version ID of the entry "v6" for IPV6
 	friend class Directory;
 };
 

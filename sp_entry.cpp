@@ -1,7 +1,30 @@
 #include "sp_entry.h"
+#include "directory.h"
 
-const std::string EntryV4::versionID = "v4";
-const std::string EntryV6::versionID = "v6";
+const std::string entryBase::VER[] =
+{
+	"v4",
+	"v6"
+};
+
+const char entryBase::PRI[] =
+{
+	'l',
+	'p',
+	'r'
+};
+
+EntryV4::EntryV4()
+{
+	version = Version::V4;
+	description = "[]";
+}
+
+EntryV6::EntryV6()
+{
+	version = Version::V6;
+	description = "[]";
+}
 
 void entryBase::attachToPeer()
 {
@@ -15,34 +38,55 @@ void entryBase::detachFromPeer()
 	_chargeEntry();
 }
 
-bool entryBase::haveExpired(short& expireIn)
+void entryBase::printUID(std::string& strBuffer)
 {
+	std::lock_guard<std::mutex> lock(accessLock);
+	strBuffer += UID;
+}
+
+void entryBase::printEntryCount(std::string& strBuffer)
+{
+	strBuffer += std::to_string(Directory::getEntryCount());
+}
+
+void entryBase::printBrief(std::string& strBuffer)
+{
+	std::lock_guard<std::mutex> lock(accessLock);
+	if (version == Version::V4)
+		strBuffer += VER[(short)Version::V4];
+	else
+		strBuffer += VER[(short)Version::V6];
+	strBuffer += " " + ipAddress + " " + portNumber;
+}
+
+void entryBase::printTTL(std::string& strBuffer)
+{
+	std::lock_guard<std::mutex> lock(accessLock);
 	if (iswithPeer)
-	{
-		expireIn = (short)TTL::RESTRICTED_TTL;
-		return false;
-	}
-	auto timeNow = posix_time::second_clock::local_time();
-	auto diffTime = timeNow - addedTime;
-	if (diffTime.minutes() > (short)timeToLive)
-		return true;
+		strBuffer += std::to_string((short)Privilege::RESTRICTED_ENTRY);
 	else
 	{
-		expireIn = (short)diffTime.minutes();
-		return false;
+		auto timePassed = _getTimePassed();
+		short ttl = -(timePassed - (short)timeToLive);
+		if (ttl <= 0)
+			strBuffer += "0";
+		else
+			strBuffer += std::to_string(ttl);
 	}
 }
 
-bool entryBase::haveExpired()
+void entryBase::printExpand(std::string& strBuffer)
 {
-	if (iswithPeer)
-		return false;
-	auto timeNow = posix_time::second_clock::local_time();
-	auto diffTime = timeNow - addedTime;
-	if (diffTime.minutes() > (short)timeToLive)
-		return true;
+	std::lock_guard<std::mutex> lock(accessLock);
+	if (version == Version::V4)
+		strBuffer += VER[(short)Version::V4];
 	else
-		return false;
+		strBuffer += VER[(short)Version::V6];
+	strBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
+	strBuffer += PRI[(short)permission.change];
+	strBuffer += PRI[(short)permission.charge];
+	strBuffer += PRI[(short)permission.remove];
+	strBuffer += " " + description;
 }
 
 bool entryBase::inDirectory()
@@ -53,5 +97,21 @@ bool entryBase::inDirectory()
 void entryBase::_chargeEntry()
 {
 	std::lock_guard<std::mutex> lock(accessLock);
-	addedTime = posix_time::second_clock::local_time();
+	lastChargT = posix_time::second_clock::local_time();
+}
+
+bool entryBase::_haveExpired()
+{
+	std::lock_guard<std::mutex> lock(accessLock);
+	if (_getTimePassed() > (unsigned short)timeToLive)
+		return true;
+	else
+		return false;
+}
+
+short entryBase::_getTimePassed()
+{
+	auto timeNow = posix_time::second_clock::local_time();
+	auto diffTime = timeNow - lastChargT;
+	return (short)diffTime.minutes();
 }

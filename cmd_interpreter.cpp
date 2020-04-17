@@ -68,24 +68,26 @@ void CmdInterpreter::processCommand(Peer& peer)
 
 inline void CmdInterpreter::_ping(Peer& peer)
 {
-	if (peer.remoteEp.address().is_v4())
-		__ping(peer, peer.peerEntry.Ev4);
-	else
-		__ping(peer, peer.peerEntry.Ev6);
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.peerEntry.Ev->printBrief(peer.writeBuffer);
 }
 
 void CmdInterpreter::_add(Peer& peer)
 {
 	auto response = Directory::addEntry(peer.peerEntry.Ev);
-	std::lock_guard<std::mutex> lock(peer.peerEntry.Ev->accessLock);
 	peer.writeBuffer += RESP[(short)response] + " ";
-	peer.writeBuffer += peer.peerEntry.Ev->UID;
+	peer.peerEntry.Ev->printUID(peer.writeBuffer);
 }
 
 void CmdInterpreter::_search(Peer& peer)
 {
-	if(!peer.peerEntry.Ev->inDirectory())
+	if (!peer.peerEntry.Ev->inDirectory())
 		peer.writeBuffer += RESP[(short)Response::NO_EXIST] + " ";
+	else
+	{
+		peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+		peer.peerEntry.Ev->printExpand(peer.writeBuffer);
+	}
 }
 
 void CmdInterpreter::_charge(Peer& peer)
@@ -103,7 +105,7 @@ void CmdInterpreter::_ttl(Peer& peer)
 void CmdInterpreter::_count(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.writeBuffer += std::to_string(Directory::getEntryCount());
+	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
 }
 
 void CmdInterpreter::_exit(Peer& peer)

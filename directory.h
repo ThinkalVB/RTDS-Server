@@ -9,7 +9,7 @@ class Directory
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
-	static unsigned int entryCount;							//!< Count the number on entries in the directory
+	static int entryCount;									//!< Count the number on entries in the directory
 	
 /*******************************************************************************************
 * @brief Return the maximum privilege the command issuing entry have
@@ -34,7 +34,7 @@ public:
 *
 * @return						The total number on entries in directory.
 ********************************************************************************************/
-	static unsigned int getEntryCount();
+	static int getEntryCount();
 /*******************************************************************************************
 * @brief Return a pointer to V4 Entry for the given IP4 address and port number
 *

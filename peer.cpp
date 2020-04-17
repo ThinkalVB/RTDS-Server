@@ -4,7 +4,7 @@
 #include "cmd_interpreter.h"
 #include "log.h"
 
-unsigned short Peer::peerCount = 0;
+short Peer::peerCount = 0;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
@@ -74,7 +74,7 @@ void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 	}
 }
 
-unsigned short Peer::getPeerCount()
+short Peer::getPeerCount()
 {
 	return peerCount;
 }

@@ -7,9 +7,9 @@ std::map<sourcePairV6, EntryV6*> Directory::V6EntryMap;
 
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
-unsigned int Directory::entryCount = 0;
+int Directory::entryCount = 0;
 
-unsigned int Directory::getEntryCount()
+int Directory::getEntryCount()
 {
 	return entryCount;
 }
@@ -67,7 +67,7 @@ EntryV4* Directory::findEntry(asio::ip::address_v4& ipAdd, unsigned short portNu
 	auto entry = V4EntryMap.find(sourcePair);
 	if (entry != V4EntryMap.end())
 	{
-		if (entry->second->isInDirectory && !entry->second->haveExpired())
+		if (entry->second->isInDirectory && !entry->second->_haveExpired())
 			return entry->second;
 		else
 			return nullptr;
@@ -83,7 +83,7 @@ EntryV6* Directory::findEntry(asio::ip::address_v6& ipAdd, unsigned short portNu
 	auto entry = V6EntryMap.find(sourcePair);
 	if (entry != V6EntryMap.end())
 	{
-		if (entry->second->isInDirectory || !entry->second->haveExpired())
+		if (entry->second->isInDirectory || !entry->second->_haveExpired())
 			return entry->second;
 		else
 			return nullptr;
@@ -111,8 +111,8 @@ void Directory::addEntry(EntryV4* entry,EntryV4* CmdEntry)
 		if (!entry->isInDirectory)
 		{
 			entry->isInDirectory = true;
-			entry->chargeEntry();
-			auto maxCmdEntryPrivilege = maxPrivilege(entry, CmdEntry);
+			entry->_chargeEntry();
+			auto maxCmdEntryPrivilege = _maxPrivilege(entry, CmdEntry);
 			if (maxCmdEntryPrivilege == Privilege::LIBERAL_ENTRY)
 			{
 				entry->permission.charge = Privilege::LIBERAL_ENTRY;

@@ -4,11 +4,11 @@
 #include <list>
 
 using namespace boost;
-constexpr unsigned short RTDS_BUFF_SIZE = 300;
+constexpr short RTDS_BUFF_SIZE = 300;
 
 class Peer
 {
-	static unsigned short peerCount;			//!< Keep the total count of peers
+	static short peerCount;						//!< Keep the total count of peers
 	asio::ip::tcp::socket* peerSocket;			//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;			//!< Endpoint of the peerSocket with info on peer system
 	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
@@ -85,6 +85,6 @@ public:
 * @details
 * Gives total number of open sockets listening to a remote system.
 ********************************************************************************************/
-	static unsigned short getPeerCount();
+	static short getPeerCount();
 	friend class CmdInterpreter;
 };

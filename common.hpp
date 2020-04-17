@@ -15,9 +15,9 @@ typedef std::array<uint8_t, 18> sourcePairV6;
 ********************************************************************************************/
 enum class Privilege : char
 {
-	LIBERAL_ENTRY		= 'l',
-	PROTECTED_ENTRY		= 'p',
-	RESTRICTED_ENTRY	= 'r'
+	LIBERAL_ENTRY		= 0,
+	PROTECTED_ENTRY		= 1,
+	RESTRICTED_ENTRY	= 2
 };
 
 /*******************************************************************************************
@@ -29,7 +29,7 @@ enum class Privilege : char
 * PROTECTED_TTL		This entry can survive upto 30 minutes.
 * RESTRICTED_TTL	This entry can survive upto 60 minutes.
 ********************************************************************************************/
-enum class TTL : short
+enum class TTL
 {
 	LIBERAL_TTL		= 10,
 	PROTECTED_TTL	= 30,
@@ -60,6 +60,11 @@ enum class Response
 	WAIT_RETRY		= 6
 };
 
+enum class Version
+{
+	V4 = 0,
+	V6 = 1
+};
 
 /*******************************************************************************************
 * @brief Enum class for Command
@@ -107,7 +112,7 @@ enum class Command
 ********************************************************************************************/
 struct Permission
 {
-	Privilege remove;
-	Privilege change;
 	Privilege charge;
+	Privilege change;
+	Privilege remove;
 };

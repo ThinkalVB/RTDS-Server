@@ -217,7 +217,7 @@ void RTDS::stopTCPserver()
 	tcpServerRunning = false;
 }
 
-unsigned short RTDS::getPeerCount()
+short RTDS::getPeerCount()
 {
 	return Peer::getPeerCount();
 }

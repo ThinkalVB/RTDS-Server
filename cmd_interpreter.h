@@ -3,22 +3,16 @@
 
 class CmdInterpreter
 {
-	template<typename EntryPtr>
-	static void __ping(Peer&, EntryPtr*);
 	static void _ping(Peer&);
-
-	template<typename EntryPtr>
-	static void __add(Peer& peer, EntryPtr* entry);
 	static void _add(Peer&);
-
 	static void _search(Peer&);
 	static void _charge(Peer&);
 	static void _ttl(Peer&);
 	static void _count(Peer&);
 	static void _exit(Peer&);
 public:
-	static const std::string RESP[];
-	static const std::string COMM[];
+	static const std::string RESP[];			//!< All responses in string.
+	static const std::string COMM[];			//!< All commands in string.
 /*******************************************************************************************
 * @brief Process the commands from peer system
 *
@@ -45,25 +39,6 @@ public:
 	template <typename IPaddress,typename sourcePair>
 	static void makeSourcePair(const IPaddress&, unsigned short, sourcePair&);
 };
-
-template<typename EntryPtr>
-inline void CmdInterpreter::__ping(Peer& peer, EntryPtr* entry)
-{
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.writeBuffer += entry->versionID + " ";
-	peer.writeBuffer += entry->ipAddress + " ";
-	peer.writeBuffer += entry->portNumber;
-}
-
-template<typename EntryPtr>
-inline void CmdInterpreter::__add(Peer& peer, EntryPtr* entry)
-{
-	/*
-	auto response = Directory::addEntry(entry);
-	std::lock_guard<std::mutex> lock(entry->accessLock);
-	peer.writeBuffer += RESP[(short)response] + " ";
-	peer.writeBuffer += entry->UID; */
-}
 
 template <typename Data>
 inline void CmdInterpreter::byteSwap(Data& portNumber)

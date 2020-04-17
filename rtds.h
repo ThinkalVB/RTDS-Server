@@ -11,7 +11,7 @@ class RTDS
 	asio::ip::tcp::endpoint tcpEp;				//!< TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
 	asio::ip::tcp::acceptor tcpAcceptor;		//!< TCP acceptor socket that accept incoming tcp connections
 
-	unsigned short activeThreadCount;			//!< Keep account of number of threads running ioContex.run()
+	short activeThreadCount;					//!< Keep account of number of threads running ioContex.run()
 	std::atomic<bool> tcpServerRunning;			//!< Track if the TCP server is running
 	std::atomic<bool> keepAccepting;			//!< Only accept new connections if True
 
@@ -107,7 +107,7 @@ public:
 * @details
 * Gives total number of open sockets listening to a remote system.
 ********************************************************************************************/
-	unsigned short getPeerCount();
+	short getPeerCount();
 /*******************************************************************************************
 * @brief Stop the tcp server and ioContext
 *
