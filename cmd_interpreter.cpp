@@ -20,6 +20,7 @@ const std::string CmdInterpreter::COMM[] =
 	"search",
 	"ttl",
 	"charge",
+	"flush",
 	"update",
 	"remove",
 	"count",
@@ -31,45 +32,65 @@ const std::string CmdInterpreter::COMM[] =
 void CmdInterpreter::processCommand(Peer& peer)
 {
 	auto commandString = std::string_view{ peer.dataBuffer };
-	auto commEnd = commandString.find(' ');
-	if (commEnd == std::string::npos)										/* Command is a single word command */	
-	{													
+	auto endIndex = commandString.find(' ');
+	if (endIndex == std::string::npos)								/* No argument commands	*/
+	{
 		if (commandString == COMM[(short)Command::PING])
+		{
 			_ping(peer);
-		else if (commandString == COMM[(short)Command::EXIT])
-			_exit(peer);
-		else if (commandString == COMM[(short)Command::ADD])
-			_add(peer);
+			return;
+		}
 		else if (commandString == COMM[(short)Command::MIRROR])
 		{
 		}
-		else if (commandString == COMM[(short)Command::COUNT])
-			_count(peer);
 		else if (commandString == COMM[(short)Command::LEAVE])
 		{
 		}
-		else if (commandString == COMM[(short)Command::TTL])
-			_ttl(peer);
-		else if (commandString == COMM[(short)Command::CHARGE])
-			_charge(peer);
-		else if (commandString == COMM[(short)Command::SEARCH])
-			_search(peer);
+		else if (commandString == COMM[(short)Command::EXIT])
+		{
+			_exit(peer);
+			return;
+		}
+		else if (commandString == COMM[(short)Command::COUNT])
+		{
+			_count(peer);
+			return;
+		}
 	}
-
-
-
+	
+	/* Multiple argument commands	*/
+	
+	auto command = commandString.substr(0, endIndex);
+	commandString.remove_prefix(endIndex + 1);
+	if (command == COMM[(short)Command::ADD])
+		_add(peer);
+	else if (command == COMM[(short)Command::TTL])
+		_ttl(peer);
+	else if (command == COMM[(short)Command::CHARGE])
+		_charge(peer);
+	else if (command == COMM[(short)Command::SEARCH])
+		_search(peer);
+	else if (command == COMM[(short)Command::FLUSH])
+	{
+	}
+	else if (command == COMM[(short)Command::REMOVE])
+	{
+	}
+	else if (command == COMM[(short)Command::UPDATE])
+	{
+	}
 	else
-	{	
-		/* Command is a multi word command */
 		peer.writeBuffer = RESP[(short)Response::BAD_COMMAND];
-	}
+
+
 	peer._sendPeerData();
 }
 
-inline void CmdInterpreter::_ping(Peer& peer)
+void CmdInterpreter::_ping(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.peerEntry.Ev->printBrief(peer.writeBuffer);
+	peer._sendPeerData();
 }
 
 void CmdInterpreter::_add(Peer& peer)
@@ -106,6 +127,7 @@ void CmdInterpreter::_count(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
+	peer._sendPeerData();
 }
 
 void CmdInterpreter::_exit(Peer& peer)

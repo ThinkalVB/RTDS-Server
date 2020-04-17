@@ -9,8 +9,13 @@ constexpr short RTDS_BUFF_SIZE = 300;
 class Peer
 {
 	static short peerCount;						//!< Keep the total count of peers
+	static std::list<Peer*> mirroringGroup;		//!< Keep the list of peers mirroring the directory
+	static std::mutex mirroringListLock;		//!< Lock this mutex when accessing the mirrorGroup
+
+
 	asio::ip::tcp::socket* peerSocket;			//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;			//!< Endpoint of the peerSocket with info on peer system
+	bool isMirroring = false;					//!< True if this peer is in mirroring mode
 	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
 
 	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
@@ -85,6 +90,21 @@ public:
 * @details
 * Gives total number of open sockets listening to a remote system.
 ********************************************************************************************/
-	static short getPeerCount();
+static short getPeerCount();
+/*******************************************************************************************
+* @brief Add this peer to mirroring group
+*
+* @details
+* Set the flag isMirroring to true and add to the mirroring group list.
+********************************************************************************************/
+	void addToMirroringGroup();
+/*******************************************************************************************
+* @brief Remove this peer to mirroring group
+*
+* @details
+* Set the flag isMirroring to false and remove peer from mirroring group list.
+********************************************************************************************/
+	void removeFromMirroringGroup();
+
 	friend class CmdInterpreter;
 };

@@ -92,12 +92,13 @@ enum class Command
 	SEARCH	= 2,
 	TTL		= 3,
 	CHARGE	= 4,
-	UPDATE	= 5,
-	REMOVE	= 6,
-	COUNT	= 7,
-	MIRROR	= 8,
-	LEAVE	= 9,
-	EXIT	= 10
+	FLUSH	= 5,
+	UPDATE	= 6,
+	REMOVE	= 7,
+	COUNT	= 8,
+	MIRROR	= 9,
+	LEAVE	= 10,
+	EXIT	= 11
 };
 
 /*******************************************************************************************

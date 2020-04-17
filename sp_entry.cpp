@@ -40,7 +40,6 @@ void entryBase::detachFromPeer()
 
 void entryBase::printUID(std::string& strBuffer)
 {
-	std::lock_guard<std::mutex> lock(accessLock);
 	strBuffer += UID;
 }
 
@@ -51,7 +50,6 @@ void entryBase::printEntryCount(std::string& strBuffer)
 
 void entryBase::printBrief(std::string& strBuffer)
 {
-	std::lock_guard<std::mutex> lock(accessLock);
 	if (version == Version::V4)
 		strBuffer += VER[(short)Version::V4];
 	else
@@ -77,12 +75,12 @@ void entryBase::printTTL(std::string& strBuffer)
 
 void entryBase::printExpand(std::string& strBuffer)
 {
-	std::lock_guard<std::mutex> lock(accessLock);
 	if (version == Version::V4)
 		strBuffer += VER[(short)Version::V4];
 	else
 		strBuffer += VER[(short)Version::V6];
 	strBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
+	std::lock_guard<std::mutex> lock(accessLock);
 	strBuffer += PRI[(short)permission.change];
 	strBuffer += PRI[(short)permission.charge];
 	strBuffer += PRI[(short)permission.remove];

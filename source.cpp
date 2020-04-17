@@ -1,5 +1,4 @@
 #include "rtds.h"
-#include "log.h"
 
 int main()
 {

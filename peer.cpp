@@ -5,6 +5,8 @@
 #include "log.h"
 
 short Peer::peerCount = 0;
+std::list<Peer*> Peer::mirroringGroup;
+std::mutex Peer::mirroringListLock;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
@@ -79,6 +81,25 @@ short Peer::getPeerCount()
 	return peerCount;
 }
 
+void Peer::addToMirroringGroup()
+{
+	if (!isMirroring)
+	{
+		isMirroring = true;
+		mirroringGroup.push_back(this);
+	}
+}
+
+void Peer::removeFromMirroringGroup()
+{
+	std::lock_guard<std::mutex> lock(mirroringListLock);
+	if (isMirroring)
+	{
+		isMirroring = false;
+		mirroringGroup.remove(this);
+	}
+}
+
 Peer::~Peer()
 {
 	#ifdef PRINT_LOG
@@ -94,6 +115,7 @@ Peer::~Peer()
 	}
 
 	peerEntry.Ev4->detachFromPeer();
+	removeFromMirroringGroup();
 	peerCount--;
 	delete peerSocket;
 }
