@@ -13,7 +13,21 @@ class CmdInterpreter
 	static void _search(Peer&);
 	static void _charge(Peer&);
 	static void _ttl(Peer&);
+	static void _remove(Peer&);
+	static void _flush(Peer&);
+	static void _update(Peer&);
 
+/*******************************************************************************************
+* @brief Extract the UID from the command line.
+*
+* @param[in] commandLine		The string view of the commandLine
+* @param[out] element			Element extracted from the commandLine.
+* @return						True if an element is found
+*
+* @details
+* The element will be purged from the command line before returning a flag.
+********************************************************************************************/
+	static bool _extractElement(std::string_view&, std::string_view&);
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.

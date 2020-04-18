@@ -44,6 +44,7 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 		if (dataBuffer[size - 1] == ';')
 		{
 			dataBuffer[size - 1] = '\0';
+			receivedData = dataBuffer;
 			CmdInterpreter::processCommand(*this);
 		}
 		else
@@ -56,6 +57,8 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 
 void Peer::_sendPeerData()
 {
+	if (writeBuffer.size() == 0)
+		writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
 	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
@@ -83,6 +86,7 @@ short Peer::getPeerCount()
 
 void Peer::addToMirroringGroup()
 {
+	std::lock_guard<std::mutex> lock(mirroringListLock);
 	if (!isMirroring)
 	{
 		isMirroring = true;

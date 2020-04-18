@@ -29,72 +29,146 @@ const std::string CmdInterpreter::COMM[] =
 	"exit"
 };
 
-void CmdInterpreter::processCommand(Peer& peer)
+bool CmdInterpreter::_extractElement(std::string_view& commandLine, std::string_view& element)
 {
-	auto commandString = std::string_view{ peer.dataBuffer };
-	auto endIndex = commandString.find(' ');
-	if (endIndex == std::string::npos)								/* No argument commands	*/
+	auto cmdSize = commandLine.size();
+	auto endIndex = commandLine.find_first_not_of(' ');
+	commandLine.remove_prefix(std::min(endIndex, cmdSize));
+
+	cmdSize = commandLine.size();
+	if (cmdSize > 0)
 	{
-		if (commandString == COMM[(short)Command::PING])
+		if (commandLine[0] == '[')
 		{
-			s_ping(peer);
-			return;
+			endIndex = commandLine.find_last_of(']');
+			if (endIndex == std::string::npos)
+			{
+				commandLine.remove_prefix(cmdSize);
+				return false;
+			}
+			else
+			{
+				element = commandLine.substr(0, endIndex + 1);
+				commandLine.remove_prefix(cmdSize);
+				return true;
+			}
 		}
-		else if (commandString == COMM[(short)Command::MIRROR])
+		else
 		{
-			s_mirror(peer);
-			return;
+			endIndex = commandLine.find(' ');
+			if (endIndex == std::string::npos)
+			{
+				element = commandLine;
+				commandLine.remove_prefix(cmdSize);
+			}
+			else
+			{
+				element = commandLine.substr(0, endIndex);
+				commandLine.remove_prefix(endIndex);
+			}
+			return true;
+
 		}
-		else if (commandString == COMM[(short)Command::LEAVE])
-		{
-			s_leave(peer);
-			return;
-		}
-		else if (commandString == COMM[(short)Command::EXIT])
-		{
-			s_exit(peer);
-			return;
-		}
-		else if (commandString == COMM[(short)Command::COUNT])
-		{
-			s_count(peer);
-			return;
-		}
-	}
-	
-	/* Multiple argument commands	*/
-	
-	auto command = commandString.substr(0, endIndex);
-	commandString.remove_prefix(endIndex + 1);
-	if (command == COMM[(short)Command::ADD])
-		_add(peer);
-	else if (command == COMM[(short)Command::TTL])
-		_ttl(peer);
-	else if (command == COMM[(short)Command::CHARGE])
-		_charge(peer);
-	else if (command == COMM[(short)Command::SEARCH])
-		_search(peer);
-	else if (command == COMM[(short)Command::FLUSH])
-	{
-	}
-	else if (command == COMM[(short)Command::REMOVE])
-	{
-	}
-	else if (command == COMM[(short)Command::UPDATE])
-	{
 	}
 	else
-		peer.writeBuffer = RESP[(short)Response::BAD_COMMAND];
+		return false;
+}
 
-
+void CmdInterpreter::processCommand(Peer& peer)
+{
+	std::string_view command;
+	if (_extractElement(peer.receivedData, command))
+	{
+		if (command == COMM[(short)Command::PING])
+			s_ping(peer);
+		else if (command == COMM[(short)Command::COUNT])
+			s_count(peer);
+		else if (command == COMM[(short)Command::EXIT])
+			s_exit(peer);
+		else if (command == COMM[(short)Command::MIRROR])
+			s_mirror(peer);
+		else if (command == COMM[(short)Command::LEAVE])
+			s_leave(peer);
+		else if (command == COMM[(short)Command::ADD])
+			_add(peer);
+		else if (command == COMM[(short)Command::SEARCH])
+			_search(peer);
+		else if (command == COMM[(short)Command::CHARGE])
+			_charge(peer);
+		else if (command == COMM[(short)Command::TTL])
+			_ttl(peer);
+		else if (command == COMM[(short)Command::REMOVE])
+			_remove(peer);
+		else if (command == COMM[(short)Command::FLUSH])
+			_flush(peer);
+		else if (command == COMM[(short)Command::UPDATE])
+			_update(peer);
+	}
 	peer._sendPeerData();
 }
 
+/* Commands without any arguments				*/		
 void CmdInterpreter::s_ping(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.peerEntry.Ev->printBrief(peer.writeBuffer);
-	peer._sendPeerData();
+}
+
+void CmdInterpreter::s_count(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
+}
+
+void CmdInterpreter::s_exit(Peer& peer)
+{
+	peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+}
+
+void CmdInterpreter::s_mirror(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.addToMirroringGroup();
+}
+
+void CmdInterpreter::s_leave(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.removeFromMirroringGroup();
+}
+
+
+/* Commands with arguments						*/
+void CmdInterpreter::_ttl(Peer& peer)
+{
+	std::string_view element;
+	if (_extractElement(peer.receivedData, element))
+	{
+		
+	}
+	else
+	{
+		if (peer.peerEntry.Ev->inDirectory())
+		{
+			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+			peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
+		}
+		else
+			peer.writeBuffer += RESP[(short)Response::NO_EXIST];
+	}
+}
+
+void CmdInterpreter::_remove(Peer& peer)
+{
+
+}
+
+void CmdInterpreter::_flush(Peer& peer)
+{
+}
+
+void CmdInterpreter::_update(Peer& peer)
+{
 }
 
 void CmdInterpreter::_add(Peer& peer)
@@ -119,36 +193,4 @@ void CmdInterpreter::_charge(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
-}
-
-void CmdInterpreter::_ttl(Peer& peer)
-{
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
-}
-
-void CmdInterpreter::s_count(Peer& peer)
-{
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
-	peer._sendPeerData();
-}
-
-void CmdInterpreter::s_exit(Peer& peer)
-{
-	peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
-}
-
-void CmdInterpreter::s_mirror(Peer& peer)
-{
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.addToMirroringGroup();
-	peer._sendPeerData();
-}
-
-void CmdInterpreter::s_leave(Peer& peer)
-{
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.removeFromMirroringGroup();
-	peer._sendPeerData();
 }

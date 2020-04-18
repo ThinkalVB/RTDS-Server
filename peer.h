@@ -19,6 +19,7 @@ class Peer
 	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
 
 	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
+	std::string_view receivedData;				//!< The string representation of the dataBuffer
 	std::string writeBuffer;					//!< Buffer from which the response will be send
 
 /*******************************************************************************************
@@ -34,6 +35,7 @@ class Peer
 *
 * @details
 * The callback function _sendData() will be invoked after the data is send.
+* If the write buffer is empty then a bad_command response will be send.
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
 	void _sendPeerData();
