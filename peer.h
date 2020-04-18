@@ -1,7 +1,7 @@
 #pragma once
 #include <boost/asio.hpp>
 #include "sp_entry.h"
-#include <list>
+#include <vector>
 
 using namespace boost;
 constexpr short RTDS_BUFF_SIZE = 300;
@@ -9,7 +9,7 @@ constexpr short RTDS_BUFF_SIZE = 300;
 class Peer
 {
 	static short peerCount;						//!< Keep the total count of peers
-	static std::list<Peer*> mirroringGroup;		//!< Keep the list of peers mirroring the directory
+	static std::vector<Peer*> mirroringGroup;	//!< Keep the list of peers mirroring the directory
 	static std::mutex mirroringListLock;		//!< Lock this mutex when accessing the mirrorGroup
 
 

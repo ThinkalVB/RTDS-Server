@@ -37,23 +37,27 @@ void CmdInterpreter::processCommand(Peer& peer)
 	{
 		if (commandString == COMM[(short)Command::PING])
 		{
-			_ping(peer);
+			s_ping(peer);
 			return;
 		}
 		else if (commandString == COMM[(short)Command::MIRROR])
 		{
+			s_mirror(peer);
+			return;
 		}
 		else if (commandString == COMM[(short)Command::LEAVE])
 		{
+			s_leave(peer);
+			return;
 		}
 		else if (commandString == COMM[(short)Command::EXIT])
 		{
-			_exit(peer);
+			s_exit(peer);
 			return;
 		}
 		else if (commandString == COMM[(short)Command::COUNT])
 		{
-			_count(peer);
+			s_count(peer);
 			return;
 		}
 	}
@@ -86,7 +90,7 @@ void CmdInterpreter::processCommand(Peer& peer)
 	peer._sendPeerData();
 }
 
-void CmdInterpreter::_ping(Peer& peer)
+void CmdInterpreter::s_ping(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.peerEntry.Ev->printBrief(peer.writeBuffer);
@@ -123,14 +127,28 @@ void CmdInterpreter::_ttl(Peer& peer)
 	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
 }
 
-void CmdInterpreter::_count(Peer& peer)
+void CmdInterpreter::s_count(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
 	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
 	peer._sendPeerData();
 }
 
-void CmdInterpreter::_exit(Peer& peer)
+void CmdInterpreter::s_exit(Peer& peer)
 {
 	peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+}
+
+void CmdInterpreter::s_mirror(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.addToMirroringGroup();
+	peer._sendPeerData();
+}
+
+void CmdInterpreter::s_leave(Peer& peer)
+{
+	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.removeFromMirroringGroup();
+	peer._sendPeerData();
 }

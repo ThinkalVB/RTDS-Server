@@ -5,7 +5,7 @@
 #include "log.h"
 
 short Peer::peerCount = 0;
-std::list<Peer*> Peer::mirroringGroup;
+std::vector<Peer*> Peer::mirroringGroup;
 std::mutex Peer::mirroringListLock;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
@@ -96,7 +96,12 @@ void Peer::removeFromMirroringGroup()
 	if (isMirroring)
 	{
 		isMirroring = false;
-		mirroringGroup.remove(this);
+		if (mirroringGroup.size() > 1) 
+		{
+			auto itr = std::find(mirroringGroup.begin(), mirroringGroup.end(), this);
+			std::iter_swap(itr, mirroringGroup.end() - 1);
+		}
+		mirroringGroup.pop_back();
 	}
 }
 

@@ -3,13 +3,17 @@
 
 class CmdInterpreter
 {
-	static void _ping(Peer&);
+	static void s_ping(Peer&);
+	static void s_count(Peer&);
+	static void s_exit(Peer&);
+	static void s_mirror(Peer&);
+	static void s_leave(Peer&);
+
 	static void _add(Peer&);
 	static void _search(Peer&);
 	static void _charge(Peer&);
 	static void _ttl(Peer&);
-	static void _count(Peer&);
-	static void _exit(Peer&);
+
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.
