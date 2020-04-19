@@ -1,6 +1,11 @@
 #include "cmd_interpreter.h"
+#include "cppcodec/base64_rfc4648.hpp"
 #include "directory.h"
+#include <regex>
 #include "log.h"
+
+#define V4_UID_MAX_CHAR 8
+#define V6_UID_MAX_CHAR 24
 
 const std::string CmdInterpreter::RESP[] = 
 {
@@ -74,6 +79,17 @@ bool CmdInterpreter::_extractElement(std::string_view& commandLine, std::string_
 		return false;
 }
 
+bool CmdInterpreter::_isUID(const std::string_view& uid)
+{
+	if (uid.size() == V4_UID_MAX_CHAR || uid.size() == V6_UID_MAX_CHAR)
+	{
+		std::regex regx("[a-zA-Z0-9\+/]*");
+		return std::regex_match(uid.cbegin(), uid.cend(), regx);
+	}
+	else
+		return false;
+}
+
 void CmdInterpreter::processCommand(Peer& peer)
 {
 	std::string_view command;
@@ -127,13 +143,13 @@ void CmdInterpreter::s_exit(Peer& peer)
 
 void CmdInterpreter::s_mirror(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.writeBuffer += RESP[(short)Response::SUCCESS];
 	peer.addToMirroringGroup();
 }
 
 void CmdInterpreter::s_leave(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	peer.writeBuffer += RESP[(short)Response::SUCCESS];
 	peer.removeFromMirroringGroup();
 }
 
@@ -144,7 +160,29 @@ void CmdInterpreter::_ttl(Peer& peer)
 	std::string_view element;
 	if (_extractElement(peer.receivedData, element))
 	{
-		
+		if (_isUID(element))
+		{
+			if (element.size() == V4_UID_MAX_CHAR)
+			{
+				sourcePairV4 sourcePair;
+				cppcodec::base64_rfc4648::decode(sourcePair.data(), sourcePair.size(), element);
+				auto entry = Directory::findEntry(sourcePair);
+				if (entry != nullptr)
+					entry->printTTL(peer.writeBuffer);
+				else 
+					peer.writeBuffer += RESP[(short)Response::NO_EXIST];
+			}
+			else
+			{
+				sourcePairV6 sourcePair;
+				cppcodec::base64_rfc4648::decode(sourcePair.data(), sourcePair.size(), element);
+				auto entry = Directory::findEntry(sourcePair);
+				if (entry != nullptr)
+					entry->printTTL(peer.writeBuffer);
+				else
+					peer.writeBuffer += RESP[(short)Response::NO_EXIST];
+			}
+		}
 	}
 	else
 	{
@@ -181,10 +219,10 @@ void CmdInterpreter::_add(Peer& peer)
 void CmdInterpreter::_search(Peer& peer)
 {
 	if (!peer.peerEntry.Ev->inDirectory())
-		peer.writeBuffer += RESP[(short)Response::NO_EXIST] + " ";
+		peer.writeBuffer += RESP[(short)Response::NO_EXIST];
 	else
 	{
-		peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+		peer.writeBuffer += RESP[(short)Response::SUCCESS];
 		peer.peerEntry.Ev->printExpand(peer.writeBuffer);
 	}
 }

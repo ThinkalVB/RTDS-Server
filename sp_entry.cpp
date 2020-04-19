@@ -61,7 +61,7 @@ void entryBase::printTTL(std::string& strBuffer)
 {
 	std::lock_guard<std::mutex> lock(accessLock);
 	if (iswithPeer)
-		strBuffer += std::to_string((short)Privilege::RESTRICTED_ENTRY);
+		strBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
 	else
 	{
 		auto timePassed = _getTimePassed();

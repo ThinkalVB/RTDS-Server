@@ -60,6 +60,36 @@ EntryV6* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum
 	}
 }
 
+EntryV4* Directory::findEntry(const sourcePairV4& sourcePair)
+{
+	auto entryItr = V4EntryMap.find(sourcePair);
+	if (entryItr != V4EntryMap.end())
+	{
+		if (entryItr->second->isInDirectory)
+			return entryItr->second;
+		else
+			return nullptr;
+	}
+	else
+		return nullptr;
+}
+
+EntryV6* Directory::findEntry(const sourcePairV6& sourcePair)
+{
+	auto entryItr = V6EntryMap.find(sourcePair);
+	if (entryItr != V6EntryMap.end())
+	{
+		if (entryItr->second->isInDirectory)
+			return entryItr->second;
+		else
+			return nullptr;
+	}
+	else
+		return nullptr;
+}
+
+/*
+
 EntryV4* Directory::findEntry(asio::ip::address_v4& ipAdd, unsigned short portNum)
 {
 	sourcePairV4 sourcePair;
@@ -92,7 +122,6 @@ EntryV6* Directory::findEntry(asio::ip::address_v6& ipAdd, unsigned short portNu
 		return nullptr;
 }
 
-/*
 void Directory::addEntry(EntryV4* entry,EntryV4* CmdEntry)
 {
 	if (entry == CmdEntry)

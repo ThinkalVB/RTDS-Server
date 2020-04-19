@@ -28,6 +28,12 @@ class CmdInterpreter
 * The element will be purged from the command line before returning a flag.
 ********************************************************************************************/
 	static bool _extractElement(std::string_view&, std::string_view&);
+/*******************************************************************************************
+* @brief Find if the string is an UID
+*
+* @return						True if the strig view is an UID
+********************************************************************************************/
+	static bool _isUID(const std::string_view&);
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.

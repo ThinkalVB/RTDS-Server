@@ -1,12 +1,18 @@
-[2020-Apr-19 03:57:43.819132]  RTDS starting
-[2020-Apr-19 03:57:43.820095]  New IO Thread added
-[2020-Apr-19 03:57:43.822091]  New IO Thread added
-[2020-Apr-19 03:57:43.825082]  New IO Thread added
-[2020-Apr-19 03:57:43.826079]  New IO Thread added
-[2020-Apr-19 03:57:43.826079]  New IO Thread added
-[2020-Apr-19 03:57:43.827076]  TCP server initiating
-[2020-Apr-19 03:57:43.827076]  TCP Accepting starting
-[2020-Apr-19 03:57:43.827076]  TCP server started
-[2020-Apr-19 03:57:48.896573]  Incoming TCP connection 127.0.0.1 56327
-[2020-Apr-19 03:58:45.080072]  TCP Socket _processData() failed 127.0.0.1 56327 End of file
-[2020-Apr-19 03:58:45.080072]  TCP Socket closing 127.0.0.1 56327
+[2020-Apr-19 07:08:33.244992]  RTDS starting
+[2020-Apr-19 07:08:33.245991]  New IO Thread added
+[2020-Apr-19 07:08:33.247014]  New IO Thread added
+[2020-Apr-19 07:08:33.248982]  New IO Thread added
+[2020-Apr-19 07:08:33.251975]  New IO Thread added
+[2020-Apr-19 07:08:33.252979]  New IO Thread added
+[2020-Apr-19 07:08:33.253968]  TCP server initiating
+[2020-Apr-19 07:08:33.253968]  TCP Accepting starting
+[2020-Apr-19 07:08:33.253968]  TCP server started
+[2020-Apr-19 07:08:39.140633]  Incoming TCP connection 127.0.0.1 57536
+[2020-Apr-19 07:08:57.924023]  Incoming TCP connection 127.0.0.1 57538
+[2020-Apr-19 07:09:16.686467]  TCP Socket _sendData() failed 127.0.0.1 57538 A request to send or receive data was disallowed because the socket had already been shut down in that direction with a previous shutdown call
+[2020-Apr-19 07:09:16.686467]  TCP Socket closing 127.0.0.1 57538
+[2020-Apr-19 07:10:37.364749]  TCP Socket _processData() failed 127.0.0.1 57536 End of file
+[2020-Apr-19 07:10:37.364749]  TCP Socket closing 127.0.0.1 57536
+[2020-Apr-19 07:14:39.793634]  Incoming TCP connection 127.0.0.1 57555
+[2020-Apr-19 07:15:03.764775]  TCP Socket _processData() failed 127.0.0.1 57555 End of file
+[2020-Apr-19 07:15:03.764775]  TCP Socket closing 127.0.0.1 57555

@@ -64,31 +64,27 @@ public:
 ********************************************************************************************/
 	static EntryV6* makeEntry(asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
-* @brief Return a pointer to V4 Entry for the given IP4 address and port number
+* @brief Return a pointer to V4 Entry for the given sourcepair address
 *
-* @param[in] ipAddr				The IPv4 address
-* @param[in] portNum			The port number
+* @param[in] ipAddr				The IPv4 source pair
 * @return						The pointer to the V4Entry or nullptr
 *
 * @details
-* Make a sourcePairV4 with the provided address and port number.
-* Search the sourcePortV4 address in the map and check if the entry have expired.
+* Search the sourcePortV4 address in the map and check if isInDirectory.
 * If entry exists and is not expired then return the EntryV4* else return nullptr.
 ********************************************************************************************/
-	static EntryV4* findEntry(asio::ip::address_v4&, unsigned short);
+	static EntryV4* findEntry(const sourcePairV4&);
 /*******************************************************************************************
-* @brief Return a pointer to V6 Entry for the given IP6 address and port number
+* @brief Return a pointer to V6 Entry for the given sourcepair address
 *
-* @param[in] ipAddr				The IP64 address
-* @param[in] portNum			The port number
+* @param[in] ipAddr				The IPv6 source pair
 * @return						The pointer to the V6Entry or nullptr
 *
 * @details
-* Make a sourcePairV6 with the provided address and port number.
-* Search the sourcePortV6 address in the map and check if the entry have expired.
+* Search the sourcePortV6 address in the map and check if isInDirectory.
 * If entry exists and is not expired then return the EntryV6* else return nullptr.
 ********************************************************************************************/
-	static EntryV6* findEntry(asio::ip::address_v6&, unsigned short);
+	static EntryV6* findEntry(const sourcePairV6&);
 /*******************************************************************************************
 * @brief Add the entry to the directory [Only call if the entry is inserting itself]
 *
@@ -135,3 +131,30 @@ inline Privilege Directory::_maxPrivilege(EntryPtrT1* entry, EntryPtrT2* cmdEntr
 {
 	return Privilege::LIBERAL_ENTRY;
 }
+
+/*******************************************************************************************
+* @brief Return a pointer to V4 Entry for the given IP4 address and port number
+*
+* @param[in] ipAddr				The IPv4 address
+* @param[in] portNum			The port number
+* @return						The pointer to the V4Entry or nullptr
+*
+* @details
+* Make a sourcePairV4 with the provided address and port number.
+* Search the sourcePortV4 address in the map and check if the entry have expired.
+* If entry exists and is not expired then return the EntryV4* else return nullptr.
+********************************************************************************************/
+//static EntryV4* findEntry(asio::ip::address_v4&, unsigned short);
+/*******************************************************************************************
+* @brief Return a pointer to V6 Entry for the given IP6 address and port number
+*
+* @param[in] ipAddr				The IP64 address
+* @param[in] portNum			The port number
+* @return						The pointer to the V6Entry or nullptr
+*
+* @details
+* Make a sourcePairV6 with the provided address and port number.
+* Search the sourcePortV6 address in the map and check if the entry have expired.
+* If entry exists and is not expired then return the EntryV6* else return nullptr.
+********************************************************************************************/
+//static EntryV6* findEntry(asio::ip::address_v6&, unsigned short);
