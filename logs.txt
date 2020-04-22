@@ -1,12 +1,12 @@
-[2020-Apr-19 14:46:45.863044]  RTDS starting
-[2020-Apr-19 14:46:45.864042]  New IO Thread added
-[2020-Apr-19 14:46:45.867034]  New IO Thread added
-[2020-Apr-19 14:46:45.870026]  New IO Thread added
-[2020-Apr-19 14:46:45.871023]  New IO Thread added
-[2020-Apr-19 14:46:45.872021]  New IO Thread added
-[2020-Apr-19 14:46:45.873018]  TCP server initiating
-[2020-Apr-19 14:46:45.873018]  TCP Accepting starting
-[2020-Apr-19 14:46:45.873018]  TCP server started
-[2020-Apr-19 14:47:06.232923]  Incoming TCP connection 127.0.0.1 60864
-[2020-Apr-19 14:53:28.098840]  TCP Socket _processData() failed 127.0.0.1 60864 End of file
-[2020-Apr-19 14:53:28.098840]  TCP Socket closing 127.0.0.1 60864
+[2020-Apr-22 04:02:57.049268]  RTDS starting
+[2020-Apr-22 04:02:57.050782]  New IO Thread added
+[2020-Apr-22 04:02:57.053770]  New IO Thread added
+[2020-Apr-22 04:02:57.055759]  New IO Thread added
+[2020-Apr-22 04:02:57.056756]  New IO Thread added
+[2020-Apr-22 04:02:57.056756]  New IO Thread added
+[2020-Apr-22 04:02:57.056756]  TCP server initiating
+[2020-Apr-22 04:02:57.057753]  TCP Accepting starting
+[2020-Apr-22 04:02:57.057753]  TCP server started
+[2020-Apr-22 04:03:09.321529]  Incoming TCP connection 127.0.0.1 53458
+[2020-Apr-22 04:11:24.696837]  TCP Socket _processData() failed 127.0.0.1 53458 End of file
+[2020-Apr-22 04:11:24.696837]  TCP Socket closing 127.0.0.1 53458

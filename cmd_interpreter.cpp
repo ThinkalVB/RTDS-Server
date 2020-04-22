@@ -1,5 +1,4 @@
 #include "cmd_interpreter.h"
-#include "directory.h"
 #include <charconv>
 #include <regex>
 #include "log.h"
@@ -93,30 +92,6 @@ bool CmdInterpreter::_isUID(const std::string_view& uid)
 		return false;
 }
 
-bool CmdInterpreter::_makeSourcePair(std::string_view& ipAddrStr, std::string_view& portNum, SourcePair& sourcePair)
-{
-	system::error_code ec;
-	auto ipAddress = asio::ip::make_address(ipAddrStr, ec);
-	unsigned short portNumber;
-	if (ec == system::errc::success && _validPortNumber(portNum, portNumber))
-	{
-		if (ipAddress.is_v4())
-		{
-			makeSourcePair(ipAddress.to_v4(), portNumber, sourcePair.SP.SPV4);
-			sourcePair.version = Version::V4;
-		}
-		else
-		{
-			makeSourcePair(ipAddress.to_v6(), portNumber, sourcePair.SP.SPV6);
-			sourcePair.version = Version::V6;
-		}
-		return true;
-	}
-	else
-		return false;
-
-}
-
 bool CmdInterpreter::_validPortNumber(std::string_view& portNumStr, unsigned short& portNum)
 {
 	std::regex regx("[0-9]{1,5}");
@@ -169,6 +144,8 @@ void CmdInterpreter::processCommand(Peer& peer)
 			return;
 		}
 	}
+	if (peer.writeBuffer.size() == 0)
+		peer.writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
 	peer._sendPeerData();
 }
 
@@ -182,8 +159,6 @@ void CmdInterpreter::s_ping(Peer& peer)
 
 void CmdInterpreter::s_count(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.peerEntry.Ev->printEntryCount(peer.writeBuffer);
 }
 
 void CmdInterpreter::s_mirror(Peer& peer)
@@ -201,53 +176,10 @@ void CmdInterpreter::s_leave(Peer& peer)
 /* Commands with arguments						*/
 void CmdInterpreter::_ttl(Peer& peer)
 {
-	std::string_view uid, portNum;
-	auto ipAddress = std::ref(uid);
-
-	if (_extractElement(peer.receivedData, uid))
-	{
-		if (_isUID(uid))
-		{
-			if (uid.size() == V4_UID_MAX_CHAR)
-			{
-				sourcePairV4 sourcePair;
-				cppcodec::base64_rfc4648::decode(sourcePair.data(), sourcePair.size(), uid);
-				_print_ttl(peer, sourcePair);
-			}
-			else
-			{
-				sourcePairV6 sourcePair;
-				cppcodec::base64_rfc4648::decode(sourcePair.data(), sourcePair.size(), uid);
-				_print_ttl(peer, sourcePair);
-			}
-		}
-		else if (_extractElement(peer.receivedData, portNum))
-		{
-			SourcePair sourcePair;
-			_makeSourcePair(ipAddress, portNum, sourcePair);
-			if (sourcePair.version == Version::V4)
-				_print_ttl(peer, sourcePair.SP.SPV4);
-			else
-				_print_ttl(peer, sourcePair.SP.SPV6);
-		}
-		else
-			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
-	}
-	else
-	{
-		if (peer.peerEntry.Ev->inDirectory())
-		{
-			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
-		}
-		else
-			peer.writeBuffer += RESP[(short)Response::NO_EXIST];
-	}
 }
 
 void CmdInterpreter::_remove(Peer& peer)
 {
-
 }
 
 void CmdInterpreter::_flush(Peer& peer)
@@ -260,24 +192,12 @@ void CmdInterpreter::_update(Peer& peer)
 
 void CmdInterpreter::_add(Peer& peer)
 {
-	auto response = Directory::addEntry(peer.peerEntry.Ev);
-	peer.writeBuffer += RESP[(short)response] + " ";
-	peer.peerEntry.Ev->printUID(peer.writeBuffer);
 }
 
 void CmdInterpreter::_search(Peer& peer)
 {
-	if (!peer.peerEntry.Ev->inDirectory())
-		peer.writeBuffer += RESP[(short)Response::NO_EXIST];
-	else
-	{
-		peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-		peer.peerEntry.Ev->printExpand(peer.writeBuffer);
-	}
 }
 
 void CmdInterpreter::_charge(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.writeBuffer += std::to_string((short)TTL::RESTRICTED_TTL);
 }

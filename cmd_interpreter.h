@@ -1,5 +1,4 @@
 #pragma once
-#include "cppcodec/base64_rfc4648.hpp"
 #include "peer.h"
 
 class CmdInterpreter
@@ -15,9 +14,6 @@ class CmdInterpreter
 	static void _remove(Peer&);
 	static void _flush(Peer&);
 	static void _update(Peer&);
-
-	template<typename sourcePairT>
-	static void _print_ttl(Peer&, sourcePairT&);
 	static void _ttl(Peer&);
 
 /*******************************************************************************************
@@ -37,18 +33,6 @@ class CmdInterpreter
 * @return						True if the strig view is an UID
 ********************************************************************************************/
 	static bool _isUID(const std::string_view&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] ipAddrStr			String view of the ip address
-* @param[in] portNum			String view of the port number
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
-********************************************************************************************/
-	static bool _makeSourcePair(std::string_view&, std::string_view&, SourcePair&);
 /*******************************************************************************************
 * @brief Return true for valid port number
 *
@@ -89,19 +73,6 @@ public:
 	template <typename IPaddress,typename sourcePair>
 	static void makeSourcePair(const IPaddress&, unsigned short, sourcePair&);
 };
-
-template<typename sourcePairT>
-inline void CmdInterpreter::_print_ttl(Peer& peer, sourcePairT& sourcePair)
-{
-	auto entry = Directory::findEntry(sourcePair);
-	if (entry != nullptr)
-	{
-		peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-		entry->printTTL(peer.writeBuffer);
-	}
-	else
-		peer.writeBuffer += RESP[(short)Response::NO_EXIST];
-}
 
 template <typename Data>
 inline void CmdInterpreter::byteSwap(Data& portNumber)

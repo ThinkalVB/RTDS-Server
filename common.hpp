@@ -117,13 +117,3 @@ struct Permission
 	Privilege change;
 	Privilege remove;
 };
-
-struct SourcePair
-{
-	union __sourcePair
-	{
-		sourcePairV4 SPV4;
-		sourcePairV6 SPV6;
-	}SP;
-	Version version;
-};

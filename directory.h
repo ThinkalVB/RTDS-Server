@@ -9,152 +9,55 @@ class Directory
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
-	static int entryCount;									//!< Count the number on entries in the directory
-	
+
 /*******************************************************************************************
-* @brief Return the maximum privilege the command issuing entry have
+* @brief Return a pointer to the EntryV4 or EntryV4
 *
-* @param[in] entry				The Entry in which the change is taking place.
-* @param[in] cmdEntry			The entry associated with the command issuing peer.
-* @return						The maximum privilage the comEntry have on entry.
+* @param[in] sourcePair			The sourcePair address
+* @return						The pointer to the EntryV4 or EntryV6
 *
 * @details
-* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
-* Both have the same IPv6 address - return Privilege::PROTECTED_ENTRY;
+* Find the pointer to the EntryV4 or EntryV6 if it exists in the map.
 ********************************************************************************************/
-	template <typename EntryPtr>
-	static Privilege _maxPrivilege(EntryPtr*, EntryPtr*);
-
-	template <typename EntryPtrT1,typename EntryPtrT2>
-	static Privilege _maxPrivilege(EntryPtrT1*, EntryPtrT2*);
+	static __base_entry* _findEntry(const sourcePairV4&);
+	static __base_entry* _findEntry(const sourcePairV6&);
 
 public:
 /*******************************************************************************************
-* @brief Return the number of entries in the directory
+* @brief Return a pointer to V4/V6 Entry for the given IPv4/IPv6 address and port number
 *
-* @return						The total number on entries in directory.
-********************************************************************************************/
-	static int getEntryCount();
-/*******************************************************************************************
-* @brief Return a pointer to V4 Entry for the given IP4 address and port number
-*
-* @param[in] ipAddr				The IPv4 address
+* @param[in] ipAddr				The IPv4/IPv6 address
 * @param[in] portNum			The port number
-* @return						The pointer to the V4Entry
+* @return						The pointer to the V4/V6 Entry
 *
 * @details
-* Make a sourcePairV4 with the provided address and port number.
+* Make a sourcePair V4/V6 with the provided address and port number.
 * Do insertion lock and check if an entry exists, yes then return it's pointer.
 * No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
-* Values of portNumber, UID, sourcePortV4 address and IP4 address will be initialized.
+* Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
 ********************************************************************************************/
-	static EntryV4* makeEntry(asio::ip::address_v4, unsigned short);
+	static __base_entry* makeEntry(asio::ip::address_v4, unsigned short);
+	static __base_entry* makeEntry(asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
-* @brief Return a pointer to V6 Entry for the given IP6 address and port number
+* @brief Add the entry to the Directory 
 *
-* @param[in] ipAddr				The IPv6 address
-* @param[in] portNum			The port number
-* @return						The pointer to the V6Entry
+* @param[in] entry				The entry to be added to the directory
+* @return						The Response to the operation.
 *
 * @details
-* Make a sourcePairV6 with the provided address and port number.
-* Do insertion lock and check if an entry exists, yes then return it's pointer.
-* No entry exists then generate EntryV6 dynamically, insert it to map and return it's pointer.
-* Values of portNumber, UID, sourcePortV6 address and IP6 address will be initialized.
+* Ensure the entry didn't expired and return SUCCESS if the entry is added to the directory.
+* Return REDUDANT_DATA if the entry is already in the directory.
 ********************************************************************************************/
-	static EntryV6* makeEntry(asio::ip::address_v6, unsigned short);
+	static Response addToDirectory(__base_entry*);
 /*******************************************************************************************
-* @brief Return a pointer to V4 Entry for the given sourcepair address
+* @brief Get the Time to Live for that entry
 *
-* @param[in] ipAddr				The IPv4 source pair
-* @return						The pointer to the V4Entry or nullptr
+* @param[in] entry				The entry to be added to the directory
+* @param[out] ttl				The TTL for the entry
+* @return						Return SUCCESS if the entry have a TTL
 *
 * @details
-* Search the sourcePortV4 address in the map and check if isInDirectory.
-* If entry exists and is not expired then return the EntryV4* else return nullptr.
+* Ensure the entry didn't expired and return SUCCESS if the entry have a TTL.
 ********************************************************************************************/
-	static EntryV4* findEntry(const sourcePairV4&);
-/*******************************************************************************************
-* @brief Return a pointer to V6 Entry for the given sourcepair address
-*
-* @param[in] ipAddr				The IPv6 source pair
-* @return						The pointer to the V6Entry or nullptr
-*
-* @details
-* Search the sourcePortV6 address in the map and check if isInDirectory.
-* If entry exists and is not expired then return the EntryV6* else return nullptr.
-********************************************************************************************/
-	static EntryV6* findEntry(const sourcePairV6&);
-/*******************************************************************************************
-* @brief Add the entry to the directory [Only call if the entry is inserting itself]
-*
-* @param[in] entry				Pointer to V4Entry || V6Entry || entryBase
-* @return						The reponse for the issued command
-*
-* @details
-* Add the entry only if it's not in the directory aka isInDirectory = false.
-* Make all permission - privilege = Privilege::PROTECTED_ENTRY (by default). 
-* Set isInDIrectory = true indicating that the entry is now in the directory. Increment entry count.
-********************************************************************************************/
-	template <typename EntryPtr>
-	static Response addEntry(EntryPtr*);
+	static Response getTTL(__base_entry*, short&);
 };
-
-
-template <typename EntryPtr>
-inline Response Directory::addEntry(EntryPtr* entry)
-{
-	if (entry->isInDirectory)
-		return Response::REDUDANT_DATA;
-	else
-	{
-		entryCount++;
-		entry->isInDirectory = true;
-		entry->permission.charge = Privilege::PROTECTED_ENTRY;
-		entry->permission.change = Privilege::PROTECTED_ENTRY;
-		entry->permission.remove = Privilege::PROTECTED_ENTRY;
-		return Response::SUCCESS;
-	}
-}
-
-template <typename EntryPtr>
-inline Privilege Directory::_maxPrivilege(EntryPtr* entry, EntryPtr* cmdEntry)
-{
-	if (std::memcmp((void*)entry->sourcePair[0], (void*)cmdEntry->sourcePair[0], (entry->sourcePair.size() - 2)) == 0)
-		return Privilege::PROTECTED_ENTRY;
-	else
-		return Privilege::LIBERAL_ENTRY;
-}
-
-template<typename EntryPtrT1, typename EntryPtrT2>
-inline Privilege Directory::_maxPrivilege(EntryPtrT1* entry, EntryPtrT2* cmdEntry)
-{
-	return Privilege::LIBERAL_ENTRY;
-}
-
-/*******************************************************************************************
-* @brief Return a pointer to V4 Entry for the given IP4 address and port number
-*
-* @param[in] ipAddr				The IPv4 address
-* @param[in] portNum			The port number
-* @return						The pointer to the V4Entry or nullptr
-*
-* @details
-* Make a sourcePairV4 with the provided address and port number.
-* Search the sourcePortV4 address in the map and check if the entry have expired.
-* If entry exists and is not expired then return the EntryV4* else return nullptr.
-********************************************************************************************/
-//static EntryV4* findEntry(asio::ip::address_v4&, unsigned short);
-/*******************************************************************************************
-* @brief Return a pointer to V6 Entry for the given IP6 address and port number
-*
-* @param[in] ipAddr				The IP64 address
-* @param[in] portNum			The port number
-* @return						The pointer to the V6Entry or nullptr
-*
-* @details
-* Make a sourcePairV6 with the provided address and port number.
-* Search the sourcePortV6 address in the map and check if the entry have expired.
-* If entry exists and is not expired then return the EntryV6* else return nullptr.
-********************************************************************************************/
-//static EntryV6* findEntry(asio::ip::address_v6&, unsigned short);

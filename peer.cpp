@@ -1,7 +1,7 @@
 #include "peer.h"
 #include <boost/bind.hpp>
-#include "directory.h"
 #include "cmd_interpreter.h"
+#include "directory.h"
 #include "log.h"
 
 short Peer::peerCount = 0;
@@ -15,9 +15,9 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	remoteEp = socketPtr->remote_endpoint();
 
 	if (remoteEp.address().is_v4())
-		peerEntry.Ev4 = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry.Ev = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
 	else
-		peerEntry.Ev6 = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry.Ev = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
 
 	peerEntry.Ev->attachToPeer();
 	_peerReceiveData();
@@ -57,8 +57,6 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 
 void Peer::_sendPeerData()
 {
-	if (writeBuffer.size() == 0)
-		writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
 	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
@@ -100,11 +98,8 @@ void Peer::removeFromMirroringGroup()
 	if (isMirroring)
 	{
 		isMirroring = false;
-		if (mirroringGroup.size() > 1) 
-		{
-			auto itr = std::find(mirroringGroup.begin(), mirroringGroup.end(), this);
-			std::iter_swap(itr, mirroringGroup.end() - 1);
-		}
+		auto itr = std::find(mirroringGroup.begin(), mirroringGroup.end(), this);
+		std::iter_swap(itr, mirroringGroup.end() - 1);
 		mirroringGroup.pop_back();
 	}
 }
