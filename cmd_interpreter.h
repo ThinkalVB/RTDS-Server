@@ -1,5 +1,6 @@
 #pragma once
 #include "peer.h"
+#include "sp_entry.h"
 
 class CmdInterpreter
 {
@@ -28,11 +29,11 @@ class CmdInterpreter
 ********************************************************************************************/
 	static bool _extractElement(std::string_view&, std::string_view&);
 /*******************************************************************************************
-* @brief Find if the string is an UID
+* @brief Find if the string is an Base64 encoded text
 *
-* @return						True if the strig view is an UID
+* @return						True if the strig view is a base64 text
 ********************************************************************************************/
-	static bool _isUID(const std::string_view&);
+	static bool _isBase64(const std::string_view&);
 /*******************************************************************************************
 * @brief Return true for valid port number
 *
@@ -43,7 +44,31 @@ class CmdInterpreter
 * @details
 * Return true and a valid portNum if the string view is a valid port number. Else return false.
 ********************************************************************************************/
-	static bool _validPortNumber(std::string_view&, unsigned short&);
+	static bool _validPortNumber(const std::string_view&, unsigned short&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[in] portNum			String view of the port number
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
+********************************************************************************************/
+	static bool _makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for UID is valid.
+********************************************************************************************/
+	static bool _makeSourcePair(const std::string_view&, SourcePair&);
+
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.

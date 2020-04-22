@@ -38,8 +38,8 @@ protected:
 	bool isInDirectory = false;					//!< True if the entry is a directory entry.
 	posix_time::ptime lastChargT;				//!< The time at which this entry was last charged.
 	posix_time::ptime createdT;					//!< The time at which this entry was added to the directory.
-
-	std::mutex accessLock;						//!< Lock these mutex when accessing or modfying data.
+			
+	std::recursive_mutex accessLock;			//!< Lock these mutex when accessing or modfying data.
 	std::string UID;							//!< Base 64 encoding of the source pair address.	
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
@@ -71,6 +71,16 @@ protected:
 * [Not thread safe]
 ********************************************************************************************/
 	bool inDirectory();
+/*******************************************************************************************
+* @brief Return the maximum privilage cmdEntry have on this entry
+*
+* @param[in] cmdEntry			The command issuing entry
+* @return						Return the maximum privilage
+*
+* @details
+* [Not thread safe]
+********************************************************************************************/
+	Privilege maxPrivilege(__base_entry*);
 
 public:
 /*******************************************************************************************
@@ -116,7 +126,7 @@ class SPentry : public __base_entry
 {
 	SPentry(SP&, IPaddrT&, unsigned short);
 	const SP sourcePair;
-
+public:
 /*******************************************************************************************
 * @brief Return the maximum privilege the command issuing entry have
 *
@@ -178,7 +188,7 @@ struct SourcePair
 	union __source_pair
 	{
 		sourcePairV4 V4;
-		sourcePairV6 v6;
+		sourcePairV6 V6;
 	}SP;
 	Version version;
 };
@@ -186,9 +196,10 @@ struct SourcePair
 template<typename SP, typename IPaddrT>
 inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(__base_entry* cmdEntry)
 {
-	if (version == cmdEntry.version)
+	if (version == cmdEntry->getVersion())
 	{
-		if (std::memcmp((void*)sourcePair[0], (void*)((SPentry*)cmdEntry)->sourcePair[0], (sourcePair.size() - 2)) == 0)
+		auto cmdEntrySP = (void*)&((SPentry*)cmdEntry)->sourcePair[0];
+		if (std::memcmp((void*)&sourcePair[0], cmdEntrySP, sourcePair.size() - 2) == 0)
 			return Privilege::PROTECTED_ENTRY;
 		else
 			return Privilege::LIBERAL_ENTRY;

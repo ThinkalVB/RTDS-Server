@@ -9,18 +9,20 @@ class Directory
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
+	static int entryCount;
 
 /*******************************************************************************************
-* @brief Return a pointer to the EntryV4 or EntryV4
+* @brief Return a pointer to the base class
 *
 * @param[in] sourcePair			The sourcePair address
-* @return						The pointer to the EntryV4 or EntryV6
+* @return						The pointer to the entry base class or nullptr
 *
 * @details
-* Find the pointer to the EntryV4 or EntryV6 if it exists in the map.
+* Find the pointer to the Entry's base class if it exists in the map.
 ********************************************************************************************/
 	static __base_entry* _findEntry(const sourcePairV4&);
 	static __base_entry* _findEntry(const sourcePairV6&);
+	static __base_entry* _findEntry(const SourcePair&);
 
 public:
 /*******************************************************************************************
@@ -39,7 +41,7 @@ public:
 	static __base_entry* makeEntry(asio::ip::address_v4, unsigned short);
 	static __base_entry* makeEntry(asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
-* @brief Add the entry to the Directory 
+* @brief Add the entry to the Directory (add itself)
 *
 * @param[in] entry				The entry to be added to the directory
 * @return						The Response to the operation.
@@ -48,7 +50,23 @@ public:
 * Ensure the entry didn't expired and return SUCCESS if the entry is added to the directory.
 * Return REDUDANT_DATA if the entry is already in the directory.
 ********************************************************************************************/
-	static Response addToDirectory(__base_entry*);
+	static Response addToDir(__base_entry*);
+/*******************************************************************************************
+* @brief Remove the entry from the directory (remove itself)
+*
+* @param[in] entry				The entry to be added to the directory
+* @return						The Response to the operation.
+*
+* @details
+* If the entry is in directory, remove it and return SUCCESS.
+* Return NO_EXIST if the entry is not present in the directory.
+********************************************************************************************/
+	static Response removeFromDir(__base_entry*);
+	static Response removeFromDir(const SourcePair&, __base_entry*);
+
+
+
+
 /*******************************************************************************************
 * @brief Get the Time to Live for that entry
 *
@@ -60,4 +78,21 @@ public:
 * Ensure the entry didn't expired and return SUCCESS if the entry have a TTL.
 ********************************************************************************************/
 	static Response getTTL(__base_entry*, short&);
+/*******************************************************************************************
+* @brief Get the Time to Live for that source pair
+*
+* @param[in] sourcePair			The source pair address to the entry
+* @param[out] ttl				The TTL for the entry
+* @return						Return SUCCESS if the entry have a TTL
+*
+* @details
+* Search for the source pair address in maps and return TTL on SUCCESS.
+********************************************************************************************/
+	static Response getTTL(const SourcePair&, short&);
+/*******************************************************************************************
+* @brief Get the total number of entries in the directory
+*
+* @return						Return the total number of entries in the directory
+********************************************************************************************/
+	static int getEntryCount();
 };

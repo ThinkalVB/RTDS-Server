@@ -6,6 +6,7 @@ std::map<sourcePairV6, EntryV6*> Directory::V6EntryMap;
 
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
+int Directory::entryCount = 0;
 
 __base_entry* Directory::_findEntry(const sourcePairV4& sourcePair)
 {
@@ -23,6 +24,14 @@ __base_entry* Directory::_findEntry(const sourcePairV6& sourcePair)
 		return entry->second;
 	else
 		return nullptr;
+}
+
+__base_entry* Directory::_findEntry(const SourcePair& sourcePair)
+{
+	if (sourcePair.version == Version::V4)
+		return _findEntry(sourcePair.SP.V4);
+	else
+		return _findEntry(sourcePair.SP.V6);
 }
 
 
@@ -56,21 +65,53 @@ __base_entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short po
 	return entryPtr;
 }
 
-Response Directory::addToDirectory(__base_entry* entry)
+Response Directory::addToDir(__base_entry* entry)
 {
-	std::lock_guard<std::mutex> lock(entry->accessLock);
+	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
 		return Response::REDUDANT_DATA;
 	else
 	{
 		entry->isInDirectory = true;
+		entryCount++;
 		return Response::SUCCESS;
 	}
 }
 
+Response Directory::removeFromDir(__base_entry* entry)
+{
+	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
+	if (entry->inDirectory())
+	{
+		entry->isInDirectory = false;
+		entryCount--;
+		return Response::SUCCESS;
+	}
+	else
+		return Response::NO_EXIST;
+}
+
+Response Directory::removeFromDir(const SourcePair& sourcePair, __base_entry* cmdEntry)
+{
+	auto entry = _findEntry(sourcePair);
+	if (entry == nullptr)
+		return Response::NO_EXIST;
+	else if (entry == cmdEntry)
+		return removeFromDir(entry);
+	else
+	{
+		std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
+		auto maxPrivilege = entry->maxPrivilege(cmdEntry);
+		if (maxPrivilege >= entry->permission.remove)
+			return removeFromDir(entry);
+		else
+			return Response::NO_PRIVILAGE;
+	}
+}
+	
 Response Directory::getTTL(__base_entry* entry, short& ttl)
 {
-	std::lock_guard<std::mutex> lock(entry->accessLock);
+	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
 	{
 		ttl = entry->getTTL();
@@ -78,4 +119,20 @@ Response Directory::getTTL(__base_entry* entry, short& ttl)
 	}
 	else
 		return Response::NO_EXIST;
+}
+
+Response Directory::getTTL(const SourcePair& sourcePair, short& ttl)
+{
+	auto entry = _findEntry(sourcePair);	
+	if (entry == nullptr)
+		return Response::NO_EXIST;
+	else
+		return getTTL(entry, ttl);
+}
+
+int Directory::getEntryCount()
+{
+	std::lock_guard<std::mutex> lock1(V4insertionLock);
+	std::lock_guard<std::mutex> lock2(V6insertionLock);
+	return entryCount;
 }

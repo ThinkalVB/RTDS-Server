@@ -32,6 +32,14 @@ bool __base_entry::inDirectory()
 	return isInDirectory;
 }
 
+Privilege __base_entry::maxPrivilege(__base_entry* cmdEntry)
+{
+	if (version == Version::V4)
+		return ((EntryV4*)this)->maxPrivilege(cmdEntry);
+	else
+		return ((EntryV6*)this)->maxPrivilege(cmdEntry);
+}
+
 void __base_entry::printBrief(std::string& strBuffer)
 {
 	if (version == Version::V4)
