@@ -37,16 +37,12 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 		#ifdef PRINT_LOG
 		Log::log("TCP Socket _processData() failed", peerSocket, ec);
 		#endif
-		delete this;
+		terminatePeer();
 	}
 	else
 	{
-		if (dataBuffer[size - 1] == ';')
-		{
-			dataBuffer[size - 1] = '\0';
-			receivedData = dataBuffer;
+		if (CmdInterpreter::populateElement(*this, size))
 			CmdInterpreter::processCommand(*this);
-		}
 		else
 		{
 			writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
@@ -68,13 +64,19 @@ void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 		#ifdef PRINT_LOG
 		Log::log("TCP Socket _sendData() failed", peerSocket, ec);
 		#endif
-		delete this;
+		terminatePeer();
 	}
 	else
 	{
 		writeBuffer.clear();
 		_peerReceiveData();
 	}
+}
+
+void Peer::terminatePeer()
+{
+	peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+	delete this;
 }
 
 short Peer::getPeerCount()
@@ -102,6 +104,11 @@ void Peer::removeFromMirroringGroup()
 		std::iter_swap(itr, mirroringGroup.end() - 1);
 		mirroringGroup.pop_back();
 	}
+}
+
+__base_entry* Peer::entry()
+{
+	return peerEntry.Ev;
 }
 
 Peer::~Peer()

@@ -166,6 +166,21 @@ SPentry<SP, IPaddrT>::SPentry(SP& srcPair, IPaddrT& ipAdd, unsigned short portNu
 		version = Version::V6;
 }
 
+template<typename SP, typename IPaddrT>
+inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(__base_entry* cmdEntry)
+{
+	if (version == cmdEntry->getVersion())
+	{
+		auto cmdEntrySP = (void*)&((SPentry*)cmdEntry)->sourcePair[0];
+		if (std::memcmp((void*)&sourcePair[0], cmdEntrySP, sourcePair.size() - 2) == 0)
+			return Privilege::PROTECTED_ENTRY;
+		else
+			return Privilege::LIBERAL_ENTRY;
+	}
+	else
+		return Privilege::LIBERAL_ENTRY;
+}
+
 typedef SPentry<sourcePairV4, asio::ip::address_v4> EntryV4;
 typedef SPentry<sourcePairV6, asio::ip::address_v6> EntryV6;
 
@@ -193,17 +208,29 @@ struct SourcePair
 	Version version;
 };
 
-template<typename SP, typename IPaddrT>
-inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(__base_entry* cmdEntry)
+/*******************************************************************************************
+ * @brief Struct to hold individual command elements
+ *
+* @details
+* This is an optimized container and shoudn't be used for any other purpose than populating elements.
+* Before using pop_front(),push_back(), peek() and peek_next() explicit bound checks must be done.
+* Populating the container must be done in a single stretch using push_back().
+* After populating the container, call reset_for_read() to start reading.
+* Before begining the push_back() streak call reset() once.
+ ********************************************************************************************/
+struct CommandElement
 {
-	if (version == cmdEntry->getVersion())
-	{
-		auto cmdEntrySP = (void*)&((SPentry*)cmdEntry)->sourcePair[0];
-		if (std::memcmp((void*)&sourcePair[0], cmdEntrySP, sourcePair.size() - 2) == 0)
-			return Privilege::PROTECTED_ENTRY;
-		else
-			return Privilege::LIBERAL_ENTRY;
-	}
-	else
-		return Privilege::LIBERAL_ENTRY;
-}
+private:
+	std::string_view element[5];
+	size_t _size;
+	size_t _index;
+public:
+	const size_t& size();
+	void reset_for_read();
+	void reset();
+
+	const std::string_view& pop_front();
+	const std::string_view& peek();
+	const std::string_view& peek_next();
+	void push_back(std::string_view);
+};

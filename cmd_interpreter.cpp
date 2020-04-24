@@ -7,8 +7,10 @@
 using namespace boost;
 #define V4_UID_MAX_CHAR 8
 #define V6_UID_MAX_CHAR 24
+
 #define PORT_NUM_MAX_CHAR 5
 #define MAX_PORT_NUM_VALUE 65535
+#define MAX_DESC_SIZE 202
 
 const std::string CmdInterpreter::RESP[] = 
 {
@@ -37,46 +39,64 @@ const std::string CmdInterpreter::COMM[] =
 	"exit"
 };
 
-bool CmdInterpreter::_extractElement(std::string_view& commandLine, std::string_view& element)
+bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
 {
-	auto cmdSize = commandLine.size();
-	auto endIndex = commandLine.find_first_not_of(' ');
-	commandLine.remove_prefix(std::min(endIndex, cmdSize));
-
-	cmdSize = commandLine.size();
-	if (cmdSize > 0)
+	std::string_view commandLine;
+	if (peer.dataBuffer[size - 1] == ';')
 	{
-		if (commandLine[0] == '[')
+		peer.dataBuffer[size - 1] = '\0';
+		commandLine = peer.dataBuffer;
+		peer.cmdElement.reset();
+	}
+	else
+		return false;
+
+	while (!commandLine.empty())
+	{
+		if (peer.cmdElement.size() == 5)
+			return false;
+
+		auto cmdSize = commandLine.size();
+		auto endIndex = commandLine.find_first_not_of(' ');
+		commandLine.remove_prefix(std::min(endIndex, cmdSize));
+
+		cmdSize = commandLine.size();
+		if (cmdSize > 0)
 		{
-			endIndex = commandLine.find_last_of(']');
-			if (endIndex == std::string::npos)
+			if (commandLine[0] == '[')
 			{
-				commandLine.remove_prefix(cmdSize);
-				return false;
+				endIndex = commandLine.find_last_of(']');
+				if (endIndex == std::string::npos)
+					return false;
+				else
+				{
+					peer.cmdElement.push_back(commandLine.substr(0, endIndex + 1));
+					commandLine.remove_prefix(cmdSize);
+				}
 			}
 			else
 			{
-				element = commandLine.substr(0, endIndex + 1);
-				commandLine.remove_prefix(cmdSize);
-				return true;
+				endIndex = commandLine.find(' ');
+				if (endIndex == std::string::npos)
+				{
+					peer.cmdElement.push_back(commandLine);
+					break;
+				}
+				else
+				{
+					peer.cmdElement.push_back(commandLine.substr(0, endIndex));
+					commandLine.remove_prefix(endIndex);
+				}
 			}
 		}
 		else
-		{
-			endIndex = commandLine.find(' ');
-			if (endIndex == std::string::npos)
-			{
-				element = commandLine;
-				commandLine.remove_prefix(cmdSize);
-			}
-			else
-			{
-				element = commandLine.substr(0, endIndex);
-				commandLine.remove_prefix(endIndex);
-			}
-			return true;
+			break;
+	}
 
-		}
+	if (peer.cmdElement.size() > 0)
+	{
+		peer.cmdElement.reset_for_read();
+		return true;
 	}
 	else
 		return false;
@@ -86,6 +106,19 @@ bool CmdInterpreter::_isBase64(const std::string_view& uid)
 {
 	std::regex regx("[a-zA-Z0-9\+/]*");
 	return std::regex_match(uid.cbegin(), uid.cend(), regx);
+}
+
+bool CmdInterpreter::_isDescription(const std::string_view& desc)
+{
+	if (desc[0] == '[' && desc[desc.size() - 1] == ']' && desc.size() <= MAX_DESC_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdInterpreter::_isPermission(const std::string_view& permission)
+{
+	std::regex regx("[plr]{3}");
+	return std::regex_match(permission.cbegin(), permission.cend(), regx);
 }
 
 bool CmdInterpreter::_validPortNumber(const std::string_view& portNumStr, unsigned short& portNum)
@@ -155,48 +188,45 @@ bool CmdInterpreter::_makeSourcePair(const std::string_view& uid, SourcePair& so
 
 void CmdInterpreter::processCommand(Peer& peer)
 {
-	std::string_view command;
-	if (_extractElement(peer.receivedData, command))
+	auto command = peer.cmdElement.pop_front();
+	if (command == COMM[(short)Command::PING] && peer.cmdElement.size() == 0)
+		s_ping(peer);
+	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement.size() == 0)
+		s_count(peer);
+	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement.size() == 0)
+		s_mirror(peer);
+	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement.size() == 0)
+		s_leave(peer);
+	else if (command == COMM[(short)Command::ADD])
+		_add(peer);
+	else if (command == COMM[(short)Command::SEARCH])
+		_search(peer);
+	else if (command == COMM[(short)Command::CHARGE])
+		_charge(peer);
+	else if (command == COMM[(short)Command::TTL])
+		_ttl(peer);
+	else if (command == COMM[(short)Command::REMOVE])
+		_remove(peer);
+	else if (command == COMM[(short)Command::FLUSH])
+		_flush(peer);
+	else if (command == COMM[(short)Command::UPDATE])
+		_update(peer);
+	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement.size() == 0)
 	{
-		if (command == COMM[(short)Command::PING])
-			s_ping(peer);
-		else if (command == COMM[(short)Command::COUNT])
-			s_count(peer);
-		else if (command == COMM[(short)Command::MIRROR])
-			s_mirror(peer);
-		else if (command == COMM[(short)Command::LEAVE])
-			s_leave(peer);
-		else if (command == COMM[(short)Command::ADD])
-			_add(peer);
-		else if (command == COMM[(short)Command::SEARCH])
-			_search(peer);
-		else if (command == COMM[(short)Command::CHARGE])
-			_charge(peer);
-		else if (command == COMM[(short)Command::TTL])
-			_ttl(peer);
-		else if (command == COMM[(short)Command::REMOVE])
-			_remove(peer);
-		else if (command == COMM[(short)Command::FLUSH])
-			_flush(peer);
-		else if (command == COMM[(short)Command::UPDATE])
-			_update(peer);
-		else if (command == COMM[(short)Command::EXIT])
-		{
-			peer.peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
-			return;
-		}
+		peer.terminatePeer();
+		return;
 	}
+
 	if (peer.writeBuffer.size() == 0)
 		peer.writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
 	peer._sendPeerData();
 }
 
-
 /* Commands without any arguments				*/		
 void CmdInterpreter::s_ping(Peer& peer)
 {
 	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.peerEntry.Ev->printBrief(peer.writeBuffer);
+	peer.entry()->printBrief(peer.writeBuffer);
 }
 
 void CmdInterpreter::s_count(Peer& peer)
@@ -220,28 +250,22 @@ void CmdInterpreter::s_leave(Peer& peer)
 /* Commands with arguments						*/
 void CmdInterpreter::_ttl(Peer& peer)
 {
-	std::string_view uid, portNum;
-	auto ipAddress = std::ref(uid);
-
 	Response response = Response::BAD_PARAM;
+	SourcePair sourcePair;
 	short ttl;
 
-	if (_extractElement(peer.receivedData, uid))
+	if (peer.cmdElement.size() == 0)
+		response = Directory::getTTL(peer.entry(), ttl);
+	else if (peer.cmdElement.size() == 1)
 	{
-		SourcePair sourcePair;
-		if (_isBase64(uid))
-		{
-			if (_makeSourcePair(uid, sourcePair))
-				response = Directory::getTTL(sourcePair, ttl);
-		}
-		else if (_extractElement(peer.receivedData, portNum))
-		{
-			if (_makeSourcePair(ipAddress, portNum, sourcePair))
-				response = Directory::getTTL(sourcePair, ttl);
-		}
+		if (_isBase64(peer.cmdElement.peek()) && _makeSourcePair(peer.cmdElement.peek(), sourcePair))
+			response = Directory::getTTL(sourcePair, ttl);
 	}
-	else
-		response = Directory::getTTL(peer.peerEntry.Ev, ttl);
+	else if (peer.cmdElement.size() == 2)
+	{
+		if (_makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
+			response = Directory::getTTL(sourcePair, ttl);
+	}
 
 	peer.writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS)
@@ -250,26 +274,21 @@ void CmdInterpreter::_ttl(Peer& peer)
 
 void CmdInterpreter::_remove(Peer& peer)
 {
-	std::string_view uid, portNum;
-	auto ipAddress = std::ref(uid);
-
 	Response response = Response::BAD_PARAM;
-	if (_extractElement(peer.receivedData, uid))
+	SourcePair sourcePair;
+
+	if (peer.cmdElement.size() == 0)
+		response = Directory::removeFromDir(peer.entry());
+	else if (peer.cmdElement.size() == 1)
 	{
-		SourcePair sourcePair;
-		if (_isBase64(uid))
-		{
-			if (_makeSourcePair(uid, sourcePair))
-				response = Directory::removeFromDir(sourcePair, peer.peerEntry.Ev);
-		}
-		else if (_extractElement(peer.receivedData, portNum))
-		{
-			if (_makeSourcePair(ipAddress, portNum, sourcePair))
-				response = Directory::removeFromDir(sourcePair, peer.peerEntry.Ev);
-		}
+		if (_isBase64(peer.cmdElement.peek()) && _makeSourcePair(peer.cmdElement.peek(), sourcePair))
+			response = Directory::removeFromDir(sourcePair, peer.entry());
 	}
-	else
-		response = Directory::removeFromDir(peer.peerEntry.Ev);
+	else if (peer.cmdElement.size() == 2)
+	{
+		if (_makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
+			response = Directory::removeFromDir(sourcePair, peer.entry());
+	}
 	peer.writeBuffer += RESP[(short)response];
 }
 
@@ -283,9 +302,13 @@ void CmdInterpreter::_update(Peer& peer)
 
 void CmdInterpreter::_add(Peer& peer)
 {
-	auto response = Directory::addToDir(peer.peerEntry.Ev);
+
+
+
+
+	auto response = Directory::addToDir(peer.entry());
 	peer.writeBuffer += RESP[(short)response] + " ";
-	peer.peerEntry.Ev->printUID(peer.writeBuffer);
+	peer.entry()->printUID(peer.writeBuffer);
 }
 
 void CmdInterpreter::_search(Peer& peer)
@@ -294,4 +317,24 @@ void CmdInterpreter::_search(Peer& peer)
 
 void CmdInterpreter::_charge(Peer& peer)
 {
+	Response response = Response::BAD_PARAM;
+	SourcePair sourcePair;
+	short newTTL;
+	
+	if (peer.cmdElement.size() == 0)
+		response = Directory::charge(peer.entry(), newTTL);
+	else if (peer.cmdElement.size() == 1)
+	{
+		if (_isBase64(peer.cmdElement.peek()) && _makeSourcePair(peer.cmdElement.peek(), sourcePair))
+			response = Directory::charge(sourcePair, peer.entry(), newTTL);
+	}
+	else if (peer.cmdElement.size() == 2)
+	{
+		if (_makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
+			response = Directory::charge(sourcePair, peer.entry(), newTTL);
+	}
+
+	peer.writeBuffer += RESP[(short)response];
+	if (response == Response::SUCCESS)
+		peer.writeBuffer += " " + std::to_string(newTTL);
 }

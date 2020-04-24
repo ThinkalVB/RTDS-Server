@@ -11,16 +11,11 @@ class Peer
 	static short peerCount;						//!< Keep the total count of peers
 	static std::vector<Peer*> mirroringGroup;	//!< Keep the list of peers mirroring the directory
 	static std::mutex mirroringListLock;		//!< Lock this mutex when accessing the mirrorGroup
-
+	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
 
 	asio::ip::tcp::socket* peerSocket;			//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;			//!< Endpoint of the peerSocket with info on peer system
 	bool isMirroring = false;					//!< True if this peer is in mirroring mode
-	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
-
-	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
-	std::string_view receivedData;				//!< The string representation of the dataBuffer
-	std::string writeBuffer;					//!< Buffer from which the response will be send
 
 /*******************************************************************************************
  * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
@@ -30,15 +25,6 @@ class Peer
  * The callback function will be called even if thier is a error in tcp connection.
  ********************************************************************************************/
 	void _peerReceiveData();
-/*******************************************************************************************
-* @brief Shedule a send for writeBuffer contents to the peer system
-*
-* @details
-* The callback function _sendData() will be invoked after the data is send.
-* If the write buffer is empty then a bad_command response will be send.
-* The callback function will be called even if thier is a error in tcp connection.
-********************************************************************************************/
-	void _sendPeerData();
 /*******************************************************************************************
 * @brief The callback function for getting (new data / socket error)
 *
@@ -64,8 +50,12 @@ class Peer
 * If the connection is ok then, clear the write buffer and register for next receive.
 ********************************************************************************************/
 	void _sendData(const boost::system::error_code&, std::size_t);
-
 public:
+
+	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
+	CommandElement cmdElement;					//!< String view Array of command elements
+	std::string writeBuffer;					//!< Buffer from which the response will be send
+
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
 *
@@ -85,6 +75,15 @@ public:
 ********************************************************************************************/
 	~Peer();
 /*******************************************************************************************
+* @brief Shedule a send for writeBuffer contents to the peer system
+*
+* @details
+* The callback function _sendData() will be invoked after the data is send.
+* If the write buffer is empty then a bad_command response will be send.
+* The callback function will be called even if thier is a error in tcp connection.
+********************************************************************************************/
+	void _sendPeerData();
+/*******************************************************************************************
 * @brief Get the total number of peers
 *
 * @return						Total number of peers
@@ -93,6 +92,10 @@ public:
 * Gives total number of open sockets listening to a remote system.
 ********************************************************************************************/
 static short getPeerCount();
+/*******************************************************************************************
+* @brief Shut down the socket and delete the peer object.
+********************************************************************************************/
+void terminatePeer();
 /*******************************************************************************************
 * @brief Add this peer to mirroring group
 *
@@ -107,6 +110,10 @@ static short getPeerCount();
 * Set the flag isMirroring to false and remove peer from mirroring group list.
 ********************************************************************************************/
 	void removeFromMirroringGroup();
-
-	friend class CmdInterpreter;
+/*******************************************************************************************
+* @brief Return the pointer to the base class of this entry
+*
+* @return						Pointer to the base class
+********************************************************************************************/
+	__base_entry* entry();
 };

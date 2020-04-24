@@ -99,3 +99,46 @@ void __base_entry::_doExpiryCheck()
 	if (_tmAfterLastChrg() > (unsigned short)timeToLive)
 		isInDirectory = false;
 }
+
+
+
+const size_t& CommandElement::size()
+{
+	return _size;
+}
+
+void CommandElement::reset_for_read()
+{
+	_index = 0;
+}
+
+void CommandElement::reset()
+{
+	_size = 0;
+	_index = 0;
+}
+
+const std::string_view& CommandElement::pop_front()
+{
+	_size--;
+	auto currIndex = _index;
+	_index++;
+	return element[currIndex];
+}
+
+const std::string_view& CommandElement::peek()
+{
+	return element[_index];
+}
+
+const std::string_view& CommandElement::peek_next()
+{
+	return element[_index + 1];
+}
+
+void CommandElement::push_back(std::string_view elem)
+{
+	_size++;
+	element[_index] = elem;
+	_index++;
+}

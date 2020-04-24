@@ -14,26 +14,27 @@ class CmdInterpreter
 	static void _charge(Peer&);
 	static void _remove(Peer&);
 	static void _flush(Peer&);
-	static void _update(Peer&);
 	static void _ttl(Peer&);
+	static void _update(Peer&);
 
 /*******************************************************************************************
-* @brief Extract the UID from the command line.
-*
-* @param[in] commandLine		The string view of the commandLine
-* @param[out] element			Element extracted from the commandLine.
-* @return						True if an element is found
-*
-* @details
-* The element will be purged from the command line before returning a flag.
-********************************************************************************************/
-	static bool _extractElement(std::string_view&, std::string_view&);
-/*******************************************************************************************
-* @brief Find if the string is an Base64 encoded text
+* @brief Check if the string is an Base64 encoded text
 *
 * @return						True if the strig view is a base64 text
 ********************************************************************************************/
 	static bool _isBase64(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string is a valid description
+*
+* @return						True if the strig view is a description.
+********************************************************************************************/
+	static bool _isDescription(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string is a valid permission
+*
+* @return						True if the strig view is a permission.
+********************************************************************************************/
+	static bool _isPermission(const std::string_view&);
 /*******************************************************************************************
 * @brief Return true for valid port number
 *
@@ -78,6 +79,20 @@ public:
 * @param[in] peer				The peer system from which the command is comming.
 ********************************************************************************************/
 	static void processCommand(Peer&);
+/*******************************************************************************************
+* @brief Extract all command elements from the command line.
+*
+* @param[in] peer				The peer for which the command elements are to be generated
+* @param[out] size				Number of characters received from process data
+* @return						True if command elements is found
+*
+* @details
+* The command elements will be populated in the cmdElements.
+* If their are more than 5 command elements, then the command line will be considered invalid.
+* For this function to return true their must be atleast 1 command element present.
+********************************************************************************************/
+	static bool populateElement(Peer&, const size_t&);
+
 /*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )
 *
