@@ -1,4 +1,6 @@
-#pragma once
+#ifndef DIRECTORY_H
+#define DIRECTORY_H
+
 #include <map>
 #include "sp_entry.h"
 
@@ -145,35 +147,48 @@ public:
 *
 * @param[in] sourcePair			The entry to be updated in the directory
 * @param[in] cmdEntry			The commanding entry
-* @param[out] entryStruct		The Entry structure that contains a valid pointer to entry
+* @param[out] updateTocken		The data structure that contains a valid pointer to entry
 * @return						Return SUCCESS if the event is updatable
 *
 * @details
-* Return SUCCESS and entryStruct if the entry is in directory and cmdEntry have the apt privilege.
+* Return SUCCESS and updateTocken if the entry is in directory and cmdEntry have the apt privilege.
 * Return NO_EXIST if the entry is not present in the directory.
 * Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
 ********************************************************************************************/
-	static Response acquireUpdateLock(const SourcePair&, __base_entry*, Entry&);
+	static Response acquireUpdateLock(const SourcePair&, __base_entry*, UpdateTocken&);
+/*******************************************************************************************
+* @brief Lock the entry for updates [Lock must be released by calling releaseLock() method]
+*
+* @param[in] entry				The entry to be updated (self call)
+* @param[out] updateTocken		The data structure that contains a valid pointer to entry
+* @return						Return SUCCESS if the event is updatable
+*
+* @details
+* Return SUCCESS and updateTocken if the entry is in directory and cmdEntry have the apt privilege.
+* Return NO_EXIST if the entry is not present in the directory.
+********************************************************************************************/
+	static Response acquireUpdateLock(__base_entry*, UpdateTocken&);
+
 /*******************************************************************************************
 * @brief Release the access lock for the event
 *
 * @param[in] entry				The entry to be unlocked
 ********************************************************************************************/
-	static void releaseLock(__base_entry*);
+	static void releaseLock(UpdateTocken&);
 /*******************************************************************************************
 * @brief Update the entry [Only use these functions after acquiring update lock on event]
 *
 * @param[in] entry				The entry to be updated in the directory
 * @param[in] perm				Permission to be updated
 ********************************************************************************************/
-	static void update(__base_entry*, const Permission&);
+	static Response update(UpdateTocken&, const Permission&);
 /*******************************************************************************************
 * @brief Update the entry [Only use these functions after acquiring update lock on event]
 *
 * @param[in] entry				The entry to be updated in the directory
 * @param[in] desc				Description to be updated
 ********************************************************************************************/
-	static void update(__base_entry*, const std::string_view&);
+	static void update(UpdateTocken&, const std::string_view&);
 
 /*******************************************************************************************
 * @brief Get the total number of entries in the directory
@@ -182,3 +197,5 @@ public:
 ********************************************************************************************/
 	static int getEntryCount();
 };
+
+#endif

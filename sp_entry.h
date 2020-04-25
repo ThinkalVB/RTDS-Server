@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SP_ENTRY_H
+#define SP_ENTRY_H
+
 #include "common.hpp"
 #include "cppcodec/base64_rfc4648.hpp"
 #include <variant>
@@ -190,9 +192,17 @@ typedef SPentry<sourcePairV6, asio::ip::address_v6> EntryV6;
  ********************************************************************************************/
 union Entry
 {
-	__base_entry* Ev;
+	__base_entry* EvB;
 	EntryV4* Ev4;
 	EntryV6* Ev6;
+};
+
+struct UpdateTocken
+{
+private:
+	__base_entry* EvB;
+	Privilege maxPrivileage;
+	friend class Directory;
 };
 
 /*******************************************************************************************
@@ -222,8 +232,8 @@ struct CommandElement
 {
 private:
 	std::string_view element[5];
-	size_t _size;
-	size_t _index;
+	std::size_t _size;
+	std::size_t _index;
 public:
 	const size_t& size();
 	void reset_for_read();
@@ -234,3 +244,5 @@ public:
 	const std::string_view& peek_next();
 	void push_back(std::string_view);
 };
+
+#endif

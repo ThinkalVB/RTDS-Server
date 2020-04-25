@@ -15,11 +15,11 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	remoteEp = socketPtr->remote_endpoint();
 
 	if (remoteEp.address().is_v4())
-		peerEntry.Ev = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry.EvB = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
 	else
-		peerEntry.Ev = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry.EvB = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
 
-	peerEntry.Ev->attachToPeer();
+	peerEntry.EvB->attachToPeer();
 	_peerReceiveData();
 	peerCount++;
 }
@@ -46,12 +46,12 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 		else
 		{
 			writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
-			_sendPeerData();
+			sendPeerData();
 		}
 	}
 }
 
-void Peer::_sendPeerData()
+void Peer::sendPeerData()
 {
 	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
@@ -108,7 +108,7 @@ void Peer::removeFromMirroringGroup()
 
 __base_entry* Peer::entry()
 {
-	return peerEntry.Ev;
+	return peerEntry.EvB;
 }
 
 Peer::~Peer()
@@ -125,7 +125,7 @@ Peer::~Peer()
 		#endif
 	}
 
-	peerEntry.Ev4->detachFromPeer();
+	peerEntry.EvB->detachFromPeer();
 	removeFromMirroringGroup();
 	peerCount--;
 	delete peerSocket;

@@ -195,32 +195,26 @@ Response Directory::charge(const SourcePair& sourcePair, __base_entry* cmdEntry,
 	}
 }
 
-Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry* cmdEntry, Entry& entryStruct)
+Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry* cmdEntry, UpdateTocken& updateTocken)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry == nullptr)
 		return Response::NO_EXIST;
 
-	entry->accessLock.lock();
 	Response response;
 	if (entry == cmdEntry)
-	{
-		if (entry->inDirectory())
-		{
-			entryStruct.Ev = entry;
-			response = Response::SUCCESS;
-		}
-		else
-			response = Response::NO_EXIST;
-	}
+		return acquireUpdateLock(entry, updateTocken);
 	else 
 	{
+		entry->accessLock.lock();
 		if (entry->inDirectory())
 		{
-			if (_havePrivilegeToChange(entry, cmdEntry))
+			auto maxPrivilege = entry->maxPrivilege(cmdEntry);
+			if (maxPrivilege >= entry->permission.change)
 			{
-				entryStruct.Ev = entry;
-				response = Response::SUCCESS;
+				updateTocken.EvB = entry;
+				updateTocken.maxPrivileage = maxPrivilege;
+				return Response::SUCCESS;
 			}
 			else
 				response = Response::NO_PRIVILAGE;
@@ -229,24 +223,47 @@ Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry
 			response = Response::NO_EXIST;
 	}
 
-	if (response != Response::SUCCESS)
-		entry->accessLock.unlock();
+	entry->accessLock.unlock();
 	return response;
 }
 
-void Directory::releaseLock(__base_entry* entry)
+Response Directory::acquireUpdateLock(__base_entry* entry, UpdateTocken& updateTocken)
 {
-	entry->accessLock.unlock();
+	entry->accessLock.lock();
+	if (entry->inDirectory())
+	{
+		updateTocken.EvB = entry;
+		updateTocken.maxPrivileage = Privilege::RESTRICTED_ENTRY;
+		return Response::SUCCESS;
+	}
+	else
+	{
+		entry->accessLock.unlock();
+		return Response::NO_EXIST;
+	}
 }
 
-void Directory::update(__base_entry* entry, const Permission& perm)
+void Directory::releaseLock(UpdateTocken& updateTocken)
 {
-	entry->permission = perm;
+	updateTocken.EvB->accessLock.unlock();
 }
 
-void Directory::update(__base_entry* entry, const std::string_view& desc)
+Response Directory::update(UpdateTocken& updateTocken, const Permission& perm)
 {
-	entry->description = desc;
+	if (updateTocken.maxPrivileage >= perm.change && 
+		updateTocken.maxPrivileage >= perm.remove && 
+		updateTocken.maxPrivileage >= perm.charge)
+	{
+		updateTocken.EvB->permission = perm;
+		return Response::SUCCESS;
+	}
+	else
+		return Response::NO_PRIVILAGE;
+}
+
+void Directory::update(UpdateTocken& updateTocken, const std::string_view& desc)
+{
+	updateTocken.EvB->description = desc;
 }
 
 

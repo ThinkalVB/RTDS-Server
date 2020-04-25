@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PEER_H
+#define PEER_H
+
 #include <boost/asio.hpp>
 #include "sp_entry.h"
 #include <vector>
@@ -82,7 +84,7 @@ public:
 * If the write buffer is empty then a bad_command response will be send.
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
-	void _sendPeerData();
+	void sendPeerData();
 /*******************************************************************************************
 * @brief Get the total number of peers
 *
@@ -117,3 +119,5 @@ void terminatePeer();
 ********************************************************************************************/
 	__base_entry* entry();
 };
+
+#endif

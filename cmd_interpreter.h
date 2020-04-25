@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CMD_INTERPRETER_H
+#define CMD_INTERPRETER_H
+
 #include "peer.h"
 #include "sp_entry.h"
 
@@ -18,57 +20,16 @@ class CmdInterpreter
 	static void _update(Peer&);
 
 /*******************************************************************************************
-* @brief Check if the string is an Base64 encoded text
+* @brief Update the permission and description for a locked entry
 *
-* @return						True if the strig view is a base64 text
-********************************************************************************************/
-	static bool _isBase64(const std::string_view&);
-/*******************************************************************************************
-* @brief Check if the string is a valid description
-*
-* @return						True if the strig view is a description.
-********************************************************************************************/
-	static bool _isDescription(const std::string_view&);
-/*******************************************************************************************
-* @brief Check if the string is a valid permission
-*
-* @return						True if the strig view is a permission.
-********************************************************************************************/
-	static bool _isPermission(const std::string_view&);
-/*******************************************************************************************
-* @brief Return true for valid port number
-*
-* @param[in] portNumStr			Port number as string view
-* @param[out] portNum			A valid port number
-* @return						True if the port number is valid
+* @param[in] entry				The entry which is locked and waiting for updates
+* @param[out] cmdPeer			The peer issuing the command for update
+* @return						SUCCESS if successfully updated
 *
 * @details
-* Return true and a valid portNum if the string view is a valid port number. Else return false.
+* Return BAD_PARAM if the order of the parameter or the parameter itself is bad.
 ********************************************************************************************/
-	static bool _validPortNumber(const std::string_view&, unsigned short&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] ipAddrStr			String view of the ip address
-* @param[in] portNum			String view of the port number
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
-********************************************************************************************/
-	static bool _makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] ipAddrStr			String view of the ip address
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for UID is valid.
-********************************************************************************************/
-	static bool _makeSourcePair(const std::string_view&, SourcePair&);
+	static Response _updateLockedEntry(UpdateTocken&, Peer&);
 
 public:
 	static const std::string RESP[];			//!< All responses in string.
@@ -92,6 +53,74 @@ public:
 * For this function to return true their must be atleast 1 command element present.
 ********************************************************************************************/
 	static bool populateElement(Peer&, const size_t&);
+/*******************************************************************************************
+* @brief Convert the string to permission [use only after verfying by _isPermission()]
+*
+* @param[in] privilege			Character l,p or r for different privileges
+********************************************************************************************/
+	static Privilege toPrivilege(const char&);
+/*******************************************************************************************
+* @brief Convert the string to permission [use only after verfying by _isPermission()]
+*
+* @param[in] perm				The string view of the permission string
+* @param[in] privilege			Permission
+********************************************************************************************/
+	static void toPermission(const std::string_view&, Permission&);
+/*******************************************************************************************
+* @brief Check if the string is an Base64 encoded text
+*
+* @param[in] uid				The string view of the UID
+* @return						True if the strig view is a base64 text
+********************************************************************************************/
+	static bool isBase64(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string is a valid description
+*
+* @param[in] desc				The string view of the description
+* @return						True if the strig view is a description.
+********************************************************************************************/
+	static bool isDescription(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string is a valid permission
+*
+* @param[in] permission			The string view of the permission
+* @return						True if the strig view is a permission
+********************************************************************************************/
+	static bool isPermission(const std::string_view&);
+/*******************************************************************************************
+* @brief Return true for valid port number
+*
+* @param[in] portNumStr			Port number as string view
+* @param[out] portNum			A valid port number
+* @return						True if the port number is valid
+*
+* @details
+* Return true and a valid portNum if the string view is a valid port number. Else return false.
+********************************************************************************************/
+	static bool validPortNumber(const std::string_view&, unsigned short&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[in] portNum			String view of the port number
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
+********************************************************************************************/
+	static bool makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for UID is valid.
+********************************************************************************************/
+	static bool makeSourcePair(const std::string_view&, SourcePair&);
 
 /*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )
@@ -133,3 +162,5 @@ inline void CmdInterpreter::makeSourcePair(const IPaddress& ipAddress, unsigned 
 	#endif
 	memcpy(&sourcePair[sourcePair.size() - 2], &portNum, 2);
 }
+
+#endif

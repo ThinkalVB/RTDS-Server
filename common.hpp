@@ -1,4 +1,6 @@
-#pragma once
+#ifndef COMMON_H
+#define COMMON_H
+
 #include <cstdint>
 #include <array>
 
@@ -117,3 +119,5 @@ struct Permission
 	Privilege change;
 	Privilege remove;
 };
+
+#endif

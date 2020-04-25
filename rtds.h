@@ -1,4 +1,6 @@
-#pragma once
+#ifndef RTDS_H
+#define RTDS_H
+
 #include <boost/asio.hpp>
 
 constexpr unsigned short RTDS_PORT = 389;
@@ -117,3 +119,5 @@ public:
 ********************************************************************************************/
 	~RTDS();
 };
+
+#endif

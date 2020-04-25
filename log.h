@@ -1,4 +1,6 @@
-#pragma once
+#ifndef LOG_H
+#define LOG_H
+
 #include <boost/asio.hpp>
 #include <fstream>
 #include <mutex>
@@ -78,3 +80,5 @@ public:
 ********************************************************************************************/
     static void stopLog();
 };
+
+#endif
