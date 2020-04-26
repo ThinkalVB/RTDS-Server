@@ -6,13 +6,29 @@ const std::string __base_entry::VER[] =
 	"v4",
 	"v6"
 };
-
 const char __base_entry::PRI[] =
 {
 	'l',
 	'p',
 	'r'
 };
+int __base_entry::entryCount = 0;
+__base_entry* __base_entry::beginPtr = nullptr;
+__base_entry* __base_entry::endPtr = nullptr;
+
+short __base_entry::_tmAfterLastChrg()
+{
+	auto timeNow = posix_time::second_clock::universal_time();
+	auto diffTime = timeNow - lastChargT;
+	return (short)diffTime.minutes();
+}
+
+void __base_entry::_doExpiryCheck()
+{
+	if (_tmAfterLastChrg() > (unsigned short)timeToLive)
+		isInDirectory = false;
+}
+
 
 void __base_entry::attachToPeer()
 {
@@ -39,6 +55,19 @@ Privilege __base_entry::maxPrivilege(__base_entry* cmdEntry)
 		return ((EntryV4*)this)->maxPrivilege(cmdEntry);
 	else
 		return ((EntryV6*)this)->maxPrivilege(cmdEntry);
+}
+
+void __base_entry::addToDirectory()
+{
+	isInDirectory = true;
+	lastChargT = posix_time::second_clock::universal_time();
+	entryCount++;
+}
+
+void __base_entry::removeFromDirectory()
+{
+	isInDirectory = false;
+	entryCount--;
 }
 
 void __base_entry::printBrief(std::string& strBuffer)
@@ -82,23 +111,9 @@ short __base_entry::getTTL()
 	}
 }
 
-Version __base_entry::getVersion()
+const Version& __base_entry::getVersion()
 {
 	return version;
-}
-
-
-short __base_entry::_tmAfterLastChrg()
-{
-	auto timeNow = posix_time::second_clock::universal_time();
-	auto diffTime = timeNow - lastChargT;
-	return (short)diffTime.minutes();
-}
-
-void __base_entry::_doExpiryCheck()
-{
-	if (_tmAfterLastChrg() > (unsigned short)timeToLive)
-		isInDirectory = false;
 }
 
 

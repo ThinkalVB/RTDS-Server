@@ -11,7 +11,6 @@ class Directory
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
-	static int entryCount;
 
 /*******************************************************************************************
 * @brief Return a pointer to the base class

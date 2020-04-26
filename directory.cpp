@@ -6,7 +6,6 @@ std::map<sourcePairV6, EntryV6*> Directory::V6EntryMap;
 
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
-int Directory::entryCount = 0;
 
 __base_entry* Directory::_findEntry(const sourcePairV4& sourcePair)
 {
@@ -153,11 +152,7 @@ Response Directory::addToDir(SourcePair& sourcePair, __base_entry* cmdEntry, Ins
 void Directory::releaseInsertionTocken(InsertionTocken& insertionTocken, Response& reponse)
 {
 	if (reponse == Response::SUCCESS)
-	{
-		insertionTocken.EvB->isInDirectory = true;
-		insertionTocken.EvB->lastChargT = posix_time::second_clock::universal_time();
-		entryCount++;
-	}
+		insertionTocken.EvB->addToDirectory();
 	insertionTocken.EvB->accessLock.unlock();
 }
 
@@ -167,8 +162,7 @@ Response Directory::removeFromDir(__base_entry* entry)
 	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
 	{
-		entry->isInDirectory = false;
-		entryCount--;
+		entry->removeFromDirectory();
 		return Response::SUCCESS;
 	}
 	else
@@ -326,5 +320,5 @@ int Directory::getEntryCount()
 {
 	std::lock_guard<std::mutex> lock1(V4insertionLock);
 	std::lock_guard<std::mutex> lock2(V6insertionLock);
-	return entryCount;
+	return __base_entry::entryCount;
 }

@@ -31,6 +31,10 @@ class __base_entry
 protected:
 	static const std::string VER[];				//!< All version code in string.
 	static const char PRI[];				    //!< All privilage code in string.
+	
+	static int entryCount;						//!< Total entries in the directory
+	static __base_entry* beginPtr;				//!< Starting pointer to the entry list
+	static __base_entry* endPtr;				//!< Ending pointer to the entry list
 
 	Version version;							//!< Version of the derived class IPV4 or IPV6.
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
@@ -83,6 +87,22 @@ protected:
 * [Not thread safe]
 ********************************************************************************************/
 	Privilege maxPrivilege(__base_entry*);
+/*******************************************************************************************
+* @brief Add the entry to the directory
+*
+* @details
+* Increment the entryCount, turn isInDirectory flag to true, update lastChargeT
+* [Not thread safe]
+********************************************************************************************/
+	void addToDirectory();
+/*******************************************************************************************
+* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
+*
+* @details
+* Decrement the entryCount, turn isInDirectory flag to false
+* [Not thread safe]
+********************************************************************************************/
+	void removeFromDirectory();
 
 public:
 /*******************************************************************************************
@@ -118,7 +138,7 @@ public:
 *
 * @return						Version type V4 or V6
 ********************************************************************************************/
-	Version getVersion();
+	const Version& getVersion();
 	friend class Directory;
 };
 
