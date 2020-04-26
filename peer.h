@@ -117,7 +117,7 @@ void terminatePeer();
 *
 * @return						Pointer to the base class
 ********************************************************************************************/
-	__base_entry* entry();
+	BaseEntry* entry();
 };
 
 #endif

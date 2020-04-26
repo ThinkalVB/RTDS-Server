@@ -21,9 +21,9 @@ class Directory
 * @details
 * Find the pointer to the Entry's base class if it exists in the map.
 ********************************************************************************************/
-	static __base_entry* _findEntry(const sourcePairV4&);
-	static __base_entry* _findEntry(const sourcePairV6&);
-	static __base_entry* _findEntry(const SourcePair&);
+	static BaseEntry* _findEntry(const sourcePairV4&);
+	static BaseEntry* _findEntry(const sourcePairV6&);
+	static BaseEntry* _findEntry(const SourcePair&);
 /*******************************************************************************************
 * @brief Return true if cmdEntry have the privilege over entry to carry out the command
 *
@@ -34,9 +34,9 @@ class Directory
 * @details
 * These functions are not thread safe. [Need external locking for thread safety]
 ********************************************************************************************/
-	static bool _havePrivilegeToCharge(__base_entry*, __base_entry*);
-	static bool _havePrivilegeToRemove(__base_entry*, __base_entry*);
-	static bool _havePrivilegeToChange(__base_entry*, __base_entry*);
+	static bool _havePrivilegeToCharge(BaseEntry*, BaseEntry*);
+	static bool _havePrivilegeToRemove(BaseEntry*, BaseEntry*);
+	static bool _havePrivilegeToChange(BaseEntry*, BaseEntry*);
 
 public:
 /*******************************************************************************************
@@ -52,8 +52,8 @@ public:
 * No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
 * Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
 ********************************************************************************************/
-	static __base_entry* makeEntry(asio::ip::address_v4, unsigned short);
-	static __base_entry* makeEntry(asio::ip::address_v6, unsigned short);
+	static BaseEntry* makeEntry(asio::ip::address_v4, unsigned short);
+	static BaseEntry* makeEntry(asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
 * @brief Return a pointer to V4/V6 Entry for the given source pair address
 *
@@ -66,7 +66,7 @@ public:
 * No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
 * Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
 ********************************************************************************************/
-	static __base_entry* makeEntry(SourcePair&);
+	static BaseEntry* makeEntry(SourcePair&);
 
 /*******************************************************************************************
 * @brief Lock the entry for add [Lock must be released by calling releaseInsertionLock() method]
@@ -79,7 +79,7 @@ public:
 * Return SUCCESS and lock the entry if not in the directory and can be added.
 * Return REDUDANT_DATA if the entry is already in the directory and can't be added.
 ********************************************************************************************/
-	static Response addToDir(__base_entry*, InsertionTocken&);
+	static Response addToDir(BaseEntry*, InsertionTocken&);
 /*******************************************************************************************
 * @brief Add the entry to the Directory (add itself)
 *
@@ -92,7 +92,7 @@ public:
 * Return SUCCESS and lock the entry if not in the directory and can be added.
 * Return REDUDANT_DATA if the entry is already in the directory and can't be added.
 ********************************************************************************************/
-	static Response addToDir(SourcePair&, __base_entry*, InsertionTocken&);
+	static Response addToDir(SourcePair&, BaseEntry*, InsertionTocken&);
 /*******************************************************************************************
 * @brief Release the access lock of the entry and add the entry based on response
 *
@@ -115,7 +115,7 @@ public:
 * If the entry is in directory, remove it and return SUCCESS.
 * Return NO_EXIST if the entry is not present in the directory.
 ********************************************************************************************/
-	static Response removeFromDir(__base_entry*);
+	static Response removeFromDir(BaseEntry*);
 /*******************************************************************************************
 * @brief Remove the entry from the directory
 *
@@ -128,7 +128,7 @@ public:
 * Return NO_EXIST if the entry is not present in the directory.
 * Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
 ********************************************************************************************/
-	static Response removeFromDir(const SourcePair&, __base_entry*);
+	static Response removeFromDir(const SourcePair&, BaseEntry*);
 
 /*******************************************************************************************
 * @brief Get the Time to Live for that entry
@@ -140,7 +140,7 @@ public:
 * @details
 * Ensure the entry didn't expire and return SUCCESS if the entry have a TTL.
 ********************************************************************************************/
-	static Response getTTL(__base_entry*, short&);
+	static Response getTTL(BaseEntry*, short&);
 /*******************************************************************************************
 * @brief Get the Time to Live for that source pair
 *
@@ -163,7 +163,7 @@ public:
 * @details
 * Ensure the entry didn't expire and return the TTL of the entry.
 ********************************************************************************************/
-	static Response charge(__base_entry*, short&);
+	static Response charge(BaseEntry*, short&);
 /*******************************************************************************************
 * @brief Charge the entry
 *
@@ -177,7 +177,7 @@ public:
 * Return NO_EXIST if the entry is not present in the directory.
 * Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
 ********************************************************************************************/
-	static Response charge(const SourcePair&, __base_entry*, short&);
+	static Response charge(const SourcePair&, BaseEntry*, short&);
 
 /*******************************************************************************************
 * @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
@@ -192,7 +192,7 @@ public:
 * Return NO_EXIST if the entry is not present in the directory.
 * Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
 ********************************************************************************************/
-	static Response getUpdateTocken(const SourcePair&, __base_entry*, UpdateTocken&);
+	static Response getUpdateTocken(const SourcePair&, BaseEntry*, UpdateTocken&);
 /*******************************************************************************************
 * @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
 *
@@ -204,7 +204,7 @@ public:
 * Return SUCCESS, updateTocken and lock the entry if it's in directory and have apt privilege.
 * Return NO_EXIST if the entry is not present in the directory.
 ********************************************************************************************/
-	static Response getUpdateTocken(__base_entry*, UpdateTocken&);
+	static Response getUpdateTocken(BaseEntry*, UpdateTocken&);
 
 /*******************************************************************************************
 * @brief Release the access lock for the event

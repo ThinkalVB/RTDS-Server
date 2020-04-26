@@ -15,7 +15,7 @@ using namespace boost;
  * Base class for the Entry for IPv4 and IPV6
  * The member functions of this class in not thread safe. Directory class must guarantee safety.
  ********************************************************************************************/
-class __base_entry
+class BaseEntry
 {
 /*******************************************************************************************
 * @brief Return the time passed after the last charge
@@ -32,10 +32,13 @@ protected:
 	static const std::string VER[];				//!< All version code in string.
 	static const char PRI[];				    //!< All privilage code in string.
 	
-	static int entryCount;						//!< Total entries in the directory
-	static __base_entry* beginPtr;				//!< Starting pointer to the entry list
-	static __base_entry* endPtr;				//!< Ending pointer to the entry list
+	static int entryCount;						//!< Total entries in the directory.
+	static BaseEntry* begin;					//!< Starting pointer to the entry list.
+	static BaseEntry* end;						//!< Starting pointer to the entry list.
+	static std::mutex entryTrainLock;			//!< Lock this mutex before inserting and removing from train.
 
+	BaseEntry* next;							//!< Pointer to the next entry.
+	BaseEntry* previous;						//!< Pointer to the previous entry.
 	Version version;							//!< Version of the derived class IPV4 or IPV6.
 	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
 	TTL timeToLive;								//!< Keep the time to live for this entry.
@@ -86,7 +89,7 @@ protected:
 * @details
 * [Not thread safe]
 ********************************************************************************************/
-	Privilege maxPrivilege(__base_entry*);
+	Privilege maxPrivilege(BaseEntry*);
 /*******************************************************************************************
 * @brief Add the entry to the directory
 *
@@ -94,7 +97,7 @@ protected:
 * Increment the entryCount, turn isInDirectory flag to true, update lastChargeT
 * [Not thread safe]
 ********************************************************************************************/
-	void addToDirectory();
+	void addToDirectory(TTL);
 /*******************************************************************************************
 * @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
 *
@@ -144,7 +147,7 @@ public:
 
 
 template <typename SP, typename IPaddrT>
-class SPentry : public __base_entry
+class SPentry : public BaseEntry
 {
 	SPentry(SP&, IPaddrT&, unsigned short);
 	const SP sourcePair;
@@ -159,7 +162,7 @@ public:
 * If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
 * Both have the same IP  version address - return Privilege::PROTECTED_ENTRY;
 ********************************************************************************************/
-	Privilege maxPrivilege(__base_entry*);
+	Privilege maxPrivilege(BaseEntry*);
 	friend class Directory;
 };
 
@@ -189,7 +192,7 @@ SPentry<SP, IPaddrT>::SPentry(SP& srcPair, IPaddrT& ipAdd, unsigned short portNu
 }
 
 template<typename SP, typename IPaddrT>
-inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(__base_entry* cmdEntry)
+inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(BaseEntry* cmdEntry)
 {
 	if (version == cmdEntry->getVersion())
 	{
@@ -210,7 +213,7 @@ typedef SPentry<sourcePairV6, asio::ip::address_v6> EntryV6;
  ********************************************************************************************/
 union Entry
 {
-	__base_entry* EvB;
+	BaseEntry* EvB;
 	EntryV4* Ev4;
 	EntryV6* Ev6;
 };
@@ -218,10 +221,10 @@ union Entry
 struct UpdateTocken
 {
 private:
-	__base_entry* EvB;
+	BaseEntry* EvB;
 	Privilege maxPrivileage;
 public:
-	__base_entry* entry();
+	BaseEntry* entry();
 	friend class Directory;
 };
 typedef UpdateTocken InsertionTocken;

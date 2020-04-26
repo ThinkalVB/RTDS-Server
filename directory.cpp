@@ -7,7 +7,7 @@ std::map<sourcePairV6, EntryV6*> Directory::V6EntryMap;
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
 
-__base_entry* Directory::_findEntry(const sourcePairV4& sourcePair)
+BaseEntry* Directory::_findEntry(const sourcePairV4& sourcePair)
 {
 	auto entry = V4EntryMap.find(sourcePair);
 	if (entry != V4EntryMap.end())
@@ -16,7 +16,7 @@ __base_entry* Directory::_findEntry(const sourcePairV4& sourcePair)
 		return nullptr;
 }
 
-__base_entry* Directory::_findEntry(const sourcePairV6& sourcePair)
+BaseEntry* Directory::_findEntry(const sourcePairV6& sourcePair)
 {
 	auto entry = V6EntryMap.find(sourcePair);
 	if (entry != V6EntryMap.end())
@@ -25,7 +25,7 @@ __base_entry* Directory::_findEntry(const sourcePairV6& sourcePair)
 		return nullptr;
 }
 
-__base_entry* Directory::_findEntry(const SourcePair& sourcePair)
+BaseEntry* Directory::_findEntry(const SourcePair& sourcePair)
 {
 	if (sourcePair.version == Version::V4)
 		return _findEntry(sourcePair.SP.V4);
@@ -34,7 +34,7 @@ __base_entry* Directory::_findEntry(const SourcePair& sourcePair)
 }
 
 
-bool Directory::_havePrivilegeToCharge(__base_entry* entry, __base_entry* cmdEntry)
+bool Directory::_havePrivilegeToCharge(BaseEntry* entry, BaseEntry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (maxPrivilege >= entry->permission.charge)
@@ -43,7 +43,7 @@ bool Directory::_havePrivilegeToCharge(__base_entry* entry, __base_entry* cmdEnt
 		return false;
 }
 
-bool Directory::_havePrivilegeToRemove(__base_entry* entry, __base_entry* cmdEntry)
+bool Directory::_havePrivilegeToRemove(BaseEntry* entry, BaseEntry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (maxPrivilege >= entry->permission.remove)
@@ -52,7 +52,7 @@ bool Directory::_havePrivilegeToRemove(__base_entry* entry, __base_entry* cmdEnt
 		return false;
 }
 
-bool Directory::_havePrivilegeToChange(__base_entry* entry, __base_entry* cmdEntry)
+bool Directory::_havePrivilegeToChange(BaseEntry* entry, BaseEntry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (maxPrivilege >= entry->permission.change)
@@ -62,7 +62,7 @@ bool Directory::_havePrivilegeToChange(__base_entry* entry, __base_entry* cmdEnt
 }
 
 
-__base_entry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
+BaseEntry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
 {
 	sourcePairV4 sourcePair;
 	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
@@ -77,7 +77,7 @@ __base_entry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short po
 	return entryPtr;
 }
 
-__base_entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum)
+BaseEntry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum)
 {
 	sourcePairV6 sourcePair;
 	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
@@ -92,7 +92,7 @@ __base_entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short po
 	return entryPtr;
 }
 
-__base_entry* Directory::makeEntry(SourcePair& sourcePair)
+BaseEntry* Directory::makeEntry(SourcePair& sourcePair)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry != nullptr)
@@ -108,7 +108,7 @@ __base_entry* Directory::makeEntry(SourcePair& sourcePair)
 }
 
 
-Response Directory::addToDir(__base_entry* entry, InsertionTocken& updateTocken)
+Response Directory::addToDir(BaseEntry* entry, InsertionTocken& updateTocken)
 {
 	entry->accessLock.lock();
 	updateTocken.EvB = entry;
@@ -125,7 +125,7 @@ Response Directory::addToDir(__base_entry* entry, InsertionTocken& updateTocken)
 	}
 }
 
-Response Directory::addToDir(SourcePair& sourcePair, __base_entry* cmdEntry, InsertionTocken& insertionTocken)
+Response Directory::addToDir(SourcePair& sourcePair, BaseEntry* cmdEntry, InsertionTocken& insertionTocken)
 {
 	auto entry = makeEntry(sourcePair);
 	Response response;
@@ -152,12 +152,12 @@ Response Directory::addToDir(SourcePair& sourcePair, __base_entry* cmdEntry, Ins
 void Directory::releaseInsertionTocken(InsertionTocken& insertionTocken, Response& reponse)
 {
 	if (reponse == Response::SUCCESS)
-		insertionTocken.EvB->addToDirectory();
+		insertionTocken.EvB->addToDirectory(CmdInterpreter::toTTL(insertionTocken.maxPrivileage));
 	insertionTocken.EvB->accessLock.unlock();
 }
 
 
-Response Directory::removeFromDir(__base_entry* entry)
+Response Directory::removeFromDir(BaseEntry* entry)
 {
 	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
@@ -169,7 +169,7 @@ Response Directory::removeFromDir(__base_entry* entry)
 		return Response::NO_EXIST;
 }
 
-Response Directory::removeFromDir(const SourcePair& sourcePair, __base_entry* cmdEntry)
+Response Directory::removeFromDir(const SourcePair& sourcePair, BaseEntry* cmdEntry)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry == nullptr)
@@ -188,7 +188,7 @@ Response Directory::removeFromDir(const SourcePair& sourcePair, __base_entry* cm
 }
 	
 
-Response Directory::getTTL(__base_entry* entry, short& ttl)
+Response Directory::getTTL(BaseEntry* entry, short& ttl)
 {
 	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
@@ -210,7 +210,7 @@ Response Directory::getTTL(const SourcePair& sourcePair, short& ttl)
 }
 
 
-Response Directory::charge(__base_entry* entry, short& newTTL)
+Response Directory::charge(BaseEntry* entry, short& newTTL)
 {
 	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
 	if (entry->inDirectory())
@@ -222,7 +222,7 @@ Response Directory::charge(__base_entry* entry, short& newTTL)
 		return Response::NO_EXIST;
 }
 
-Response Directory::charge(const SourcePair& sourcePair, __base_entry* cmdEntry, short& newTTL)
+Response Directory::charge(const SourcePair& sourcePair, BaseEntry* cmdEntry, short& newTTL)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry == nullptr)
@@ -244,7 +244,7 @@ Response Directory::charge(const SourcePair& sourcePair, __base_entry* cmdEntry,
 }
 
 
-Response Directory::getUpdateTocken(const SourcePair& sourcePair, __base_entry* cmdEntry, UpdateTocken& updateTocken)
+Response Directory::getUpdateTocken(const SourcePair& sourcePair, BaseEntry* cmdEntry, UpdateTocken& updateTocken)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry == nullptr)
@@ -276,7 +276,7 @@ Response Directory::getUpdateTocken(const SourcePair& sourcePair, __base_entry* 
 	return response;
 }
 
-Response Directory::getUpdateTocken(__base_entry* entry, UpdateTocken& updateTocken)
+Response Directory::getUpdateTocken(BaseEntry* entry, UpdateTocken& updateTocken)
 {
 	entry->accessLock.lock();
 	if (entry->inDirectory())
@@ -320,5 +320,5 @@ int Directory::getEntryCount()
 {
 	std::lock_guard<std::mutex> lock1(V4insertionLock);
 	std::lock_guard<std::mutex> lock2(V6insertionLock);
-	return __base_entry::entryCount;
+	return BaseEntry::entryCount;
 }

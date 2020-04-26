@@ -106,7 +106,7 @@ void Peer::removeFromMirroringGroup()
 	}
 }
 
-__base_entry* Peer::entry()
+BaseEntry* Peer::entry()
 {
 	return peerEntry.EvB;
 }

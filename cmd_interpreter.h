@@ -69,6 +69,8 @@ public:
 ********************************************************************************************/
 	static void toPermission(const std::string_view&, Permission&);
 
+	static TTL toTTL(Privilege);
+
 /*******************************************************************************************
 * @brief Check if the string is an Base64 encoded text
 *

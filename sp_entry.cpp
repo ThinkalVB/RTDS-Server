@@ -1,55 +1,56 @@
 #include "sp_entry.h"
 #include "cmd_interpreter.h"
 
-const std::string __base_entry::VER[] =
+const std::string BaseEntry::VER[] =
 {
 	"v4",
 	"v6"
 };
-const char __base_entry::PRI[] =
+const char BaseEntry::PRI[] =
 {
 	'l',
 	'p',
 	'r'
 };
-int __base_entry::entryCount = 0;
-__base_entry* __base_entry::beginPtr = nullptr;
-__base_entry* __base_entry::endPtr = nullptr;
+int BaseEntry::entryCount = 0;
+BaseEntry* BaseEntry::begin = nullptr;
+BaseEntry* BaseEntry::end = nullptr;
+std::mutex BaseEntry::entryTrainLock;
 
-short __base_entry::_tmAfterLastChrg()
+short BaseEntry::_tmAfterLastChrg()
 {
 	auto timeNow = posix_time::second_clock::universal_time();
 	auto diffTime = timeNow - lastChargT;
 	return (short)diffTime.minutes();
 }
 
-void __base_entry::_doExpiryCheck()
+void BaseEntry::_doExpiryCheck()
 {
 	if (_tmAfterLastChrg() > (unsigned short)timeToLive)
-		isInDirectory = false;
+		removeFromDirectory();
 }
 
 
-void __base_entry::attachToPeer()
+void BaseEntry::attachToPeer()
 {
 	timeToLive = TTL::RESTRICTED_TTL;
 	iswithPeer = true;
 }
 
-void __base_entry::detachFromPeer()
+void BaseEntry::detachFromPeer()
 {
 	iswithPeer = false;
 	lastChargT = posix_time::second_clock::universal_time();
 }
 
-bool __base_entry::inDirectory()
+bool BaseEntry::inDirectory()
 {
 	if (!iswithPeer && isInDirectory)
 		_doExpiryCheck();
 	return isInDirectory;
 }
 
-Privilege __base_entry::maxPrivilege(__base_entry* cmdEntry)
+Privilege BaseEntry::maxPrivilege(BaseEntry* cmdEntry)
 {
 	if (version == Version::V4)
 		return ((EntryV4*)this)->maxPrivilege(cmdEntry);
@@ -57,20 +58,64 @@ Privilege __base_entry::maxPrivilege(__base_entry* cmdEntry)
 		return ((EntryV6*)this)->maxPrivilege(cmdEntry);
 }
 
-void __base_entry::addToDirectory()
+void BaseEntry::addToDirectory(TTL ttl)
 {
+	std::lock_guard<std::mutex> lock(entryTrainLock);
 	isInDirectory = true;
 	lastChargT = posix_time::second_clock::universal_time();
+	timeToLive = ttl;
 	entryCount++;
+
+	if (begin == nullptr)
+	{
+		begin = this;
+		end = this;
+		this->next = nullptr;
+		this->previous = nullptr;
+	}
+	else
+	{
+		end->next = this;
+		this->previous = end;
+		this->next = nullptr;
+		end = this;
+	}
 }
 
-void __base_entry::removeFromDirectory()
+void BaseEntry::removeFromDirectory()
 {
-	isInDirectory = false;
-	entryCount--;
+	std::lock_guard<std::mutex> lock(entryTrainLock);
+	if (isInDirectory)
+	{
+		isInDirectory = false;
+		entryCount--;
+
+		auto this_next = this->next;
+		auto this_previous = this->previous;
+		if (this_next == nullptr && this_previous == nullptr)
+		{
+			begin = nullptr;
+			end = nullptr;
+		}
+		else if (this_next != nullptr && this_previous != nullptr)
+		{
+			this_previous->next = this_next;
+			this_next->previous = this_previous;
+		}
+		else if (begin == this)
+		{
+			begin = this_next;
+			begin->previous = nullptr;
+		}
+		else if (end == this)
+		{
+			this_previous->next = nullptr;
+			end = this;
+		}
+	}
 }
 
-void __base_entry::printBrief(std::string& strBuffer)
+void BaseEntry::printBrief(std::string& strBuffer)
 {
 	if (version == Version::V4)
 		strBuffer += VER[(short)Version::V4];
@@ -79,7 +124,7 @@ void __base_entry::printBrief(std::string& strBuffer)
 	strBuffer += " " + ipAddress + " " + portNumber;
 }
 
-void __base_entry::printExpand(std::string& strBuffer)
+void BaseEntry::printExpand(std::string& strBuffer)
 {
 	if (version == Version::V4)
 		strBuffer += VER[(short)Version::V4];
@@ -92,12 +137,12 @@ void __base_entry::printExpand(std::string& strBuffer)
 	strBuffer += " " + description;
 }
 
-void __base_entry::printUID(std::string& strBuffer)
+void BaseEntry::printUID(std::string& strBuffer)
 {
 	strBuffer += UID;
 }
 
-short __base_entry::getTTL()
+short BaseEntry::getTTL()
 {
 	if (iswithPeer)
 		return (short)timeToLive;
@@ -111,7 +156,7 @@ short __base_entry::getTTL()
 	}
 }
 
-const Version& __base_entry::getVersion()
+const Version& BaseEntry::getVersion()
 {
 	return version;
 }
@@ -180,7 +225,7 @@ unsigned short SourcePair::portNumber()
 }
 
 
-__base_entry* UpdateTocken::entry()
+BaseEntry* UpdateTocken::entry()
 {
 	return EvB;
 }

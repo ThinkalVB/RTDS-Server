@@ -65,14 +65,12 @@ bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
 		{
 			if (commandLine[0] == '[')
 			{
-				endIndex = commandLine.find_last_of(']');
+				endIndex = commandLine.find_last_not_of(' ');
 				if (endIndex == std::string::npos)
-					return false;
+					peer.cmdElement.push_back(commandLine.substr(0, commandLine.size()));
 				else
-				{
 					peer.cmdElement.push_back(commandLine.substr(0, endIndex + 1));
-					commandLine.remove_prefix(cmdSize);
-				}
+				commandLine.remove_prefix(commandLine.size());
 			}
 			else
 			{
@@ -80,6 +78,7 @@ bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
 				if (endIndex == std::string::npos)
 				{
 					peer.cmdElement.push_back(commandLine);
+					commandLine.remove_prefix(commandLine.size());
 					break;
 				}
 				else
@@ -93,7 +92,7 @@ bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
 			break;
 	}
 
-	if (peer.cmdElement.size() > 0)
+	if (peer.cmdElement.size() > 0 && commandLine.empty())
 	{
 		peer.cmdElement.reset_for_read();
 		return true;
@@ -117,6 +116,16 @@ void CmdInterpreter::toPermission(const std::string_view& perm, Permission& perm
 	permission.charge = toPrivilege(perm[0]);
 	permission.change = toPrivilege(perm[1]);
 	permission.remove = toPrivilege(perm[2]);
+}
+
+TTL CmdInterpreter::toTTL(Privilege maxPrivilege)
+{
+	if (maxPrivilege == Privilege::LIBERAL_ENTRY)
+		return TTL::LIBERAL_TTL;
+	else if (maxPrivilege == Privilege::PROTECTED_ENTRY)
+		return TTL::PROTECTED_TTL;
+	else
+		return TTL::RESTRICTED_TTL;
 }
 
 bool CmdInterpreter::isBase64(const std::string_view& uid)
@@ -328,7 +337,7 @@ void CmdInterpreter::_ttl(Peer& peer)
 
 	if (peer.cmdElement.size() == 0)
 		response = Directory::getTTL(peer.entry(), ttl);
-	else if (makeSourcePair(peer.cmdElement, sourcePair))
+	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
 		response = Directory::getTTL(sourcePair, ttl);
 
 	peer.writeBuffer += RESP[(short)response];
@@ -343,7 +352,7 @@ void CmdInterpreter::_remove(Peer& peer)
 
 	if (peer.cmdElement.size() == 0)
 		response = Directory::removeFromDir(peer.entry());
-	else if (makeSourcePair(peer.cmdElement, sourcePair))
+	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
 		response = Directory::removeFromDir(sourcePair, peer.entry());
 
 	peer.writeBuffer += RESP[(short)response];
@@ -410,16 +419,8 @@ void CmdInterpreter::_charge(Peer& peer)
 	
 	if (peer.cmdElement.size() == 0)
 		response = Directory::charge(peer.entry(), newTTL);
-	else if (peer.cmdElement.size() == 1)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), sourcePair))
-			response = Directory::charge(sourcePair, peer.entry(), newTTL);
-	}
-	else if (peer.cmdElement.size() == 2)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
-			response = Directory::charge(sourcePair, peer.entry(), newTTL);
-	}
+	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
+		response = Directory::charge(sourcePair, peer.entry(), newTTL);
 
 	peer.writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS)
