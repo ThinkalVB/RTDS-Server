@@ -34,6 +34,7 @@ class CmdInterpreter
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.
+
 /*******************************************************************************************
 * @brief Process the commands from peer system
 *
@@ -53,6 +54,7 @@ public:
 * For this function to return true their must be atleast 1 command element present.
 ********************************************************************************************/
 	static bool populateElement(Peer&, const size_t&);
+
 /*******************************************************************************************
 * @brief Convert the string to permission [use only after verfying by _isPermission()]
 *
@@ -66,6 +68,7 @@ public:
 * @param[in] privilege			Permission
 ********************************************************************************************/
 	static void toPermission(const std::string_view&, Permission&);
+
 /*******************************************************************************************
 * @brief Check if the string is an Base64 encoded text
 *
@@ -97,7 +100,8 @@ public:
 * @details
 * Return true and a valid portNum if the string view is a valid port number. Else return false.
 ********************************************************************************************/
-	static bool validPortNumber(const std::string_view&, unsigned short&);
+	static bool isPortNumber(const std::string_view&, unsigned short&);
+
 /*******************************************************************************************
 * @brief Return true if a valid source pair is generated
 *
@@ -121,6 +125,18 @@ public:
 * Return true and a valid sourcePair if the string view for UID is valid.
 ********************************************************************************************/
 	static bool makeSourcePair(const std::string_view&, SourcePair&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if a valid source pair is found.
+* The values used for generating the source pair will be purged from the cmdElement.
+********************************************************************************************/
+	static bool makeSourcePair(CommandElement&, SourcePair&);
 
 /*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )

@@ -1,4 +1,5 @@
 #include "sp_entry.h"
+#include "cmd_interpreter.h"
 
 const std::string __base_entry::VER[] =
 {
@@ -101,7 +102,6 @@ void __base_entry::_doExpiryCheck()
 }
 
 
-
 const size_t& CommandElement::size()
 {
 	return _size;
@@ -126,6 +126,12 @@ const std::string_view& CommandElement::pop_front()
 	return element[currIndex];
 }
 
+void CommandElement::pop_front(int count)
+{
+	_size = _size - count;
+	_index = _index + count;
+}
+
 const std::string_view& CommandElement::peek()
 {
 	return element[_index];
@@ -141,4 +147,25 @@ void CommandElement::push_back(std::string_view elem)
 	_size++;
 	element[_index] = elem;
 	_index++;
+}
+
+
+unsigned short SourcePair::portNumber()
+{
+	unsigned short portNumber;
+	if (version == Version::V4)
+		memcpy(&portNumber, SP.V4.data() + SP.IPV4.size(), 2);
+	else
+		memcpy(&portNumber, SP.V6.data() + SP.IPV6.size(), 2);
+
+	#ifdef BOOST_ENDIAN_LITTLE_BYTE
+	CmdInterpreter::byteSwap(portNumber);
+	#endif
+	return portNumber;
+}
+
+
+__base_entry* UpdateTocken::entry()
+{
+	return EvB;
 }

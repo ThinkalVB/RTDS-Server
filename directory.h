@@ -55,18 +55,56 @@ public:
 ********************************************************************************************/
 	static __base_entry* makeEntry(asio::ip::address_v4, unsigned short);
 	static __base_entry* makeEntry(asio::ip::address_v6, unsigned short);
+/*******************************************************************************************
+* @brief Return a pointer to V4/V6 Entry for the given source pair address
+*
+* @param[in] sourcePair			The source pair address
+* @return						The pointer to the V4/V6 Entry
+*
+* @details
+* Make a sourcePair V4/V6 with the provided address and port number.
+* Do insertion lock and check if an entry exists, yes then return it's pointer.
+* No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
+* Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
+********************************************************************************************/
+	static __base_entry* makeEntry(SourcePair&);
 
+/*******************************************************************************************
+* @brief Lock the entry for add [Lock must be released by calling releaseInsertionLock() method]
+*
+* @param[in] entry				The entry to be updated (self call)
+* @param[out] insertionTocken	The insertion tocken for add command on SUCCESS
+* @return						The Response to the operation
+*
+* @details
+* Return SUCCESS and lock the entry if not in the directory and can be added.
+* Return REDUDANT_DATA if the entry is already in the directory and can't be added.
+********************************************************************************************/
+	static Response addToDir(__base_entry*, InsertionTocken&);
 /*******************************************************************************************
 * @brief Add the entry to the Directory (add itself)
 *
-* @param[in] entry				The entry to be added to the directory
-* @return						The Response to the operation.
+* @param[in] sourcePair			Source pair address of the entry to be added
+* @param[in] entry				The commanding entry
+* @param[out] insertionTocken	The insertion tocken for add command on SUCCESS
+* @return						The Response to the operation
 *
 * @details
-* Ensure the entry didn't expired and return SUCCESS if the entry is added to the directory.
-* Return REDUDANT_DATA if the entry is already in the directory.
+* Return SUCCESS and lock the entry if not in the directory and can be added.
+* Return REDUDANT_DATA if the entry is already in the directory and can't be added.
 ********************************************************************************************/
-	static Response addToDir(__base_entry*);
+	static Response addToDir(SourcePair&, __base_entry*, InsertionTocken&);
+/*******************************************************************************************
+* @brief Release the access lock of the entry and add the entry based on response
+*
+* @param[in] insertionTocken	The entry to be unlocked
+* @param[in] reponse			The cumilative response for the add command
+*
+* @details
+* If the response is SUCCESS then add the entry to the directory.
+* If response is SUCCESS increment the entry count and update lastChargTime.
+********************************************************************************************/
+	static void releaseInsertionTocken(InsertionTocken&, Response&);
 
 /*******************************************************************************************
 * @brief Remove the entry from the directory (remove itself)
@@ -143,38 +181,38 @@ public:
 	static Response charge(const SourcePair&, __base_entry*, short&);
 
 /*******************************************************************************************
-* @brief Lock the entry for updates [Lock must be released by calling releaseLock() method]
+* @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
 *
 * @param[in] sourcePair			The entry to be updated in the directory
 * @param[in] cmdEntry			The commanding entry
-* @param[out] updateTocken		The data structure that contains a valid pointer to entry
+* @param[out] updateTocken		The updation tocken for update command on SUCCESS
 * @return						Return SUCCESS if the event is updatable
 *
 * @details
-* Return SUCCESS and updateTocken if the entry is in directory and cmdEntry have the apt privilege.
+* Return SUCCESS, updateTocken and lock the entry if it's in directory and have apt privilege.
 * Return NO_EXIST if the entry is not present in the directory.
 * Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
 ********************************************************************************************/
-	static Response acquireUpdateLock(const SourcePair&, __base_entry*, UpdateTocken&);
+	static Response getUpdateTocken(const SourcePair&, __base_entry*, UpdateTocken&);
 /*******************************************************************************************
-* @brief Lock the entry for updates [Lock must be released by calling releaseLock() method]
+* @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
 *
 * @param[in] entry				The entry to be updated (self call)
-* @param[out] updateTocken		The data structure that contains a valid pointer to entry
+* @param[out] updateTocken		The updation tocken for update command on SUCCESS
 * @return						Return SUCCESS if the event is updatable
 *
 * @details
-* Return SUCCESS and updateTocken if the entry is in directory and cmdEntry have the apt privilege.
+* Return SUCCESS, updateTocken and lock the entry if it's in directory and have apt privilege.
 * Return NO_EXIST if the entry is not present in the directory.
 ********************************************************************************************/
-	static Response acquireUpdateLock(__base_entry*, UpdateTocken&);
+	static Response getUpdateTocken(__base_entry*, UpdateTocken&);
 
 /*******************************************************************************************
 * @brief Release the access lock for the event
 *
-* @param[in] entry				The entry to be unlocked
+* @param[in] updateTocken		The entry to be unlocked
 ********************************************************************************************/
-	static void releaseLock(UpdateTocken&);
+	static void releaseUpdateTocken(UpdateTocken&);
 /*******************************************************************************************
 * @brief Update the entry [Only use these functions after acquiring update lock on event]
 *

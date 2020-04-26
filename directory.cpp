@@ -93,18 +93,72 @@ __base_entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short po
 	return entryPtr;
 }
 
-
-Response Directory::addToDir(__base_entry* entry)
+__base_entry* Directory::makeEntry(SourcePair& sourcePair)
 {
-	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
-	if (entry->inDirectory())
-		return Response::REDUDANT_DATA;
+	auto entry = _findEntry(sourcePair);
+	if (entry != nullptr)
+		return entry;
 	else
 	{
-		entry->isInDirectory = true;
-		entryCount++;
+		if (sourcePair.version == Version::V4)
+			entry = makeEntry(asio::ip::make_address_v4(sourcePair.SP.IPV4), sourcePair.portNumber());
+		else
+			entry = makeEntry(asio::ip::make_address_v6(sourcePair.SP.IPV6), sourcePair.portNumber());
+	}
+	return entry;
+}
+
+
+Response Directory::addToDir(__base_entry* entry, InsertionTocken& updateTocken)
+{
+	entry->accessLock.lock();
+	updateTocken.EvB = entry;
+	if (!entry->inDirectory())
+	{
+		updateTocken.maxPrivileage = Privilege::RESTRICTED_ENTRY;
 		return Response::SUCCESS;
 	}
+	else
+	{
+
+		entry->accessLock.unlock();
+		return Response::REDUDANT_DATA;
+	}
+}
+
+Response Directory::addToDir(SourcePair& sourcePair, __base_entry* cmdEntry, InsertionTocken& insertionTocken)
+{
+	auto entry = makeEntry(sourcePair);
+	Response response;
+
+	if (entry == cmdEntry)
+		return addToDir(entry, insertionTocken);
+	else
+	{
+		entry->accessLock.lock();
+		insertionTocken.EvB = entry;
+		if (!entry->inDirectory())
+		{
+			insertionTocken.maxPrivileage = entry->maxPrivilege(cmdEntry);
+			return Response::SUCCESS;
+		}
+		else
+			response = Response::REDUDANT_DATA;
+	}
+
+	entry->accessLock.unlock();
+	return response;
+}
+
+void Directory::releaseInsertionTocken(InsertionTocken& insertionTocken, Response& reponse)
+{
+	if (reponse == Response::SUCCESS)
+	{
+		insertionTocken.EvB->isInDirectory = true;
+		insertionTocken.EvB->lastChargT = posix_time::second_clock::universal_time();
+		entryCount++;
+	}
+	insertionTocken.EvB->accessLock.unlock();
 }
 
 
@@ -195,7 +249,8 @@ Response Directory::charge(const SourcePair& sourcePair, __base_entry* cmdEntry,
 	}
 }
 
-Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry* cmdEntry, UpdateTocken& updateTocken)
+
+Response Directory::getUpdateTocken(const SourcePair& sourcePair, __base_entry* cmdEntry, UpdateTocken& updateTocken)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry == nullptr)
@@ -203,7 +258,7 @@ Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry
 
 	Response response;
 	if (entry == cmdEntry)
-		return acquireUpdateLock(entry, updateTocken);
+		return getUpdateTocken(entry, updateTocken);
 	else 
 	{
 		entry->accessLock.lock();
@@ -227,7 +282,7 @@ Response Directory::acquireUpdateLock(const SourcePair& sourcePair, __base_entry
 	return response;
 }
 
-Response Directory::acquireUpdateLock(__base_entry* entry, UpdateTocken& updateTocken)
+Response Directory::getUpdateTocken(__base_entry* entry, UpdateTocken& updateTocken)
 {
 	entry->accessLock.lock();
 	if (entry->inDirectory())
@@ -243,7 +298,7 @@ Response Directory::acquireUpdateLock(__base_entry* entry, UpdateTocken& updateT
 	}
 }
 
-void Directory::releaseLock(UpdateTocken& updateTocken)
+void Directory::releaseUpdateTocken(UpdateTocken& updateTocken)
 {
 	updateTocken.EvB->accessLock.unlock();
 }

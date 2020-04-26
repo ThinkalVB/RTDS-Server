@@ -185,8 +185,6 @@ inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(__base_entry* cmdEntry)
 
 typedef SPentry<sourcePairV4, asio::ip::address_v4> EntryV4;
 typedef SPentry<sourcePairV6, asio::ip::address_v6> EntryV6;
-
-
 /*******************************************************************************************
  * @brief Union to hold the poiter to either EntryV4 or EntryV6
  ********************************************************************************************/
@@ -202,8 +200,11 @@ struct UpdateTocken
 private:
 	__base_entry* EvB;
 	Privilege maxPrivileage;
+public:
+	__base_entry* entry();
 	friend class Directory;
 };
+typedef UpdateTocken InsertionTocken;
 
 /*******************************************************************************************
  * @brief Struct to hold both sourcePairV4 and sourcePairV6
@@ -213,8 +214,12 @@ struct SourcePair
 	union __source_pair
 	{
 		sourcePairV4 V4;
+		IPVersion4 IPV4;
 		sourcePairV6 V6;
+		IPVersion6 IPV6;
 	}SP;
+	
+	unsigned short portNumber();
 	Version version;
 };
 
@@ -240,6 +245,7 @@ public:
 	void reset();
 
 	const std::string_view& pop_front();
+	void pop_front(int);
 	const std::string_view& peek();
 	const std::string_view& peek_next();
 	void push_back(std::string_view);

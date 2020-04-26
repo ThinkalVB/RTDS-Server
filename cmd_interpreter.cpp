@@ -138,7 +138,7 @@ bool CmdInterpreter::isPermission(const std::string_view& permission)
 	return std::regex_match(permission.cbegin(), permission.cend(), regx);
 }
 
-bool CmdInterpreter::validPortNumber(const std::string_view& portNumStr, unsigned short& portNum)
+bool CmdInterpreter::isPortNumber(const std::string_view& portNumStr, unsigned short& portNum)
 {
 	std::regex regx("[0-9]{1,5}");
 	if (std::regex_match(portNumStr.cbegin(), portNumStr.cend(), regx))
@@ -162,7 +162,7 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std
 	system::error_code ec;
 	auto ipAddress = asio::ip::make_address(ipAddrStr, ec);
 	unsigned short portNumber;
-	if (ec == system::errc::success && validPortNumber(portNum, portNumber))
+	if (ec == system::errc::success && isPortNumber(portNum, portNumber))
 	{
 		if (ipAddress.is_v4())
 		{
@@ -201,6 +201,28 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SourcePair& sou
 	}
 	else
 		return false;
+}
+
+bool CmdInterpreter::makeSourcePair(CommandElement& cmdElement, SourcePair& sourcePair)
+{
+	if (cmdElement.size() >= 1)
+	{
+		if (makeSourcePair(cmdElement.peek(), sourcePair))
+		{
+			cmdElement.pop_front(1);
+			return true;
+		}
+	}
+	
+	if (cmdElement.size() >= 2)
+	{
+		if (makeSourcePair(cmdElement.peek(), cmdElement.peek_next(), sourcePair))
+		{
+			cmdElement.pop_front(2);
+			return true;
+		}
+	}
+	return false;
 }
 
 Response CmdInterpreter::_updateLockedEntry(UpdateTocken& updateTocken, Peer& cmdPeer)
@@ -306,16 +328,8 @@ void CmdInterpreter::_ttl(Peer& peer)
 
 	if (peer.cmdElement.size() == 0)
 		response = Directory::getTTL(peer.entry(), ttl);
-	else if (peer.cmdElement.size() == 1)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), sourcePair))
-			response = Directory::getTTL(sourcePair, ttl);
-	}
-	else if (peer.cmdElement.size() == 2)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
-			response = Directory::getTTL(sourcePair, ttl);
-	}
+	else if (makeSourcePair(peer.cmdElement, sourcePair))
+		response = Directory::getTTL(sourcePair, ttl);
 
 	peer.writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS)
@@ -329,16 +343,9 @@ void CmdInterpreter::_remove(Peer& peer)
 
 	if (peer.cmdElement.size() == 0)
 		response = Directory::removeFromDir(peer.entry());
-	else if (peer.cmdElement.size() == 1)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), sourcePair))
-			response = Directory::removeFromDir(sourcePair, peer.entry());
-	}
-	else if (peer.cmdElement.size() == 2)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
-			response = Directory::removeFromDir(sourcePair, peer.entry());
-	}
+	else if (makeSourcePair(peer.cmdElement, sourcePair))
+		response = Directory::removeFromDir(sourcePair, peer.entry());
+
 	peer.writeBuffer += RESP[(short)response];
 }
 
@@ -350,35 +357,17 @@ void CmdInterpreter::_update(Peer& peer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
-	bool haveSourcePair = false;
 	UpdateTocken updateTocken;
 
-	if (peer.cmdElement.size() >= 1)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), sourcePair))
-		{
-			haveSourcePair = true;
-			response = Directory::acquireUpdateLock(sourcePair, peer.entry(), updateTocken);
-			peer.cmdElement.pop_front();
-		}
-	}
-	if (!haveSourcePair && peer.cmdElement.size() >= 2)
-	{
-		if (makeSourcePair(peer.cmdElement.peek(), peer.cmdElement.peek_next(), sourcePair))
-		{
-			haveSourcePair = true;
-			response = Directory::acquireUpdateLock(sourcePair, peer.entry(), updateTocken);
-			peer.cmdElement.pop_front();
-			peer.cmdElement.pop_front();
-		}
-	}
-	if (!haveSourcePair)
-		response = Directory::acquireUpdateLock(peer.entry(), updateTocken);
+	if (makeSourcePair(peer.cmdElement, sourcePair))
+		response = Directory::getUpdateTocken(sourcePair, peer.entry(), updateTocken);
+	else
+		response = Directory::getUpdateTocken(peer.entry(), updateTocken);
 
 	if (response == Response::SUCCESS)
 	{
 		response = _updateLockedEntry(updateTocken, peer);
-		Directory::releaseLock(updateTocken);
+		Directory::releaseUpdateTocken(updateTocken);
 	}
 	peer.writeBuffer += RESP[(short)response];
 }
@@ -386,16 +375,26 @@ void CmdInterpreter::_update(Peer& peer)
 void CmdInterpreter::_add(Peer& peer)
 {
 	Response response = Response::BAD_PARAM;
-	if (peer.cmdElement.size() == 0)
-		response = Directory::addToDir(peer.entry());
+	SourcePair sourcePair;
+	InsertionTocken insertionTocken;
 
+	if (makeSourcePair(peer.cmdElement, sourcePair))
+		response = Directory::addToDir(sourcePair, peer.entry(), insertionTocken);
+	else 
+		response = Directory::addToDir(peer.entry(), insertionTocken);
 
+	if (response == Response::SUCCESS)
+	{
+		if (peer.cmdElement.size() > 0)
+			response = _updateLockedEntry(insertionTocken, peer);
+		Directory::releaseInsertionTocken(insertionTocken, response);
+	}
 
 	peer.writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS || response == Response::REDUDANT_DATA)
 	{
 		peer.writeBuffer += " ";
-		peer.entry()->printUID(peer.writeBuffer);
+		insertionTocken.entry()->printUID(peer.writeBuffer);
 	}
 }
 
