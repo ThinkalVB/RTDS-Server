@@ -15,7 +15,7 @@ using namespace boost;
 const std::string CmdInterpreter::RESP[] = 
 {
 	"redudant_data",
-	"ok_success",
+	"success",
 	"no_privilege",
 	"bad_command",
 	"bad_param",
@@ -39,7 +39,7 @@ const std::string CmdInterpreter::COMM[] =
 	"exit"
 };
 
-bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
+bool CmdInterpreter::populateElement(Peer& peer, const std::size_t& size)
 {
 	std::string_view commandLine;
 	if (peer.dataBuffer[size - 1] == ';')
@@ -101,6 +101,22 @@ bool CmdInterpreter::populateElement(Peer& peer, const size_t& size)
 		return false;
 }
 
+bool CmdInterpreter::extractFlushParam(Peer& peer, std::size_t& flushCount)
+{
+	auto flushPara = peer.cmdElement.peek();
+	std::regex regx("[0-9]{1,5}");
+	if (std::regex_match(flushPara.cbegin(), flushPara.cend(), regx))
+	{
+		std::from_chars(flushPara.data(), flushPara.data() + flushPara.size(), flushCount);
+		if (flushCount != 0)
+		{
+			peer.cmdElement.pop_front(1);
+			return true;
+		}
+	}
+	return false;
+}
+
 Privilege CmdInterpreter::toPrivilege(const char& privilege)
 {
 	if (privilege == 'l')
@@ -159,11 +175,8 @@ bool CmdInterpreter::isPortNumber(const std::string_view& portNumStr, unsigned s
 			portNum = (unsigned short)portNumber;
 			return true;
 		}
-		else
-			return false;
 	}
-	else
-		return false;
+	return false;
 }
 
 bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std::string_view& portNum, SourcePair& sourcePair)
@@ -198,18 +211,16 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SourcePair& sou
 		{
 			cppcodec::base64_rfc4648::decode(sourcePair.SP.V4.data(), sourcePair.SP.V4.size(), uid);
 			sourcePair.version = Version::V4;
+			return true;
 		}
 		else if (uid.size() == V6_UID_MAX_CHAR)
 		{
 			cppcodec::base64_rfc4648::decode(sourcePair.SP.V6.data(), sourcePair.SP.V6.size(), uid);
 			sourcePair.version = Version::V6;
+			return true;
 		}
-		else
-			return false;
-		return true;
 	}
-	else
-		return false;
+	return false;
 }
 
 bool CmdInterpreter::makeSourcePair(CommandElement& cmdElement, SourcePair& sourcePair)
@@ -360,6 +371,15 @@ void CmdInterpreter::_remove(Peer& peer)
 
 void CmdInterpreter::_flush(Peer& peer)
 {
+	std::size_t flushCount;
+	Response response = Response::BAD_PARAM;
+	if (peer.cmdElement.size() == 1 && extractFlushParam(peer, flushCount))
+		response = Directory::flushEntries(peer.writeBuffer, flushCount);
+	else if (peer.cmdElement.size() == 0)
+		response = Directory::flushEntries(peer.writeBuffer);
+
+	if (response != Response::SUCCESS)
+		peer.writeBuffer += RESP[(short)response];
 }
 
 void CmdInterpreter::_update(Peer& peer)

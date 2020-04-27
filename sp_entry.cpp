@@ -115,6 +115,22 @@ void BaseEntry::removeFromDirectory()
 	}
 }
 
+void BaseEntry::assignDefualtPermission(Privilege maxPrivilege)
+{
+	if (maxPrivilege == Privilege::RESTRICTED_ENTRY || maxPrivilege == Privilege::PROTECTED_ENTRY)
+	{
+		permission.charge = Privilege::PROTECTED_ENTRY;
+		permission.change = Privilege::PROTECTED_ENTRY;
+		permission.remove = Privilege::PROTECTED_ENTRY;
+	}
+	else
+	{
+		permission.charge = Privilege::LIBERAL_ENTRY;
+		permission.change = Privilege::LIBERAL_ENTRY;
+		permission.remove = Privilege::LIBERAL_ENTRY;
+	}
+}
+
 void BaseEntry::printBrief(std::string& strBuffer)
 {
 	if (version == Version::V4)
@@ -162,7 +178,7 @@ const Version& BaseEntry::getVersion()
 }
 
 
-const size_t& CommandElement::size()
+const std::size_t& CommandElement::size()
 {
 	return _size;
 }

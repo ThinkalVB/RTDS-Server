@@ -53,7 +53,19 @@ public:
 * If their are more than 5 command elements, then the command line will be considered invalid.
 * For this function to return true their must be atleast 1 command element present.
 ********************************************************************************************/
-	static bool populateElement(Peer&, const size_t&);
+	static bool populateElement(Peer&, const std::size_t&);
+/*******************************************************************************************
+* @brief Extract flush count from the command element
+*
+* @param[in] peer				The peer for which the flush count is to be generated
+* @param[out] flushCount		Number of entries to be flushed
+* @return						True if a valid parameter is found
+*
+* @details
+* The value shoudn't be negative or zero. Regex "[0-9]{1,5}"
+* If a valid parameter is found it will be purged from the peer cmdElement.
+********************************************************************************************/
+	static bool extractFlushParam(Peer&, std::size_t&);
 
 /*******************************************************************************************
 * @brief Convert the string to permission [use only after verfying by _isPermission()]
@@ -68,7 +80,12 @@ public:
 * @param[in] privilege			Permission
 ********************************************************************************************/
 	static void toPermission(const std::string_view&, Permission&);
-
+/*******************************************************************************************
+* @brief Get the TTL for the privilege
+*
+* @param[in] maxPrivilege		The maximum privilege the entry have
+* @return						Time to live for that particular privilege
+********************************************************************************************/
 	static TTL toTTL(Privilege);
 
 /*******************************************************************************************

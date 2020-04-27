@@ -106,6 +106,16 @@ protected:
 * [Not thread safe]
 ********************************************************************************************/
 	void removeFromDirectory();
+/*******************************************************************************************
+* @brief Assign default permission to the entry
+*
+* @param[in] maxPrivilege		The maximum privilege commanding entry have on this entry
+*
+* @details
+* PROTECTED_ENTRY if either protected or restricted, else LIBERAL_ENTRY
+* [Not thread safe]
+********************************************************************************************/
+	void assignDefualtPermission(Privilege);
 
 public:
 /*******************************************************************************************
@@ -206,8 +216,8 @@ inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(BaseEntry* cmdEntry)
 		return Privilege::LIBERAL_ENTRY;
 }
 
-typedef SPentry<sourcePairV4, asio::ip::address_v4> EntryV4;
-typedef SPentry<sourcePairV6, asio::ip::address_v6> EntryV6;
+typedef SPentry<SourcePairV4, asio::ip::address_v4> EntryV4;
+typedef SPentry<SourcePairV6, asio::ip::address_v6> EntryV6;
 /*******************************************************************************************
  * @brief Union to hold the poiter to either EntryV4 or EntryV6
  ********************************************************************************************/
@@ -222,7 +232,7 @@ struct UpdateTocken
 {
 private:
 	BaseEntry* EvB;
-	Privilege maxPrivileage;
+	Privilege maxPrivilege;
 public:
 	BaseEntry* entry();
 	friend class Directory;
@@ -230,15 +240,15 @@ public:
 typedef UpdateTocken InsertionTocken;
 
 /*******************************************************************************************
- * @brief Struct to hold both sourcePairV4 and sourcePairV6
+ * @brief Struct to hold both SourcePairV4 and SourcePairV6
  ********************************************************************************************/
 struct SourcePair
 {
 	union __source_pair
 	{
-		sourcePairV4 V4;
+		SourcePairV4 V4;
 		IPVersion4 IPV4;
-		sourcePairV6 V6;
+		SourcePairV6 V6;
 		IPVersion6 IPV6;
 	}SP;
 	
@@ -263,7 +273,7 @@ private:
 	std::size_t _size;
 	std::size_t _index;
 public:
-	const size_t& size();
+	const std::size_t& size();
 	void reset_for_read();
 	void reset();
 

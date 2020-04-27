@@ -6,8 +6,8 @@
 
 class Directory
 {
-	static std::map<sourcePairV4, EntryV4*> V4EntryMap;		//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
-	static std::map<sourcePairV6, EntryV6*> V6EntryMap;		//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
+	static std::map<SourcePairV4, EntryV4*> V4EntryMap;		//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
+	static std::map<SourcePairV6, EntryV6*> V6EntryMap;		//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
@@ -21,8 +21,8 @@ class Directory
 * @details
 * Find the pointer to the Entry's base class if it exists in the map.
 ********************************************************************************************/
-	static BaseEntry* _findEntry(const sourcePairV4&);
-	static BaseEntry* _findEntry(const sourcePairV6&);
+	static BaseEntry* _findEntry(const SourcePairV4&);
+	static BaseEntry* _findEntry(const SourcePairV6&);
 	static BaseEntry* _findEntry(const SourcePair&);
 /*******************************************************************************************
 * @brief Return true if cmdEntry have the privilege over entry to carry out the command
@@ -233,6 +233,21 @@ public:
 * @return						Return the total number of entries in the directory
 ********************************************************************************************/
 	static int getEntryCount();
+/*******************************************************************************************
+* @brief Wipe all the entries from the directory (dynamic deallocation)
+********************************************************************************************/
+	static void clearDirectory();
+/*******************************************************************************************
+* @brief Flush the entries details through write buffer
+*
+* @param[in] writeBuffer		Buffer to which the entry details will be streamed
+* @param[in] flushCount			Maximum number of entries to be flushed
+* @return						Return SUCCESS if the events are flushed
+*
+* @details
+* Return SUCCESS, after the flushing is completed. Return NO_EXIST if the directory is empty.
+********************************************************************************************/
+	static Response flushEntries(std::string&, std::size_t = SIZE_MAX);
 };
 
 #endif

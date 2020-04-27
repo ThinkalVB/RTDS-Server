@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <array>
 
-typedef std::array<uint8_t, 6> sourcePairV4;
+typedef std::array<uint8_t, 6> SourcePairV4;
 typedef std::array< unsigned char, 4 > IPVersion4;
-typedef std::array<uint8_t, 18> sourcePairV6;
+typedef std::array<uint8_t, 18> SourcePairV6;
 typedef std::array< unsigned char, 16 > IPVersion6;
 
 /*******************************************************************************************
