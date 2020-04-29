@@ -26,7 +26,7 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 
 void Peer::_peerReceiveData()
 {
-	peerSocket->async_receive(asio::buffer(dataBuffer, RTDS_BUFF_SIZE), 0, bind(&Peer::_processData,
+	peerSocket->async_receive(asio::buffer(dataBuffer.data(), RTDS_BUFF_SIZE), 0, bind(&Peer::_processData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 
@@ -41,7 +41,7 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 	}
 	else
 	{
-		if (CmdInterpreter::populateElement(*this, size))
+		if (CmdInterpreter::makeCmdElement(dataBuffer, commandElement, size))
 			CmdInterpreter::processCommand(*this);
 		else
 		{
@@ -109,6 +109,16 @@ void Peer::removeFromMirroringGroup()
 BaseEntry* Peer::entry()
 {
 	return peerEntry.EvB;
+}
+
+std::string& Peer::Buffer()
+{
+	return writeBuffer;
+}
+
+CommandElement& Peer::cmdElement()
+{
+	return commandElement;
 }
 
 Peer::~Peer()

@@ -2,34 +2,33 @@
 #define CMD_INTERPRETER_H
 
 #include "peer.h"
-#include "sp_entry.h"
 
 class CmdInterpreter
 {
-	static void s_ping(Peer&);
-	static void s_count(Peer&);
+	static void s_ping(BaseEntry*, std::string&);
+	static void s_count(std::string&);
 	static void s_mirror(Peer&);
 	static void s_leave(Peer&);
 
-	static void _add(Peer&);
-	static void _search(Peer&);
-	static void _charge(Peer&);
-	static void _remove(Peer&);
-	static void _flush(Peer&);
-	static void _ttl(Peer&);
-	static void _update(Peer&);
+	static void _add(BaseEntry*, CommandElement&, std::string&);
+	static void _search(BaseEntry*, CommandElement&, std::string&);
+	static void _charge(BaseEntry*, CommandElement&, std::string&);
+	static void _remove(BaseEntry*, CommandElement&, std::string&);
+	static void _flush(CommandElement&, std::string&);
+	static void _ttl(BaseEntry*, CommandElement&, std::string&);
+	static void _update(BaseEntry*, CommandElement&, std::string&);
 
 /*******************************************************************************************
 * @brief Update the permission and description for a locked entry
 *
-* @param[in] entry				The entry which is locked and waiting for updates
-* @param[out] cmdPeer			The peer issuing the command for update
+* @param[in] updateTocken		Update tocken for the entry to be updated
+* @param[in] cmdElement			The commanding element with description and permission
 * @return						SUCCESS if successfully updated
 *
 * @details
 * Return BAD_PARAM if the order of the parameter or the parameter itself is bad.
 ********************************************************************************************/
-	static Response _updateLockedEntry(UpdateTocken&, Peer&);
+	static Response _updateLockedEntry(UpdateTocken&, CommandElement&);
 
 public:
 	static const std::string RESP[];			//!< All responses in string.
@@ -44,8 +43,9 @@ public:
 /*******************************************************************************************
 * @brief Extract all command elements from the command line.
 *
-* @param[in] peer				The peer for which the command elements are to be generated
-* @param[out] size				Number of characters received from process data
+* @param[in] dataBuffer			Buffer that store the incoming data
+* @param[in] cmdElement			Data structure to store the command elements
+* @param[in] size				Number of characters received from the socket
 * @return						True if command elements is found
 *
 * @details
@@ -53,19 +53,19 @@ public:
 * If their are more than 5 command elements, then the command line will be considered invalid.
 * For this function to return true their must be atleast 1 command element present.
 ********************************************************************************************/
-	static bool populateElement(Peer&, const std::size_t&);
+	static bool makeCmdElement(std::array<char, RTDS_BUFF_SIZE>&, CommandElement&, std::size_t);
 /*******************************************************************************************
 * @brief Extract flush count from the command element
 *
-* @param[in] peer				The peer for which the flush count is to be generated
+* @param[in] cmdElement			The command element containing the parameter
 * @param[out] flushCount		Number of entries to be flushed
 * @return						True if a valid parameter is found
 *
 * @details
 * The value shoudn't be negative or zero. Regex "[0-9]{1,5}"
-* If a valid parameter is found it will be purged from the peer cmdElement.
+* If a valid parameter is found it will be purged from the cmdElement.
 ********************************************************************************************/
-	static bool extractFlushParam(Peer&, std::size_t&);
+	static bool extractFlushParam(CommandElement&, std::size_t&);
 
 /*******************************************************************************************
 * @brief Convert the string to permission [use only after verfying by _isPermission()]

@@ -226,6 +226,17 @@ public:
 * @param[in] desc				Description to be updated
 ********************************************************************************************/
 	static void update(UpdateTocken&, const std::string_view&);
+/*******************************************************************************************
+* @brief Entry to be searched
+*
+* @param[in] sourcePair			The source pair address to the entry
+* @param[out] entry				The pointer to the entry if an entry is found
+* @return						Return SUCCESS if the entry is found
+*
+* @details
+* Return SUCCESS, if an entry is found. Return NO_EXIST if entry didn't exist.
+********************************************************************************************/
+	static Response searchEntry(const SourcePair&, BaseEntry*&);
 
 /*******************************************************************************************
 * @brief Get the total number of entries in the directory
@@ -237,6 +248,7 @@ public:
 * @brief Wipe all the entries from the directory (dynamic deallocation)
 ********************************************************************************************/
 	static void clearDirectory();
+
 /*******************************************************************************************
 * @brief Flush the entries details through write buffer
 *
@@ -248,6 +260,27 @@ public:
 * Return SUCCESS, after the flushing is completed. Return NO_EXIST if the directory is empty.
 ********************************************************************************************/
 	static Response flushEntries(std::string&, std::size_t = SIZE_MAX);
+/*******************************************************************************************
+* @brief Print the brief info - IPversion, IPaddress, PortNumber
+*
+* @param[in] writeBuffer		Entry for which the brief is to be printed
+* @param[out] writeBuffer		String buffer to which the data will be written.
+********************************************************************************************/
+	static void printBrief(BaseEntry*, std::string&);
+/*******************************************************************************************
+* @brief Print the expanded form of the entry
+*
+* @param[out] entry				The pointer to the entry if an entry is found
+* @param[in] writeBuffer		The buffer to which the expanded form will be written
+********************************************************************************************/
+	static void printExpand(BaseEntry* entry, std::string&);
+/*******************************************************************************************
+* @brief Print the UID
+*
+* @param[in] writeBuffer		Entry for which the UID is to be printed
+* @param[out] strBuffer			String buffer to which the data will be written.
+********************************************************************************************/
+	static void printUID(const BaseEntry*, std::string&);
 };
 
 #endif

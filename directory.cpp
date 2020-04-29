@@ -316,6 +316,19 @@ void Directory::update(UpdateTocken& updateTocken, const std::string_view& desc)
 	updateTocken.EvB->description = desc;
 }
 
+Response Directory::searchEntry(const SourcePair& sourcePair, BaseEntry*& entry)
+{
+	auto searchingEntry = _findEntry(sourcePair);
+	if (searchingEntry == nullptr)
+		return Response::NO_EXIST;
+	if (searchingEntry->inDirectory())
+	{
+		entry = searchingEntry;
+		return Response::SUCCESS;
+	}
+	return::Response::NO_EXIST;
+}
+
 
 int Directory::getEntryCount()
 {
@@ -343,6 +356,7 @@ void Directory::clearDirectory()
 	V6EntryMap.clear();
 }
 
+
 Response Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 {
 	if (BaseEntry::begin == nullptr)
@@ -363,4 +377,20 @@ Response Directory::flushEntries(std::string& writeBuffer, std::size_t flushCoun
 		}
 		return Response::SUCCESS;
 	}
-}    
+}
+
+void Directory::printBrief(BaseEntry* entry, std::string& writeBuffer)
+{
+	entry->printBrief(writeBuffer);
+}
+
+void Directory::printExpand(BaseEntry* entry, std::string& writeBuffer)
+{
+	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
+	entry->printExpand(writeBuffer);
+}
+
+void Directory::printUID(const BaseEntry* entry, std::string& writeBuffer)
+{
+	writeBuffer += entry->UID;
+}

@@ -93,8 +93,10 @@ protected:
 /*******************************************************************************************
 * @brief Add the entry to the directory
 *
+* @param[in] ttl				Time to Live for the entry.
+*
 * @details
-* Increment the entryCount, turn isInDirectory flag to true, update lastChargeT
+* Increment the entryCount, turn isInDirectory flag to true, update lastChargeT.
 * [Not thread safe]
 ********************************************************************************************/
 	void addToDirectory(TTL);
@@ -102,7 +104,7 @@ protected:
 * @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
 *
 * @details
-* Decrement the entryCount, turn isInDirectory flag to false
+* Decrement the entryCount, turn isInDirectory flag to false.
 * [Not thread safe]
 ********************************************************************************************/
 	void removeFromDirectory();
@@ -112,24 +114,18 @@ protected:
 * @param[in] maxPrivilege		The maximum privilege commanding entry have on this entry
 *
 * @details
-* PROTECTED_ENTRY if either protected or restricted, else LIBERAL_ENTRY
+* PROTECTED_ENTRY if either protected or restricted, else LIBERAL_ENTRY.
 * [Not thread safe]
 ********************************************************************************************/
 	void assignDefualtPermission(Privilege);
-
-public:
-/*******************************************************************************************
-* @brief Print the UID
-*
-* @param[out] strBuffer			String buffer to which the data will be written.
-********************************************************************************************/
-	void printUID(std::string&);
 /*******************************************************************************************
 * @brief Print the brief info - IPversion, IPaddress, PortNumber
 *
 * @param[out] strBuffer			String buffer to which the data will be written.
 ********************************************************************************************/
 	void printBrief(std::string&);
+public:
+
 /*******************************************************************************************
 * @brief Make this entry part of a peer
 *
@@ -169,8 +165,8 @@ public:
 * @return						The maximum privilage the comEntry have on entry.
 *
 * @details
-* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY;
-* Both have the same IP  version address - return Privilege::PROTECTED_ENTRY;
+* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY.
+* Both have the same IP  version address - return Privilege::PROTECTED_ENTRY.
 ********************************************************************************************/
 	Privilege maxPrivilege(BaseEntry*);
 	friend class Directory;

@@ -1,21 +1,12 @@
-[2020-Apr-28 02:21:05.368548]  RTDS starting
-[2020-Apr-28 02:21:05.369545]  New IO Thread added
-[2020-Apr-28 02:21:05.370545]  New IO Thread added
-[2020-Apr-28 02:21:05.373535]  New IO Thread added
-[2020-Apr-28 02:21:05.374532]  New IO Thread added
-[2020-Apr-28 02:21:05.374532]  New IO Thread added
-[2020-Apr-28 02:21:05.375531]  TCP server initiating
-[2020-Apr-28 02:21:05.375531]  TCP Accepting starting
-[2020-Apr-28 02:21:05.375531]  TCP server started
-[2020-Apr-28 02:21:14.166669]  Incoming TCP connection 127.0.0.1 56243
-[2020-Apr-28 02:21:14.806374]  Incoming TCP connection 127.0.0.1 56244
-[2020-Apr-28 02:21:15.293904]  Incoming TCP connection 127.0.0.1 56245
-[2020-Apr-28 02:21:15.814765]  Incoming TCP connection 127.0.0.1 56246
-[2020-Apr-28 02:22:48.160846]  TCP Socket _processData() failed 127.0.0.1 56246 End of file
-[2020-Apr-28 02:22:48.160846]  TCP Socket closing 127.0.0.1 56246
-[2020-Apr-28 02:22:49.847213]  TCP Socket _processData() failed 127.0.0.1 56245 End of file
-[2020-Apr-28 02:22:49.847213]  TCP Socket closing 127.0.0.1 56245
-[2020-Apr-28 02:22:51.354962]  TCP Socket _processData() failed 127.0.0.1 56244 End of file
-[2020-Apr-28 02:22:51.354962]  TCP Socket closing 127.0.0.1 56244
-[2020-Apr-28 02:22:52.715628]  TCP Socket _processData() failed 127.0.0.1 56243 End of file
-[2020-Apr-28 02:22:52.715628]  TCP Socket closing 127.0.0.1 56243
+[2020-Apr-29 07:01:58.644876]  RTDS starting
+[2020-Apr-29 07:01:58.645879]  New IO Thread added
+[2020-Apr-29 07:01:58.647869]  New IO Thread added
+[2020-Apr-29 07:01:58.650857]  New IO Thread added
+[2020-Apr-29 07:01:58.653852]  New IO Thread added
+[2020-Apr-29 07:01:58.654847]  New IO Thread added
+[2020-Apr-29 07:01:58.654847]  TCP server initiating
+[2020-Apr-29 07:01:58.654847]  TCP Accepting starting
+[2020-Apr-29 07:01:58.655844]  TCP server started
+[2020-Apr-29 07:02:01.781127]  Incoming TCP connection 127.0.0.1 62593
+[2020-Apr-29 07:02:39.190676]  TCP Socket _processData() failed 127.0.0.1 62593 End of file
+[2020-Apr-29 07:02:39.190676]  TCP Socket closing 127.0.0.1 62593

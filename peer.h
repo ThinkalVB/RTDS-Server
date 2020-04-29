@@ -10,14 +10,18 @@ constexpr short RTDS_BUFF_SIZE = 300;
 
 class Peer
 {
-	static short peerCount;						//!< Keep the total count of peers
-	static std::vector<Peer*> mirroringGroup;	//!< Keep the list of peers mirroring the directory
-	static std::mutex mirroringListLock;		//!< Lock this mutex when accessing the mirrorGroup
-	Entry peerEntry;							//!< Union DS that store the SourcePair entry(v4/v6) pointers
+	static short peerCount;							//!< Keep the total count of peers
+	static std::vector<Peer*> mirroringGroup;		//!< Keep the list of peers mirroring the directory
+	static std::mutex mirroringListLock;			//!< Lock this mutex when accessing the mirrorGroup
+	Entry peerEntry;								//!< Union DS that store the SourcePair entry(v4/v6) pointers
 
-	asio::ip::tcp::socket* peerSocket;			//!< Socket handling the data from peer system
-	asio::ip::tcp::endpoint remoteEp;			//!< Endpoint of the peerSocket with info on peer system
-	bool isMirroring = false;					//!< True if this peer is in mirroring mode
+	asio::ip::tcp::socket* peerSocket;				//!< Socket handling the data from peer system
+	asio::ip::tcp::endpoint remoteEp;				//!< Endpoint of the peerSocket with info on peer system
+	bool isMirroring = false;						//!< True if this peer is in mirroring mode
+
+	std::array<char, RTDS_BUFF_SIZE> dataBuffer;	//!< Buffer to which the commands are received
+	CommandElement commandElement;					//!< String view Array of command elements
+	std::string writeBuffer;						//!< Buffer from which the response will be send
 
 /*******************************************************************************************
  * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
@@ -53,10 +57,6 @@ class Peer
 ********************************************************************************************/
 	void _sendData(const boost::system::error_code&, std::size_t);
 public:
-
-	char dataBuffer[RTDS_BUFF_SIZE];			//!< Buffer to which the commands are received
-	CommandElement cmdElement;					//!< String view Array of command elements
-	std::string writeBuffer;					//!< Buffer from which the response will be send
 
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
@@ -118,6 +118,18 @@ void terminatePeer();
 * @return						Pointer to the base class
 ********************************************************************************************/
 	BaseEntry* entry();
+/*******************************************************************************************
+* @brief Return the write buffer
+*
+* @return						Reference to the write buffer
+********************************************************************************************/
+	std::string& Buffer();
+/*******************************************************************************************
+* @brief Return the command Elements
+*
+* @return						Reference to the command elements
+********************************************************************************************/
+	CommandElement& cmdElement();
 };
 
 #endif

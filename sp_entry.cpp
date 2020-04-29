@@ -131,31 +131,26 @@ void BaseEntry::assignDefualtPermission(Privilege maxPrivilege)
 	}
 }
 
-void BaseEntry::printBrief(std::string& strBuffer)
+void BaseEntry::printBrief(std::string& writeBuffer)
 {
 	if (version == Version::V4)
-		strBuffer += VER[(short)Version::V4];
+		writeBuffer += VER[(short)Version::V4];
 	else
-		strBuffer += VER[(short)Version::V6];
-	strBuffer += " " + ipAddress + " " + portNumber;
+		writeBuffer += VER[(short)Version::V6];
+	writeBuffer += " " + ipAddress + " " + portNumber;
 }
 
-void BaseEntry::printExpand(std::string& strBuffer)
+void BaseEntry::printExpand(std::string& writeBuffer)
 {
 	if (version == Version::V4)
-		strBuffer += VER[(short)Version::V4];
+		writeBuffer += VER[(short)Version::V4];
 	else
-		strBuffer += VER[(short)Version::V6];
-	strBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
-	strBuffer += PRI[(short)permission.change];
-	strBuffer += PRI[(short)permission.charge];
-	strBuffer += PRI[(short)permission.remove];
-	strBuffer += " " + description;
-}
-
-void BaseEntry::printUID(std::string& strBuffer)
-{
-	strBuffer += UID;
+		writeBuffer += VER[(short)Version::V6];
+	writeBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
+	writeBuffer += PRI[(short)permission.change];
+	writeBuffer += PRI[(short)permission.charge];
+	writeBuffer += PRI[(short)permission.remove];
+	writeBuffer += " " + description;
 }
 
 short BaseEntry::getTTL()

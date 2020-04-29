@@ -39,21 +39,21 @@ const std::string CmdInterpreter::COMM[] =
 	"exit"
 };
 
-bool CmdInterpreter::populateElement(Peer& peer, const std::size_t& size)
+bool CmdInterpreter::makeCmdElement(std::array<char, RTDS_BUFF_SIZE>& dataBuffer, CommandElement& cmdElement, std::size_t size)
 {
 	std::string_view commandLine;
-	if (peer.dataBuffer[size - 1] == ';')
+	if (dataBuffer[size - 1] == ';')
 	{
-		peer.dataBuffer[size - 1] = '\0';
-		commandLine = peer.dataBuffer;
-		peer.cmdElement.reset();
+		dataBuffer[size - 1] = '\0';
+		commandLine = (char*)dataBuffer.data();
+		cmdElement.reset();
 	}
 	else
 		return false;
 
 	while (!commandLine.empty())
 	{
-		if (peer.cmdElement.size() == 5)
+		if (cmdElement.size() == 5)
 			return false;
 
 		auto cmdSize = commandLine.size();
@@ -67,9 +67,9 @@ bool CmdInterpreter::populateElement(Peer& peer, const std::size_t& size)
 			{
 				endIndex = commandLine.find_last_not_of(' ');
 				if (endIndex == std::string::npos)
-					peer.cmdElement.push_back(commandLine.substr(0, commandLine.size()));
+					cmdElement.push_back(commandLine.substr(0, commandLine.size()));
 				else
-					peer.cmdElement.push_back(commandLine.substr(0, endIndex + 1));
+					cmdElement.push_back(commandLine.substr(0, endIndex + 1));
 				commandLine.remove_prefix(commandLine.size());
 			}
 			else
@@ -77,13 +77,13 @@ bool CmdInterpreter::populateElement(Peer& peer, const std::size_t& size)
 				endIndex = commandLine.find(' ');
 				if (endIndex == std::string::npos)
 				{
-					peer.cmdElement.push_back(commandLine);
+					cmdElement.push_back(commandLine);
 					commandLine.remove_prefix(commandLine.size());
 					break;
 				}
 				else
 				{
-					peer.cmdElement.push_back(commandLine.substr(0, endIndex));
+					cmdElement.push_back(commandLine.substr(0, endIndex));
 					commandLine.remove_prefix(endIndex);
 				}
 			}
@@ -92,25 +92,25 @@ bool CmdInterpreter::populateElement(Peer& peer, const std::size_t& size)
 			break;
 	}
 
-	if (peer.cmdElement.size() > 0 && commandLine.empty())
+	if (cmdElement.size() > 0 && commandLine.empty())
 	{
-		peer.cmdElement.reset_for_read();
+		cmdElement.reset_for_read();
 		return true;
 	}
 	else
 		return false;
 }
 
-bool CmdInterpreter::extractFlushParam(Peer& peer, std::size_t& flushCount)
+bool CmdInterpreter::extractFlushParam(CommandElement& cmdElement, std::size_t& flushCount)
 {
-	auto flushPara = peer.cmdElement.peek();
+	auto flushPara = cmdElement.peek();
 	std::regex regx("[0-9]{1,5}");
 	if (std::regex_match(flushPara.cbegin(), flushPara.cend(), regx))
 	{
 		std::from_chars(flushPara.data(), flushPara.data() + flushPara.size(), flushCount);
 		if (flushCount != 0)
 		{
-			peer.cmdElement.pop_front(1);
+			cmdElement.pop_front(1);
 			return true;
 		}
 	}
@@ -245,33 +245,33 @@ bool CmdInterpreter::makeSourcePair(CommandElement& cmdElement, SourcePair& sour
 	return false;
 }
 
-Response CmdInterpreter::_updateLockedEntry(UpdateTocken& updateTocken, Peer& cmdPeer)
+Response CmdInterpreter::_updateLockedEntry(UpdateTocken& updateTocken, CommandElement& cmdElement)
 {
 	auto response = Response::BAD_PARAM;
-	if (cmdPeer.cmdElement.size() == 2)
+	if (cmdElement.size() == 2)
 	{
-		if (isPermission(cmdPeer.cmdElement.peek()) && isDescription(cmdPeer.cmdElement.peek_next()))
+		if (isPermission(cmdElement.peek()) && isDescription(cmdElement.peek_next()))
 		{
 			Permission permission;
-			toPermission(cmdPeer.cmdElement.peek(), permission);
+			toPermission(cmdElement.peek(), permission);
 
 			response = Directory::update(updateTocken, permission);
 			if (response == Response::SUCCESS)
-				Directory::update(updateTocken, cmdPeer.cmdElement.peek_next());
+				Directory::update(updateTocken, cmdElement.peek_next());
 		}
 	}
 
-	if (cmdPeer.cmdElement.size() == 1)
+	if (cmdElement.size() == 1)
 	{
-		if (isPermission(cmdPeer.cmdElement.peek()))
+		if (isPermission(cmdElement.peek()))
 		{
 			Permission permission;
-			toPermission(cmdPeer.cmdElement.peek(), permission);
+			toPermission(cmdElement.peek(), permission);
 			response = Directory::update(updateTocken, permission);
 		}	
-		else if (isDescription(cmdPeer.cmdElement.peek()))
+		else if (isDescription(cmdElement.peek()))
 		{
-			Directory::update(updateTocken, cmdPeer.cmdElement.peek());
+			Directory::update(updateTocken, cmdElement.peek());
 			response = Response::SUCCESS;
 		}
 	}
@@ -280,169 +280,185 @@ Response CmdInterpreter::_updateLockedEntry(UpdateTocken& updateTocken, Peer& cm
 
 void CmdInterpreter::processCommand(Peer& peer)
 {
-	auto command = peer.cmdElement.pop_front();
-	if (command == COMM[(short)Command::PING] && peer.cmdElement.size() == 0)
-		s_ping(peer);
-	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement.size() == 0)
-		s_count(peer);
-	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement.size() == 0)
+	auto command = peer.cmdElement().pop_front();
+	if (command == COMM[(short)Command::PING] && peer.cmdElement().size() == 0)
+		s_ping(peer.entry(), peer.Buffer());
+	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement().size() == 0)
+		s_count(peer.Buffer());
+	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement().size() == 0)
 		s_mirror(peer);
-	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement.size() == 0)
+	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement().size() == 0)
 		s_leave(peer);
 	else if (command == COMM[(short)Command::ADD])
-		_add(peer);
+		_add(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::SEARCH])
-		_search(peer);
+		_search(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::CHARGE])
-		_charge(peer);
+		_charge(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::TTL])
-		_ttl(peer);
+		_ttl(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::REMOVE])
-		_remove(peer);
+		_remove(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::FLUSH])
-		_flush(peer);
+		_flush(peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::UPDATE])
-		_update(peer);
-	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement.size() == 0)
+		_update(peer.entry(), peer.cmdElement(), peer.Buffer());
+	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement().size() == 0)
 	{
 		peer.terminatePeer();
 		return;
 	}
 
-	if (peer.writeBuffer.size() == 0)
-		peer.writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
+	if (peer.Buffer().size() == 0)
+		peer.Buffer() = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
 	peer.sendPeerData();
 }
 
 /* Commands without any arguments				*/		
-void CmdInterpreter::s_ping(Peer& peer)
+void CmdInterpreter::s_ping(BaseEntry* entry, std::string& writeBuffer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.entry()->printBrief(peer.writeBuffer);
+	writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	Directory::printBrief(entry, writeBuffer);
 }
 
-void CmdInterpreter::s_count(Peer& peer)
+void CmdInterpreter::s_count(std::string& writeBuffer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-	peer.writeBuffer += std::to_string(Directory::getEntryCount());
+	writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+	writeBuffer += std::to_string(Directory::getEntryCount());
 }
 
 void CmdInterpreter::s_mirror(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS];
+	peer.Buffer() += RESP[(short)Response::SUCCESS];
 	peer.addToMirroringGroup();
 }
 
 void CmdInterpreter::s_leave(Peer& peer)
 {
-	peer.writeBuffer += RESP[(short)Response::SUCCESS];
+	peer.Buffer() += RESP[(short)Response::SUCCESS];
 	peer.removeFromMirroringGroup();
 }
 
 /* Commands with arguments						*/
-void CmdInterpreter::_ttl(Peer& peer)
+void CmdInterpreter::_ttl(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
 	short ttl;
 
-	if (peer.cmdElement.size() == 0)
-		response = Directory::getTTL(peer.entry(), ttl);
-	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
+	if (cmdElement.size() == 0)
+		response = Directory::getTTL(entry, ttl);
+	else if (makeSourcePair(cmdElement, sourcePair) && cmdElement.size() == 0)
 		response = Directory::getTTL(sourcePair, ttl);
 
-	peer.writeBuffer += RESP[(short)response];
+	writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS)
-		peer.writeBuffer += " " + std::to_string(ttl);
+		writeBuffer += " " + std::to_string(ttl);
 }
 
-void CmdInterpreter::_remove(Peer& peer)
+void CmdInterpreter::_remove(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
 
-	if (peer.cmdElement.size() == 0)
-		response = Directory::removeFromDir(peer.entry());
-	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
-		response = Directory::removeFromDir(sourcePair, peer.entry());
+	if (cmdElement.size() == 0)
+		response = Directory::removeFromDir(entry);
+	else if (makeSourcePair(cmdElement, sourcePair) && cmdElement.size() == 0)
+		response = Directory::removeFromDir(sourcePair, entry);
 
-	peer.writeBuffer += RESP[(short)response];
+	writeBuffer += RESP[(short)response];
 }
 
-void CmdInterpreter::_flush(Peer& peer)
+void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer)
 {
 	std::size_t flushCount;
 	Response response = Response::BAD_PARAM;
-	if (peer.cmdElement.size() == 1 && extractFlushParam(peer, flushCount))
-		response = Directory::flushEntries(peer.writeBuffer, flushCount);
-	else if (peer.cmdElement.size() == 0)
-		response = Directory::flushEntries(peer.writeBuffer);
+	if (cmdElement.size() == 1 && extractFlushParam(cmdElement, flushCount))
+		response = Directory::flushEntries(writeBuffer, flushCount);
+	else if (cmdElement.size() == 0)
+		response = Directory::flushEntries(writeBuffer);
 
 	if (response != Response::SUCCESS)
-		peer.writeBuffer += RESP[(short)response];
+		writeBuffer += RESP[(short)response];
 }
 
-void CmdInterpreter::_update(Peer& peer)
+void CmdInterpreter::_update(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
 	UpdateTocken updateTocken;
 
-	if (makeSourcePair(peer.cmdElement, sourcePair))
-		response = Directory::getUpdateTocken(sourcePair, peer.entry(), updateTocken);
+	if (makeSourcePair(cmdElement, sourcePair))
+		response = Directory::getUpdateTocken(sourcePair, entry, updateTocken);
 	else
-		response = Directory::getUpdateTocken(peer.entry(), updateTocken);
+		response = Directory::getUpdateTocken(entry, updateTocken);
 
 	if (response == Response::SUCCESS)
 	{
-		response = _updateLockedEntry(updateTocken, peer);
+		response = _updateLockedEntry(updateTocken, cmdElement);
 		Directory::releaseUpdateTocken(updateTocken);
 	}
-	peer.writeBuffer += RESP[(short)response];
+	writeBuffer += RESP[(short)response];
 }
 
-void CmdInterpreter::_add(Peer& peer)
+void CmdInterpreter::_add(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
 	InsertionTocken insertionTocken;
 
-	if (makeSourcePair(peer.cmdElement, sourcePair))
-		response = Directory::addToDir(sourcePair, peer.entry(), insertionTocken);
+	if (makeSourcePair(cmdElement, sourcePair))
+		response = Directory::addToDir(sourcePair, entry, insertionTocken);
 	else 
-		response = Directory::addToDir(peer.entry(), insertionTocken);
+		response = Directory::addToDir(entry, insertionTocken);
 
 	if (response == Response::SUCCESS)
 	{
-		if (peer.cmdElement.size() > 0)
-			response = _updateLockedEntry(insertionTocken, peer);
+		if (cmdElement.size() > 0)
+			response = _updateLockedEntry(insertionTocken, cmdElement);
 		Directory::releaseInsertionTocken(insertionTocken, response);
 	}
 
-	peer.writeBuffer += RESP[(short)response];
+	writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS || response == Response::REDUDANT_DATA)
 	{
-		peer.writeBuffer += " ";
-		insertionTocken.entry()->printUID(peer.writeBuffer);
+		writeBuffer += " ";
+		Directory::printUID(insertionTocken.entry(), writeBuffer);
 	}
 }
 
-void CmdInterpreter::_search(Peer& peer)
+void CmdInterpreter::_search(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
+	Response response = Response::BAD_PARAM;
+	SourcePair sourcePair;
+	BaseEntry* foundEntry = nullptr;
+
+	if (makeSourcePair(cmdElement, sourcePair) && cmdElement.size() == 0)
+		response = Directory::searchEntry(sourcePair, foundEntry);
+	else if (cmdElement.size() == 0)
+	{
+		foundEntry = entry;
+		response = Response::SUCCESS;
+	}
+
+	if (response == Response::SUCCESS)
+		Directory::printExpand(foundEntry, writeBuffer);
+	else
+		writeBuffer += RESP[(short)response];
 }
 
-void CmdInterpreter::_charge(Peer& peer)
+void CmdInterpreter::_charge(BaseEntry* entry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	Response response = Response::BAD_PARAM;
 	SourcePair sourcePair;
 	short newTTL;
 	
-	if (peer.cmdElement.size() == 0)
-		response = Directory::charge(peer.entry(), newTTL);
-	else if (makeSourcePair(peer.cmdElement, sourcePair) && peer.cmdElement.size() == 0)
-		response = Directory::charge(sourcePair, peer.entry(), newTTL);
+	if (cmdElement.size() == 0)
+		response = Directory::charge(entry, newTTL);
+	else if (makeSourcePair(cmdElement, sourcePair) && cmdElement.size() == 0)
+		response = Directory::charge(sourcePair, entry, newTTL);
 
-	peer.writeBuffer += RESP[(short)response];
+	writeBuffer += RESP[(short)response];
 	if (response == Response::SUCCESS)
-		peer.writeBuffer += " " + std::to_string(newTTL);
+		writeBuffer += " " + std::to_string(newTTL);
 }
