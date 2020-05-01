@@ -53,6 +53,7 @@ protected:
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
 	std::string description;					//!< Description associated with the entry.
+public:
 /*******************************************************************************************
 * @brief Get number of minutes after which the entry expires
 *
@@ -80,16 +81,6 @@ protected:
 * [Not thread safe]
 ********************************************************************************************/
 	bool inDirectory();
-/*******************************************************************************************
-* @brief Return the maximum privilage cmdEntry have on this entry
-*
-* @param[in] cmdEntry			The command issuing entry
-* @return						Return the maximum privilage
-*
-* @details
-* [Not thread safe]
-********************************************************************************************/
-	Privilege maxPrivilege(BaseEntry*);
 /*******************************************************************************************
 * @brief Add the entry to the directory
 *
@@ -124,8 +115,49 @@ protected:
 * @param[out] strBuffer			String buffer to which the data will be written.
 ********************************************************************************************/
 	void printBrief(std::string&);
-public:
+/*******************************************************************************************
+* @brief Charge the entry
+*
+* @param[in] newTTL				New Time to Live for the entry.
+* @return						The time remaining for that entry
+*
+* @details
+* Update lastChargeT to the current univerasl time.
+* [Not thread safe]
+********************************************************************************************/
+	short charge(const TTL&);
+/*******************************************************************************************
+* @brief Return true if have the privilege to charge, change or remove
+*
+* @param[in] maxPrivilege		The maximum privilege cmdEntry have on entry
+* @return						True if have privilege
+*
+* @details
+* These functions are not thread safe. [Need external locking for thread safety]
+********************************************************************************************/
+	bool canChargeWith(const Privilege&);
+	bool canChangeWith(const Privilege&);
+	bool canRemoveWith(const Privilege&);
+/*******************************************************************************************
+* @brief Return the maximum privilage cmdEntry have on this entry
+*
+* @param[in] cmdEntry			The command issuing entry
+* @return						Return the maximum privilage
+*
+* @details
+* [Not thread safe]
+********************************************************************************************/
+	Privilege maxPrivilege(BaseEntry*);
+/*******************************************************************************************
+* @brief Lock this entry of further access from other threads
+********************************************************************************************/
+	void lock();
+/*******************************************************************************************
+* @brief Unlock this entry
+********************************************************************************************/
+	void unlock();
 
+public:
 /*******************************************************************************************
 * @brief Make this entry part of a peer
 *
@@ -149,6 +181,7 @@ public:
 ********************************************************************************************/
 	const Version& getVersion();
 	friend class Directory;
+	friend class Tocken;
 };
 
 
@@ -224,17 +257,6 @@ union Entry
 	EntryV6* Ev6;
 };
 
-struct UpdateTocken
-{
-private:
-	BaseEntry* EvB;
-	Privilege maxPrivilege;
-public:
-	BaseEntry* entry();
-	friend class Directory;
-};
-typedef UpdateTocken InsertionTocken;
-
 /*******************************************************************************************
  * @brief Struct to hold both SourcePairV4 and SourcePairV6
  ********************************************************************************************/
@@ -250,34 +272,6 @@ struct SourcePair
 	
 	unsigned short portNumber();
 	Version version;
-};
-
-/*******************************************************************************************
- * @brief Struct to hold individual command elements
- *
-* @details
-* This is an optimized container and shoudn't be used for any other purpose than populating elements.
-* Before using pop_front(),push_back(), peek() and peek_next() explicit bound checks must be done.
-* Populating the container must be done in a single stretch using push_back().
-* After populating the container, call reset_for_read() to start reading.
-* Before begining the push_back() streak call reset() once.
- ********************************************************************************************/
-struct CommandElement
-{
-private:
-	std::string_view element[5];
-	std::size_t _size;
-	std::size_t _index;
-public:
-	const std::size_t& size();
-	void reset_for_read();
-	void reset();
-
-	const std::string_view& pop_front();
-	void pop_front(int);
-	const std::string_view& peek();
-	const std::string_view& peek_next();
-	void push_back(std::string_view);
 };
 
 #endif

@@ -36,6 +36,12 @@
     <ClCompile Include="directory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cmd_element.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tockens.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.hpp">
@@ -57,6 +63,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="directory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cmd_element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tockens.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

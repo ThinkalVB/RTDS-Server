@@ -50,20 +50,50 @@ bool BaseEntry::inDirectory()
 	return isInDirectory;
 }
 
+
 Privilege BaseEntry::maxPrivilege(BaseEntry* cmdEntry)
 {
-	if (version == Version::V4)
+	if (this == cmdEntry)
+		return Privilege::RESTRICTED_ENTRY;
+	else if (version == Version::V4)
 		return ((EntryV4*)this)->maxPrivilege(cmdEntry);
 	else
 		return ((EntryV6*)this)->maxPrivilege(cmdEntry);
 }
 
+void BaseEntry::assignDefualtPermission(Privilege maxPrivilege)
+{
+	if (maxPrivilege == Privilege::RESTRICTED_ENTRY || maxPrivilege == Privilege::PROTECTED_ENTRY)
+	{
+		permission.charge = Privilege::PROTECTED_ENTRY;
+		permission.change = Privilege::PROTECTED_ENTRY;
+		permission.remove = Privilege::PROTECTED_ENTRY;
+	}
+	else
+	{
+		permission.charge = Privilege::LIBERAL_ENTRY;
+		permission.change = Privilege::LIBERAL_ENTRY;
+		permission.remove = Privilege::LIBERAL_ENTRY;
+	}
+}
+
+
+void BaseEntry::lock()
+{
+	accessLock.lock();
+}
+
+void BaseEntry::unlock()
+{
+	accessLock.unlock();
+}
+
+
 void BaseEntry::addToDirectory(TTL ttl)
 {
 	std::lock_guard<std::mutex> lock(entryTrainLock);
 	isInDirectory = true;
-	lastChargT = posix_time::second_clock::universal_time();
-	timeToLive = ttl;
+	charge(ttl);
 	entryCount++;
 
 	if (begin == nullptr)
@@ -85,6 +115,7 @@ void BaseEntry::addToDirectory(TTL ttl)
 void BaseEntry::removeFromDirectory()
 {
 	std::lock_guard<std::mutex> lock(entryTrainLock);
+	timeToLive = TTL::LIBERAL_TTL;
 	if (isInDirectory)
 	{
 		isInDirectory = false;
@@ -115,20 +146,17 @@ void BaseEntry::removeFromDirectory()
 	}
 }
 
-void BaseEntry::assignDefualtPermission(Privilege maxPrivilege)
+short BaseEntry::charge(const TTL& newTTL)
 {
-	if (maxPrivilege == Privilege::RESTRICTED_ENTRY || maxPrivilege == Privilege::PROTECTED_ENTRY)
+	auto timeRemaining = getTTL();
+	if (timeRemaining < (short)newTTL)
 	{
-		permission.charge = Privilege::PROTECTED_ENTRY;
-		permission.change = Privilege::PROTECTED_ENTRY;
-		permission.remove = Privilege::PROTECTED_ENTRY;
+		lastChargT = posix_time::second_clock::universal_time();
+		timeToLive = newTTL;
+		return (short)newTTL;
 	}
 	else
-	{
-		permission.charge = Privilege::LIBERAL_ENTRY;
-		permission.change = Privilege::LIBERAL_ENTRY;
-		permission.remove = Privilege::LIBERAL_ENTRY;
-	}
+		return timeRemaining;
 }
 
 void BaseEntry::printBrief(std::string& writeBuffer)
@@ -173,51 +201,28 @@ const Version& BaseEntry::getVersion()
 }
 
 
-const std::size_t& CommandElement::size()
+bool BaseEntry::canChargeWith(const Privilege& maxPrivilege)
 {
-	return _size;
+	if (maxPrivilege >= permission.charge)
+		return true;
+	else
+		return false;
 }
 
-void CommandElement::reset_for_read()
+bool BaseEntry::canChangeWith(const Privilege& maxPrivilege)
 {
-	_index = 0;
+	if (maxPrivilege >= permission.change)
+		return true;
+	else
+		return false;
 }
 
-void CommandElement::reset()
+bool BaseEntry::canRemoveWith(const Privilege& maxPrivilege)
 {
-	_size = 0;
-	_index = 0;
-}
-
-const std::string_view& CommandElement::pop_front()
-{
-	_size--;
-	auto currIndex = _index;
-	_index++;
-	return element[currIndex];
-}
-
-void CommandElement::pop_front(int count)
-{
-	_size = _size - count;
-	_index = _index + count;
-}
-
-const std::string_view& CommandElement::peek()
-{
-	return element[_index];
-}
-
-const std::string_view& CommandElement::peek_next()
-{
-	return element[_index + 1];
-}
-
-void CommandElement::push_back(std::string_view elem)
-{
-	_size++;
-	element[_index] = elem;
-	_index++;
+	if (maxPrivilege >= permission.remove)
+		return true;
+	else
+		return false;
 }
 
 
@@ -233,10 +238,4 @@ unsigned short SourcePair::portNumber()
 	CmdInterpreter::byteSwap(portNumber);
 	#endif
 	return portNumber;
-}
-
-
-BaseEntry* UpdateTocken::entry()
-{
-	return EvB;
 }

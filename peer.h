@@ -1,9 +1,10 @@
 #ifndef PEER_H
 #define PEER_H
 
+#include <vector>
 #include <boost/asio.hpp>
 #include "sp_entry.h"
-#include <vector>
+#include "cmd_element.h"
 
 using namespace boost;
 constexpr short RTDS_BUFF_SIZE = 300;
@@ -113,7 +114,7 @@ void terminatePeer();
 ********************************************************************************************/
 	void removeFromMirroringGroup();
 /*******************************************************************************************
-* @brief Return the pointer to the base class of this entry
+* @brief Return the pointer to the Base entry class
 *
 * @return						Pointer to the base class
 ********************************************************************************************/

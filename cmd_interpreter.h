@@ -2,6 +2,20 @@
 #define CMD_INTERPRETER_H
 
 #include "peer.h"
+#include "tockens.h"
+
+struct MutableData
+{
+	std::string_view description;
+	Permission permission;
+
+	bool havePermission = false;
+	bool haveDescription = false;
+	bool isEmpty()
+	{
+		return !(haveDescription || havePermission);
+	}
+};
 
 class CmdInterpreter
 {
@@ -17,18 +31,6 @@ class CmdInterpreter
 	static void _flush(CommandElement&, std::string&);
 	static void _ttl(BaseEntry*, CommandElement&, std::string&);
 	static void _update(BaseEntry*, CommandElement&, std::string&);
-
-/*******************************************************************************************
-* @brief Update the permission and description for a locked entry
-*
-* @param[in] updateTocken		Update tocken for the entry to be updated
-* @param[in] cmdElement			The commanding element with description and permission
-* @return						SUCCESS if successfully updated
-*
-* @details
-* Return BAD_PARAM if the order of the parameter or the parameter itself is bad.
-********************************************************************************************/
-	static Response _updateLockedEntry(UpdateTocken&, CommandElement&);
 
 public:
 	static const std::string RESP[];			//!< All responses in string.
@@ -55,18 +57,84 @@ public:
 ********************************************************************************************/
 	static bool makeCmdElement(std::array<char, RTDS_BUFF_SIZE>&, CommandElement&, std::size_t);
 /*******************************************************************************************
-* @brief Extract flush count from the command element
+* @brief Return true if a valid source pair is generated
 *
-* @param[in] cmdElement			The command element containing the parameter
-* @param[out] flushCount		Number of entries to be flushed
-* @return						True if a valid parameter is found
+* @param[in] ipAddrStr			String view of the ip address
+* @param[in] portNum			String view of the port number
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
 *
 * @details
-* The value shoudn't be negative or zero. Regex "[0-9]{1,5}"
-* If a valid parameter is found it will be purged from the cmdElement.
+* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
 ********************************************************************************************/
-	static bool extractFlushParam(CommandElement&, std::size_t&);
+	static bool makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for UID is valid.
+********************************************************************************************/
+	static bool makeSourcePair(const std::string_view&, SourcePair&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if a valid source pair is found.
+* The values used for generating the source pair will be purged from the cmdElement.
+********************************************************************************************/
+	static bool extractSourcePair(CommandElement&, SourcePair&);
+/*******************************************************************************************
+* @brief Extract flush count from the command line
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @param[out] flushCount		Number of elements to be flushed from directory
+*
+* @details
+* The values used for generating the flushCount will be purged from the cmdElement.
+********************************************************************************************/
+	static void extractFlushCount(CommandElement&, std::size_t&);
+/*******************************************************************************************
+* @brief Return mutable data from the commandElement
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @return						Mutable data
+*
+* @details
+* The values used for generating the mutable data will be purged from the commandElement
+********************************************************************************************/
+	static const MutableData extractMutableData(CommandElement&);
+/*******************************************************************************************
+* @brief Extract sourcePair address and find corresponding base entry pointer
+*
+* @param[in] entry				Entry requesting extraction
+* @param[in] cmdElement			Command element from which sourcePair is extracted
+* @return						Pointer to the BaseEntry pointer
+*
+* @details
+* If a sourcePair is found which is not in directory then return nullptr.
+* If a sourcePair is found which is in directory then return it's BaseEntry pointer.
+* If no sourcePair address is found then assume the BaseEntry to be itself.
+********************************************************************************************/
+	static BaseEntry* extractBaseEntry(BaseEntry*, CommandElement&);
 
+/*******************************************************************************************
+* @brief Convert the string to it's equivalent intiger value
+*
+* @param[out] intValue			The intiger string
+* @return						The intiger value
+*
+* @details
+* This function won't catch hence the parameter must be an initger string.
+********************************************************************************************/
+	static int toIntiger(const std::string_view& intValue);
 /*******************************************************************************************
 * @brief Convert the string to permission [use only after verfying by _isPermission()]
 *
@@ -120,42 +188,16 @@ public:
 * Return true and a valid portNum if the string view is a valid port number. Else return false.
 ********************************************************************************************/
 	static bool isPortNumber(const std::string_view&, unsigned short&);
-
 /*******************************************************************************************
-* @brief Return true if a valid source pair is generated
+* @brief Return true if string is a valid intiger value
 *
-* @param[in] ipAddrStr			String view of the ip address
-* @param[in] portNum			String view of the port number
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
+* @param[in] intValue			String view of the intiger value
+* @return						True if string is a valid intiger value* @details
 *
 * @details
-* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
+* Regex [0-9]{1,5} Range is 0 - 99999. No negative values are validated.
 ********************************************************************************************/
-	static bool makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] ipAddrStr			String view of the ip address
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for UID is valid.
-********************************************************************************************/
-	static bool makeSourcePair(const std::string_view&, SourcePair&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] cmdElement			Command element holding the elements of the command
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if a valid source pair is found.
-* The values used for generating the source pair will be purged from the cmdElement.
-********************************************************************************************/
-	static bool makeSourcePair(CommandElement&, SourcePair&);
+	static bool isIntiger(const std::string_view&);
 
 /*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )

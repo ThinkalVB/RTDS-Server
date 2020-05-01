@@ -2,7 +2,9 @@
 #define DIRECTORY_H
 
 #include <map>
-#include "sp_entry.h"
+#include "tockens.h"
+#include "cmd_interpreter.h"
+#include "peer.h"
 
 class Directory
 {
@@ -24,21 +26,19 @@ class Directory
 	static BaseEntry* _findEntry(const SourcePairV4&);
 	static BaseEntry* _findEntry(const SourcePairV6&);
 	static BaseEntry* _findEntry(const SourcePair&);
-/*******************************************************************************************
-* @brief Return true if cmdEntry have the privilege over entry to carry out the command
-*
-* @param[in] entry				The entry under command
-* @param[in] cmdEntry			The commanding entry
-* @return						True if have privilege
-*
-* @details
-* These functions are not thread safe. [Need external locking for thread safety]
-********************************************************************************************/
-	static bool _havePrivilegeToCharge(BaseEntry*, BaseEntry*);
-	static bool _havePrivilegeToRemove(BaseEntry*, BaseEntry*);
-	static bool _havePrivilegeToChange(BaseEntry*, BaseEntry*);
 
 public:
+/*******************************************************************************************
+* @brief Find an entry from the directory using it's SourcePair address
+*
+* @param[in] sourcePair			The SourcePair address of the entry
+* @return						The BaseEntry pointer or nullptr
+*
+* @details
+* If the entry is in the directory then return the pointer to it's BaseEntry.
+* Return nullptr if the entry is not in the directory.
+********************************************************************************************/
+	static BaseEntry* findEntry(const SourcePair&);
 /*******************************************************************************************
 * @brief Return a pointer to V4/V6 Entry for the given IPv4/IPv6 address and port number
 *
@@ -69,176 +69,6 @@ public:
 	static BaseEntry* makeEntry(SourcePair&);
 
 /*******************************************************************************************
-* @brief Lock the entry for add [Lock must be released by calling releaseInsertionLock() method]
-*
-* @param[in] entry				The entry to be updated (self call)
-* @param[out] insertionTocken	The insertion tocken for add command on SUCCESS
-* @return						The Response to the operation
-*
-* @details
-* Return SUCCESS and lock the entry if not in the directory and can be added.
-* Return REDUDANT_DATA if the entry is already in the directory and can't be added.
-********************************************************************************************/
-	static Response addToDir(BaseEntry*, InsertionTocken&);
-/*******************************************************************************************
-* @brief Add the entry to the Directory (add itself)
-*
-* @param[in] sourcePair			Source pair address of the entry to be added
-* @param[in] entry				The commanding entry
-* @param[out] insertionTocken	The insertion tocken for add command on SUCCESS
-* @return						The Response to the operation
-*
-* @details
-* Return SUCCESS and lock the entry if not in the directory and can be added.
-* Return REDUDANT_DATA if the entry is already in the directory and can't be added.
-********************************************************************************************/
-	static Response addToDir(SourcePair&, BaseEntry*, InsertionTocken&);
-/*******************************************************************************************
-* @brief Release the access lock of the entry and add the entry based on response
-*
-* @param[in] insertionTocken	The entry to be unlocked
-* @param[in] reponse			The cumilative response for the add command
-*
-* @details
-* If the response is SUCCESS then add the entry to the directory.
-* If response is SUCCESS increment the entry count and update lastChargTime.
-********************************************************************************************/
-	static void releaseInsertionTocken(InsertionTocken&, Response&);
-
-/*******************************************************************************************
-* @brief Remove the entry from the directory (remove itself)
-*
-* @param[in] entry				The entry to be removed from the directory
-* @return						The Response to the operation
-*
-* @details
-* If the entry is in directory, remove it and return SUCCESS.
-* Return NO_EXIST if the entry is not present in the directory.
-********************************************************************************************/
-	static Response removeFromDir(BaseEntry*);
-/*******************************************************************************************
-* @brief Remove the entry from the directory
-*
-* @param[in] sourcePair			The sourcePair address to the entry to be removed
-* @param[in] cmdEntry			The entry commanding the operation
-* @return						The Response to the operation
-*
-* @details
-* If the entry is in directory, remove it and return SUCCESS.
-* Return NO_EXIST if the entry is not present in the directory.
-* Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
-********************************************************************************************/
-	static Response removeFromDir(const SourcePair&, BaseEntry*);
-
-/*******************************************************************************************
-* @brief Get the Time to Live for that entry
-*
-* @param[in] entry				The entry for which the TTL is to be retrieved
-* @param[out] ttl				The TTL for the entry
-* @return						Return SUCCESS if the entry have a TTL
-*
-* @details
-* Ensure the entry didn't expire and return SUCCESS if the entry have a TTL.
-********************************************************************************************/
-	static Response getTTL(BaseEntry*, short&);
-/*******************************************************************************************
-* @brief Get the Time to Live for that source pair
-*
-* @param[in] sourcePair			The source pair address to the entry
-* @param[out] ttl				The TTL for the entry
-* @return						Return SUCCESS if the entry have a TTL
-*
-* @details
-* Search for the source pair address in maps and return TTL on SUCCESS.
-********************************************************************************************/
-	static Response getTTL(const SourcePair&, short&);
-
-/*******************************************************************************************
-* @brief Charge the entry (Charge itself ! no special effect)
-*
-* @param[in] entry				The entry to be charged in the directory
-* @param[out] newTTL			The new TTL for the entry
-* @return						Return SUCCESS if the charging is sucess
-*
-* @details
-* Ensure the entry didn't expire and return the TTL of the entry.
-********************************************************************************************/
-	static Response charge(BaseEntry*, short&);
-/*******************************************************************************************
-* @brief Charge the entry
-*
-* @param[in] entry				The entry to be charged in the directory
-* @param[in] cmdEntry			The entry commanding the operation
-* @param[out] newTTL			The new TTL for the entry
-* @return						Return SUCCESS if the charging is sucess
-*
-* @details
-* Ensure the entry didn't expire and return the new TTL after charging the entry.
-* Return NO_EXIST if the entry is not present in the directory.
-* Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
-********************************************************************************************/
-	static Response charge(const SourcePair&, BaseEntry*, short&);
-
-/*******************************************************************************************
-* @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
-*
-* @param[in] sourcePair			The entry to be updated in the directory
-* @param[in] cmdEntry			The commanding entry
-* @param[out] updateTocken		The updation tocken for update command on SUCCESS
-* @return						Return SUCCESS if the event is updatable
-*
-* @details
-* Return SUCCESS, updateTocken and lock the entry if it's in directory and have apt privilege.
-* Return NO_EXIST if the entry is not present in the directory.
-* Return NO_PRIVILAGE if the commanding entry lacks minimum permission.
-********************************************************************************************/
-	static Response getUpdateTocken(const SourcePair&, BaseEntry*, UpdateTocken&);
-/*******************************************************************************************
-* @brief Lock the entry for updates [Lock must be released by calling releaseUpdateLock() method]
-*
-* @param[in] entry				The entry to be updated (self call)
-* @param[out] updateTocken		The updation tocken for update command on SUCCESS
-* @return						Return SUCCESS if the event is updatable
-*
-* @details
-* Return SUCCESS, updateTocken and lock the entry if it's in directory and have apt privilege.
-* Return NO_EXIST if the entry is not present in the directory.
-********************************************************************************************/
-	static Response getUpdateTocken(BaseEntry*, UpdateTocken&);
-
-/*******************************************************************************************
-* @brief Release the access lock for the event
-*
-* @param[in] updateTocken		The entry to be unlocked
-********************************************************************************************/
-	static void releaseUpdateTocken(UpdateTocken&);
-/*******************************************************************************************
-* @brief Update the entry [Only use these functions after acquiring update lock on event]
-*
-* @param[in] entry				The entry to be updated in the directory
-* @param[in] perm				Permission to be updated
-********************************************************************************************/
-	static Response update(UpdateTocken&, const Permission&);
-/*******************************************************************************************
-* @brief Update the entry [Only use these functions after acquiring update lock on event]
-*
-* @param[in] entry				The entry to be updated in the directory
-* @param[in] desc				Description to be updated
-********************************************************************************************/
-	static void update(UpdateTocken&, const std::string_view&);
-/*******************************************************************************************
-* @brief Entry to be searched
-*
-* @param[in] sourcePair			The source pair address to the entry
-* @param[out] entry				The pointer to the entry if an entry is found
-* @return						Return SUCCESS if the entry is found
-*
-* @details
-* Return SUCCESS, if an entry is found. Return NO_EXIST if entry didn't exist.
-********************************************************************************************/
-	static Response searchEntry(const SourcePair&, BaseEntry*&);
-
-/*******************************************************************************************
 * @brief Get the total number of entries in the directory
 *
 * @return						Return the total number of entries in the directory
@@ -248,18 +78,56 @@ public:
 * @brief Wipe all the entries from the directory (dynamic deallocation)
 ********************************************************************************************/
 	static void clearDirectory();
+/*******************************************************************************************
+* @brief Return True if the entry is in the directory
+*
+* @param[in] entry				The pointer to the entry
+* @return						True if the entry is in directory
+********************************************************************************************/
+	static bool isInDirectory(BaseEntry*);
 
+	static Response insertEntry(InsertionTocken*, const MutableData&);
+/*******************************************************************************************
+* @brief Update the entry's permission and description
+*
+* @param[in] updateTocken		Tocken with entryPtr to be updated
+* @param[in] data				Mutable data with new permission and description
+* @return						SUCCESS on successfull updation
+*
+* @details
+* SUCCESS on successfull updation. Return NO_PRIVILEGE if permission is not valid.
+********************************************************************************************/
+	static Response updateEntry(UpdateTocken*, const MutableData&);
 /*******************************************************************************************
 * @brief Flush the entries details through write buffer
 *
 * @param[in] writeBuffer		Buffer to which the entry details will be streamed
 * @param[in] flushCount			Maximum number of entries to be flushed
-* @return						Return SUCCESS if the events are flushed
 *
 * @details
-* Return SUCCESS, after the flushing is completed. Return NO_EXIST if the directory is empty.
+* Write NO_EXIST if the directory is empty.
 ********************************************************************************************/
-	static Response flushEntries(std::string&, std::size_t = SIZE_MAX);
+	static void flushEntries(std::string&, std::size_t);
+/*******************************************************************************************
+* @brief Remove the entry from directory
+*
+* @param[in] purgeTocken		The purge tocken for the remove command
+********************************************************************************************/
+	static void removeEntry(PurgeTocken*);
+/*******************************************************************************************
+* @brief Return the new TTL of the entry
+*
+* @param[in] chargeTocken		The charge tocken for the charging command
+* @return						The new TTL after the charging process
+********************************************************************************************/
+	static short chargeEntry(ChargeTocken*);
+/*******************************************************************************************
+* @brief Return the Time To Live for that entry
+*
+* @param[in] entry				The pointer to the entry
+* @return						Time To Live
+********************************************************************************************/
+	static short getTTL(BaseEntry*);
 /*******************************************************************************************
 * @brief Print the brief info - IPversion, IPaddress, PortNumber
 *
@@ -267,13 +135,6 @@ public:
 * @param[out] writeBuffer		String buffer to which the data will be written.
 ********************************************************************************************/
 	static void printBrief(BaseEntry*, std::string&);
-/*******************************************************************************************
-* @brief Print the expanded form of the entry
-*
-* @param[out] entry				The pointer to the entry if an entry is found
-* @param[in] writeBuffer		The buffer to which the expanded form will be written
-********************************************************************************************/
-	static void printExpand(BaseEntry* entry, std::string&);
 /*******************************************************************************************
 * @brief Print the UID
 *
