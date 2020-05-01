@@ -161,7 +161,7 @@ Response Directory::updateEntry(UpdateTocken* updateTocken, const MutableData& d
 void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 {
 	if (BaseEntry::begin == nullptr)
-		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST] + '\x1e';
+		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
 	else
 	{
 		auto entryPtr = BaseEntry::begin;
@@ -171,9 +171,7 @@ void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 			entryPtr->printExpand(writeBuffer);
 			entryPtr = entryPtr->next;
 			flushCount--;
-			if (entryPtr == nullptr)
-				writeBuffer += '\x1e';		//!< Record separator
-			else
+			if (entryPtr != nullptr)
 				writeBuffer += '\x1f';		//!< Unit separator
 		}
 	}

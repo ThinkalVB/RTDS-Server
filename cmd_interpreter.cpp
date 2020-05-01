@@ -315,7 +315,10 @@ void CmdInterpreter::processCommand(Peer& peer)
 		return;
 	}
 	else
+	{
 		peer.Buffer() = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
+		peer.Buffer() += '\x1e';
+	}
 	peer.sendPeerData();
 }
 
@@ -352,14 +355,15 @@ void CmdInterpreter::_ttl(BaseEntry* thisEntry, CommandElement& cmdElement, std:
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
 	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto ttl = Directory::getTTL(entry);
-		writeBuffer += std::to_string(ttl) + '\x1e';
+		writeBuffer += std::to_string(ttl);
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST] + '\x1e';
+		writeBuffer += RESP[(short)Response::NO_EXIST];
+	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_remove(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
@@ -367,21 +371,22 @@ void CmdInterpreter::_remove(BaseEntry* thisEntry, CommandElement& cmdElement, s
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
 	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto purgeTocken = Tocken::makePurgeTocken(entry, thisEntry);
 		if (purgeTocken != nullptr)
 		{
 			Directory::removeEntry(purgeTocken);
-			writeBuffer += RESP[(short)Response::SUCCESS] + '\x1e';
+			writeBuffer += RESP[(short)Response::SUCCESS];
 			Tocken::destroyTocken(purgeTocken);
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE] + '\x1e';
+			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST] + '\x1e';
+		writeBuffer += RESP[(short)Response::NO_EXIST];
+	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer)
@@ -390,9 +395,10 @@ void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer
 	extractFlushCount(cmdElement, flushCount);
 
 	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 		Directory::flushEntries(writeBuffer, flushCount);
+	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_update(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
@@ -401,7 +407,7 @@ void CmdInterpreter::_update(BaseEntry* thisEntry, CommandElement& cmdElement, s
 	auto mutableData = extractMutableData(cmdElement);
 
 	if (!cmdElement.isEmpty() || mutableData.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto updateTocken = Tocken::makeUpdateTocken(entry, thisEntry);
@@ -409,13 +415,14 @@ void CmdInterpreter::_update(BaseEntry* thisEntry, CommandElement& cmdElement, s
 		{
 			auto response = Directory::updateEntry(updateTocken, mutableData);
 			Tocken::destroyTocken(updateTocken);
-			writeBuffer += RESP[(short)response] + '\x1e';
+			writeBuffer += RESP[(short)response];
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE] + '\x1e';
+			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST] + '\x1e';
+		writeBuffer += RESP[(short)Response::NO_EXIST];
+	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_add(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
@@ -431,30 +438,41 @@ void CmdInterpreter::_add(BaseEntry* thisEntry, CommandElement& cmdElement, std:
 
 	if (!cmdElement.isEmpty())
 	{
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 		return;
 	}
 	else if (Directory::isInDirectory(entry))
+	{
 		writeBuffer += RESP[(short)Response::REDUDANT_DATA] + " ";
+		Directory::printUID(entry, writeBuffer);
+	}
 	else
 	{
 		auto insertionTocken = Tocken::makeInsertionTocken(entry, thisEntry);
 		auto response = Directory::insertEntry(insertionTocken, mutableData);
 		Tocken::destroyTocken(insertionTocken);
 		if (response == Response::SUCCESS)
-			writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-		else
 		{
-			writeBuffer += RESP[(short)response] + '\x1e';
-			return;
+			writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+			Directory::printUID(entry, writeBuffer);
 		}
+		else
+			writeBuffer += RESP[(short)response];
 	}
-	Directory::printUID(entry, writeBuffer);
-	writeBuffer += '\x1e';
+	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_search(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
 {
+	auto entry = extractBaseEntry(thisEntry, cmdElement);
+
+	if (!cmdElement.isEmpty())
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
+	else if (Directory::isInDirectory(entry))
+		Directory::printBrief(entry, writeBuffer);
+	else
+		writeBuffer += RESP[(short)Response::NO_EXIST];
+	writeBuffer += '\x1e';
 }
 
 void CmdInterpreter::_charge(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
@@ -462,19 +480,20 @@ void CmdInterpreter::_charge(BaseEntry* thisEntry, CommandElement& cmdElement, s
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
 	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM] + '\x1e';
+		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto chargeTocken = Tocken::makeChargeTocken(entry, thisEntry);
 		if (chargeTocken != nullptr)
 		{
 			auto newTTL = Directory::chargeEntry(chargeTocken);
-			writeBuffer += std::to_string(newTTL) + '\x1e';
+			writeBuffer += std::to_string(newTTL);
 			Tocken::destroyTocken(chargeTocken);
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE ] + '\x1e';
+			writeBuffer += RESP[(short)Response::NO_PRIVILAGE ];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST] + '\x1e';
+		writeBuffer += RESP[(short)Response::NO_EXIST];
+	writeBuffer += '\x1e';
 }
