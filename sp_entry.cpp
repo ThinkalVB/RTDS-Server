@@ -6,12 +6,7 @@ const std::string BaseEntry::VER[] =
 	"v4",
 	"v6"
 };
-const char BaseEntry::PRI[] =
-{
-	'l',
-	'p',
-	'r'
-};
+
 int BaseEntry::entryCount = 0;
 BaseEntry* BaseEntry::begin = nullptr;
 BaseEntry* BaseEntry::end = nullptr;
@@ -86,6 +81,11 @@ void BaseEntry::lock()
 void BaseEntry::unlock()
 {
 	accessLock.unlock();
+}
+
+const std::string& BaseEntry::uid()
+{
+	return UID;
 }
 
 
@@ -175,9 +175,7 @@ void BaseEntry::printExpand(std::string& writeBuffer)
 	else
 		writeBuffer += VER[(short)Version::V6];
 	writeBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
-	writeBuffer += PRI[(short)permission.change];
-	writeBuffer += PRI[(short)permission.charge];
-	writeBuffer += PRI[(short)permission.remove];
+	writeBuffer += CmdInterpreter::toPermission(permission);
 	writeBuffer += " " + description;
 }
 
@@ -224,7 +222,6 @@ bool BaseEntry::canRemoveWith(const Privilege& maxPrivilege)
 	else
 		return false;
 }
-
 
 unsigned short SourcePair::portNumber()
 {

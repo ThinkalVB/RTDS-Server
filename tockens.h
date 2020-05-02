@@ -3,11 +3,25 @@
 
 #include "sp_entry.h"
 
+struct MutableData
+{
+	std::string_view description;
+	Permission permission;
+
+	bool havePermission = false;
+	bool haveDescription = false;
+	bool isEmpty()
+	{
+		return !(haveDescription || havePermission);
+	}
+};
+
 class BasicTocken
 {
 	BasicTocken() {}
 	BaseEntry* EvB = nullptr;
-
+public:
+	std::string makePurgeNote();
 	friend class Tocken;
 	friend class Directory;
 };
@@ -26,6 +40,8 @@ public:
 * @return						True if the permission is valid
 ********************************************************************************************/
 	bool haveValid(const Permission&);
+	std::string makeInsertionNote();
+	std::string makeUpdateNote(const MutableData&);
 	friend class Tocken;
 	friend class Directory;
 };
@@ -40,6 +56,7 @@ public:
 	static AdvancedTocken* makeChargeTocken(BaseEntry*, BaseEntry*);
 	static AdvancedTocken* makeInsertionTocken(BaseEntry*, BaseEntry*);
 	static BasicTocken* makePurgeTocken(BaseEntry*, BaseEntry*);
+
 	static void destroyTocken(BasicTocken*);
 	static void destroyTocken(AdvancedTocken*);
 };

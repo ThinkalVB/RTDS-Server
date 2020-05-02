@@ -167,7 +167,7 @@ void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 		auto entryPtr = BaseEntry::begin;
 		while (entryPtr != nullptr && flushCount != 0)
 		{
-			std::lock_guard<std::recursive_mutex> lock(entryPtr->accessLock);
+			std::lock_guard<std::mutex> lock(entryPtr->accessLock);
 			entryPtr->printExpand(writeBuffer);
 			entryPtr = entryPtr->next;
 			flushCount--;
@@ -192,7 +192,7 @@ short Directory::chargeEntry(ChargeTocken* chargeTocken)
 
 short Directory::getTTL(BaseEntry* entry)
 {
-	std::lock_guard<std::recursive_mutex> lock(entry->accessLock);
+	std::lock_guard<std::mutex> lock(entry->accessLock);
 	return entry->getTTL();
 }
 

@@ -4,19 +4,6 @@
 #include "peer.h"
 #include "tockens.h"
 
-struct MutableData
-{
-	std::string_view description;
-	Permission permission;
-
-	bool havePermission = false;
-	bool haveDescription = false;
-	bool isEmpty()
-	{
-		return !(haveDescription || havePermission);
-	}
-};
-
 class CmdInterpreter
 {
 	static void s_ping(BaseEntry*, std::string&);
@@ -24,17 +11,18 @@ class CmdInterpreter
 	static void s_mirror(Peer&);
 	static void s_leave(Peer&);
 
-	static void _add(BaseEntry*, CommandElement&, std::string&);
+	static void _add(Peer&);
 	static void _search(BaseEntry*, CommandElement&, std::string&);
 	static void _charge(BaseEntry*, CommandElement&, std::string&);
-	static void _remove(BaseEntry*, CommandElement&, std::string&);
+	static void _remove(Peer&);
 	static void _flush(CommandElement&, std::string&);
 	static void _ttl(BaseEntry*, CommandElement&, std::string&);
-	static void _update(BaseEntry*, CommandElement&, std::string&);
+	static void _update(Peer&);
 
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.
+	static const char PRI[];				    //!< All privilage code in string.
 
 /*******************************************************************************************
 * @brief Process the commands from peer system
@@ -155,6 +143,13 @@ public:
 * @return						Time to live for that particular privilege
 ********************************************************************************************/
 	static TTL toTTL(Privilege);
+/*******************************************************************************************
+* @brief Convert permission to string
+*
+* @param[in] permission			Permission
+* @return						Permission as string
+********************************************************************************************/
+	static std::string toPermission(const Permission&);
 
 /*******************************************************************************************
 * @brief Check if the string is an Base64 encoded text

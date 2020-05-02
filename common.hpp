@@ -1,6 +1,19 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+
+#define DEBUG
+/* #define RTDS_DUAL_STACK */
+
+#define MAX_NOTE_SIZE 100
+
+#define V4_UID_MAX_CHAR 8
+#define V6_UID_MAX_CHAR 24
+
+#define PORT_NUM_MAX_CHAR 5
+#define MAX_PORT_NUM_VALUE 65535
+#define MAX_DESC_SIZE 202
+
 #include <cstdint>
 #include <array>
 

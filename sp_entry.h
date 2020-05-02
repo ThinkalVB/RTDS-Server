@@ -30,8 +30,7 @@ class BaseEntry
 
 protected:
 	static const std::string VER[];				//!< All version code in string.
-	static const char PRI[];				    //!< All privilage code in string.
-	
+
 	static int entryCount;						//!< Total entries in the directory.
 	static BaseEntry* begin;					//!< Starting pointer to the entry list.
 	static BaseEntry* end;						//!< Starting pointer to the entry list.
@@ -48,12 +47,12 @@ protected:
 	posix_time::ptime lastChargT;				//!< The time at which this entry was last charged.
 	posix_time::ptime createdT;					//!< The time at which this entry was added to the directory.
 			
-	std::recursive_mutex accessLock;			//!< Lock these mutex when accessing or modfying data.
+	std::mutex accessLock;						//!< Lock these mutex when accessing or modfying data.
 	std::string UID;							//!< Base 64 encoding of the source pair address.	
 	std::string ipAddress;						//!< IPaddress associated with the entry.
 	std::string portNumber;						//!< Port number associated with the entry.
 	std::string description;					//!< Description associated with the entry.
-public:
+
 /*******************************************************************************************
 * @brief Get number of minutes after which the entry expires
 *
@@ -158,6 +157,10 @@ public:
 	void unlock();
 
 public:
+/*******************************************************************************************
+* @brief Return the UID of the entry
+********************************************************************************************/
+	const std::string& uid();
 /*******************************************************************************************
 * @brief Make this entry part of a peer
 *

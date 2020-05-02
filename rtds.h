@@ -2,6 +2,7 @@
 #define RTDS_H
 
 #include <boost/asio.hpp>
+#include "common.hpp"
 
 constexpr unsigned short RTDS_PORT = 389;
 using namespace boost;

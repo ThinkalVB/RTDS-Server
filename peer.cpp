@@ -5,8 +5,12 @@
 #include "log.h"
 
 short Peer::peerCount = 0;
+int Peer::notificationCount = 0;
+std::list<Notification> Peer::notificationList;
+
 std::vector<Peer*> Peer::mirroringGroup;
-std::mutex Peer::mirroringListLock;
+std::mutex Peer::MListLock;
+std::mutex Peer::NListLock;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
@@ -52,12 +56,6 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 	}
 }
 
-void Peer::sendPeerData()
-{
-	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
-		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-}
-
 void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 {
 	if (ec != system::errc::success)
@@ -74,6 +72,44 @@ void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 	}
 }
 
+void Peer::_sendNotification(const boost::system::error_code& ec, std::size_t size)
+{
+	if (ec != system::errc::success)
+	{
+		#ifdef PRINT_LOG
+		Log::log("TCP Socket _sendNotification() failed", peerSocket, ec);
+		#endif
+		terminatePeer();
+	}
+}
+
+void Peer::sendPeerData()
+{
+	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
+		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+}
+
+void Peer::sendNotification(const std::string& noteString)
+{
+	std::lock_guard<std::mutex> lock(MListLock);
+	NListLock.lock();
+	notificationCount++;
+	auto note = notificationList.emplace_back(noteString, notificationCount);
+	if (notificationList.size() > MAX_NOTE_SIZE)
+		notificationList.pop_front();
+	NListLock.unlock();
+
+	for (int i = 0; i < mirroringGroup.size(); i++)
+	{
+		if (mirroringGroup[i] != this)
+		{
+			mirroringGroup[i]->peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
+				bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+		}
+	}
+}
+
+
 void Peer::terminatePeer()
 {
 	peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
@@ -87,7 +123,7 @@ short Peer::getPeerCount()
 
 void Peer::addToMirroringGroup()
 {
-	std::lock_guard<std::mutex> lock(mirroringListLock);
+	std::lock_guard<std::mutex> lock(MListLock);
 	if (!isMirroring)
 	{
 		isMirroring = true;
@@ -97,7 +133,7 @@ void Peer::addToMirroringGroup()
 
 void Peer::removeFromMirroringGroup()
 {
-	std::lock_guard<std::mutex> lock(mirroringListLock);
+	std::lock_guard<std::mutex> lock(MListLock);
 	if (isMirroring)
 	{
 		isMirroring = false;

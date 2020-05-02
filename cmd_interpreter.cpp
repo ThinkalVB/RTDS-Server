@@ -6,12 +6,6 @@
 #include "log.h"
 
 using namespace boost;
-#define V4_UID_MAX_CHAR 8
-#define V6_UID_MAX_CHAR 24
-
-#define PORT_NUM_MAX_CHAR 5
-#define MAX_PORT_NUM_VALUE 65535
-#define MAX_DESC_SIZE 202
 
 const std::string CmdInterpreter::RESP[] = 
 {
@@ -38,6 +32,13 @@ const std::string CmdInterpreter::COMM[] =
 	"mirror",
 	"leave",
 	"exit"
+};
+
+const char CmdInterpreter::PRI[] =
+{
+	'l',
+	'p',
+	'r'
 };
 
 bool CmdInterpreter::makeCmdElement(std::array<char, RTDS_BUFF_SIZE>& dataBuffer, CommandElement& cmdElement, std::size_t size)
@@ -243,6 +244,15 @@ TTL CmdInterpreter::toTTL(Privilege maxPrivilege)
 		return TTL::RESTRICTED_TTL;
 }
 
+std::string CmdInterpreter::toPermission(const Permission& permission)
+{
+	std::string permStr;
+	permStr += PRI[(short)permission.change];
+	permStr += PRI[(short)permission.charge];
+	permStr += PRI[(short)permission.remove];
+	return permStr;
+}
+
 
 bool CmdInterpreter::isBase64(const std::string_view& uid)
 {
@@ -296,7 +306,7 @@ void CmdInterpreter::processCommand(Peer& peer)
 	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement().size() == 0)
 		s_leave(peer);
 	else if (command == COMM[(short)Command::ADD])
-		_add(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_add(peer);
 	else if (command == COMM[(short)Command::SEARCH])
 		_search(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::CHARGE])
@@ -304,11 +314,11 @@ void CmdInterpreter::processCommand(Peer& peer)
 	else if (command == COMM[(short)Command::TTL])
 		_ttl(peer.entry(), peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::REMOVE])
-		_remove(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_remove(peer);
 	else if (command == COMM[(short)Command::FLUSH])
 		_flush(peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::UPDATE])
-		_update(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_update(peer);
 	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement().size() == 0)
 	{
 		peer.terminatePeer();
@@ -366,27 +376,29 @@ void CmdInterpreter::_ttl(BaseEntry* thisEntry, CommandElement& cmdElement, std:
 	writeBuffer += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::_remove(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_remove(Peer& peer)
 {
-	auto entry = extractBaseEntry(thisEntry, cmdElement);
+	auto thisEntry = peer.entry();
+	auto entry = extractBaseEntry(thisEntry, peer.cmdElement());
 
-	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
+	if (!peer.cmdElement().isEmpty())
+		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto purgeTocken = Tocken::makePurgeTocken(entry, thisEntry);
 		if (purgeTocken != nullptr)
 		{
 			Directory::removeEntry(purgeTocken);
-			writeBuffer += RESP[(short)Response::SUCCESS];
+			peer.Buffer() += RESP[(short)Response::SUCCESS];
+			peer.sendNotification(purgeTocken->makePurgeNote());
 			Tocken::destroyTocken(purgeTocken);
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
+			peer.Buffer() += RESP[(short)Response::NO_PRIVILAGE];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST];
-	writeBuffer += '\x1e';				//!< Record separator
+		peer.Buffer() += RESP[(short)Response::NO_EXIST];
+	peer.Buffer() += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer)
@@ -401,65 +413,70 @@ void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer
 	writeBuffer += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::_update(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_update(Peer& peer)
 {
-	auto entry = extractBaseEntry(thisEntry, cmdElement);
-	auto mutableData = extractMutableData(cmdElement);
+	auto thisEntry = peer.entry();
+	auto entry = extractBaseEntry(thisEntry, peer.cmdElement());
+	auto mutableData = extractMutableData(peer.cmdElement());
 
-	if (!cmdElement.isEmpty() || mutableData.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
+	if (!peer.cmdElement().isEmpty() || mutableData.isEmpty())
+		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
 		auto updateTocken = Tocken::makeUpdateTocken(entry, thisEntry);
 		if (updateTocken != nullptr)
 		{
 			auto response = Directory::updateEntry(updateTocken, mutableData);
+			if (response == Response::SUCCESS)
+				peer.sendNotification(updateTocken->makeUpdateNote(mutableData));
 			Tocken::destroyTocken(updateTocken);
-			writeBuffer += RESP[(short)response];
+			peer.Buffer() += RESP[(short)response];
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
+			peer.Buffer() += RESP[(short)Response::NO_PRIVILAGE];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST];
-	writeBuffer += '\x1e';				//!< Record separator
+		peer.Buffer() += RESP[(short)Response::NO_EXIST];
+	peer.Buffer() += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::_add(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_add(Peer& peer)
 {
+	auto thisEntry = peer.entry();
 	SourcePair sourcePair;
 	BaseEntry* entry;
 
-	if (extractSourcePair(cmdElement, sourcePair))
+	if (extractSourcePair(peer.cmdElement(), sourcePair))
 		entry = Directory::makeEntry(sourcePair);
 	else
 		entry = thisEntry;
-	auto mutableData = extractMutableData(cmdElement);
+	auto mutableData = extractMutableData(peer.cmdElement());
 
-	if (!cmdElement.isEmpty())
+	if (!peer.cmdElement().isEmpty())
 	{
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
+		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
 		return;
 	}
 	else if (Directory::isInDirectory(entry))
 	{
-		writeBuffer += RESP[(short)Response::REDUDANT_DATA] + " ";
-		Directory::printUID(entry, writeBuffer);
+		peer.Buffer() += RESP[(short)Response::REDUDANT_DATA] + " ";
+		Directory::printUID(entry, peer.Buffer());
 	}
 	else
 	{
 		auto insertionTocken = Tocken::makeInsertionTocken(entry, thisEntry);
 		auto response = Directory::insertEntry(insertionTocken, mutableData);
-		Tocken::destroyTocken(insertionTocken);
 		if (response == Response::SUCCESS)
 		{
-			writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			Directory::printUID(entry, writeBuffer);
+			peer.Buffer() += RESP[(short)Response::SUCCESS] + " ";
+			Directory::printUID(entry, peer.Buffer());
+			peer.sendNotification(insertionTocken->makeInsertionNote());
 		}
 		else
-			writeBuffer += RESP[(short)response];
+			peer.Buffer() += RESP[(short)response];
+		Tocken::destroyTocken(insertionTocken);
 	}
-	writeBuffer += '\x1e';				//!< Record separator
+	peer.Buffer() += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_search(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)

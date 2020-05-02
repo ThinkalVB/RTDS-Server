@@ -6,23 +6,39 @@
 #include "sp_entry.h"
 #include "cmd_element.h"
 
+struct Notification
+{
+	std::string noteString;
+	int notificationNo;
+
+	Notification(const std::string& note, int noteNo)
+	{
+		noteString = note;
+		notificationNo = noteNo;
+	}
+};
+
 using namespace boost;
 constexpr short RTDS_BUFF_SIZE = 300;
 
 class Peer
 {
-	static short peerCount;							//!< Keep the total count of peers
-	static std::vector<Peer*> mirroringGroup;		//!< Keep the list of peers mirroring the directory
-	static std::mutex mirroringListLock;			//!< Lock this mutex when accessing the mirrorGroup
-	Entry peerEntry;								//!< Union DS that store the SourcePair entry(v4/v6) pointers
+	static short peerCount;								//!< Keep the total count of peers
+	static int notificationCount;						//!< Total number of notifications created
+	static std::list<Notification> notificationList;	//!< List of notifications
+	static std::mutex NListLock;						//!< Notification list lock
+	
+	static std::vector<Peer*> mirroringGroup;			//!< Keep the list of peers mirroring the directory
+	static std::mutex MListLock;						//!< Mirroring list lock
 
-	asio::ip::tcp::socket* peerSocket;				//!< Socket handling the data from peer system
-	asio::ip::tcp::endpoint remoteEp;				//!< Endpoint of the peerSocket with info on peer system
-	bool isMirroring = false;						//!< True if this peer is in mirroring mode
+	Entry peerEntry;									//!< Union DS that store the SourcePair entry(v4/v6) pointers
+	asio::ip::tcp::socket* peerSocket;					//!< Socket handling the data from peer system
+	asio::ip::tcp::endpoint remoteEp;					//!< Endpoint of the peerSocket with info on peer system
+	bool isMirroring = false;							//!< True if this peer is in mirroring mode
 
-	std::array<char, RTDS_BUFF_SIZE> dataBuffer;	//!< Buffer to which the commands are received
-	CommandElement commandElement;					//!< String view Array of command elements
-	std::string writeBuffer;						//!< Buffer from which the response will be send
+	std::array<char, RTDS_BUFF_SIZE> dataBuffer;		//!< Buffer to which the commands are received
+	CommandElement commandElement;						//!< String view Array of command elements
+	std::string writeBuffer;							//!< Buffer from which the response will be send
 
 /*******************************************************************************************
  * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
@@ -57,6 +73,17 @@ class Peer
 * If the connection is ok then, clear the write buffer and register for next receive.
 ********************************************************************************************/
 	void _sendData(const boost::system::error_code&, std::size_t);
+/*******************************************************************************************
+* @brief The callback function will be called after the notification is send
+*
+* @param[in] ec					Asio error code
+* @param[in] size				Number of bytes send
+*
+* @details
+* If ec state a error in connection, this peer object will be deleted.
+********************************************************************************************/
+	void _sendNotification(const boost::system::error_code&, std::size_t);
+
 public:
 
 /*******************************************************************************************
@@ -131,6 +158,16 @@ void terminatePeer();
 * @return						Reference to the command elements
 ********************************************************************************************/
 	CommandElement& cmdElement();
+/*******************************************************************************************
+* @brief Send notification to all the mirroring peers
+*
+* @param[in] noteString			The notification string
+*
+* @details
+* Create a notification with the noteString
+* Send the noteString to all the peers in the mirroring group
+********************************************************************************************/
+	void sendNotification(const std::string&);
 };
 
 #endif

@@ -5,9 +5,7 @@
 #include <fstream>
 #include <mutex>
 #include <string.h>
-/* #define goes here since all of the cpp file contains Log.h */
-#define DEBUG
-/* #define RTDS_DUAL_STACK */
+#include "common.hpp"
 
 #ifdef DEBUG
 #define PRINT_LOG

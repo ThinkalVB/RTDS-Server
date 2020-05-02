@@ -1,4 +1,5 @@
 #include "tockens.h"
+#include "cmd_interpreter.h"
 
 AdvancedTocken* Tocken::makeUpdateTocken(BaseEntry* entry, BaseEntry* cmdEntry)
 {
@@ -73,4 +74,30 @@ bool AdvancedTocken::haveValid(const Permission& perm)
 		return true;
 	else
 		return false;
+}
+
+std::string AdvancedTocken::makeInsertionNote()
+{
+	std::string notification = "[+] " + EvB->uid();
+	notification += '\x1e';				//!< Record separator
+	return notification;
+}
+
+std::string AdvancedTocken::makeUpdateNote(const MutableData& data)
+{
+	std::string notification = "[$] " + EvB->uid();
+	if (data.havePermission)
+		notification += " " + CmdInterpreter::toPermission(data.permission);
+	if (data.haveDescription)
+		notification += " " + std::string(data.description);
+
+	notification += '\x1e';				//!< Record separator
+	return notification;
+}
+
+std::string BasicTocken::makePurgeNote()
+{
+	std::string notification = "[-] " + EvB->uid();
+	notification += '\x1e';				//!< Record separator
+	return notification;
 }
