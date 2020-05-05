@@ -1,21 +1,18 @@
-[2020-May-02 19:25:57.483532]  RTDS starting
-[2020-May-02 19:25:57.484528]  New IO Thread added
-[2020-May-02 19:25:57.485526]  New IO Thread added
-[2020-May-02 19:25:57.487523]  New IO Thread added
-[2020-May-02 19:25:57.489516]  New IO Thread added
-[2020-May-02 19:25:57.491511]  New IO Thread added
-[2020-May-02 19:25:57.491511]  TCP server initiating
-[2020-May-02 19:25:57.491511]  TCP Accepting starting
-[2020-May-02 19:25:57.491511]  TCP server started
-[2020-May-02 19:26:01.589206]  Incoming TCP connection 127.0.0.1 63187
-[2020-May-02 19:26:01.590247]  Incoming TCP connection 127.0.0.1 63188
-[2020-May-02 19:26:02.038127]  Incoming TCP connection 127.0.0.1 63189
-[2020-May-02 19:26:02.820983]  Incoming TCP connection 127.0.0.1 63190
-[2020-May-02 19:26:48.655622]  TCP Socket _processData() failed 127.0.0.1 63190 End of file
-[2020-May-02 19:26:48.655622]  TCP Socket closing 127.0.0.1 63190
-[2020-May-02 19:26:49.659717]  TCP Socket _processData() failed 127.0.0.1 63189 End of file
-[2020-May-02 19:26:49.659717]  TCP Socket closing 127.0.0.1 63189
-[2020-May-02 19:26:50.461804]  TCP Socket _processData() failed 127.0.0.1 63187 End of file
-[2020-May-02 19:26:50.461804]  TCP Socket closing 127.0.0.1 63187
-[2020-May-02 19:26:51.464562]  TCP Socket _processData() failed 127.0.0.1 63188 End of file
-[2020-May-02 19:26:51.464562]  TCP Socket closing 127.0.0.1 63188
+[2020-May-05 14:55:16.094349]  RTDS starting
+[2020-May-05 14:55:16.095346]  New IO Thread added
+[2020-May-05 14:55:16.097342]  New IO Thread added
+[2020-May-05 14:55:16.102329]  New IO Thread added
+[2020-May-05 14:55:16.103325]  New IO Thread added
+[2020-May-05 14:55:16.104323]  New IO Thread added
+[2020-May-05 14:55:16.104323]  TCP server initiating
+[2020-May-05 14:55:16.104323]  TCP Accepting starting
+[2020-May-05 14:55:16.104323]  TCP server started
+[2020-May-05 14:55:22.381869]  Incoming TCP connection 127.0.0.1 62584
+[2020-May-05 14:55:27.429548]  Incoming TCP connection 127.0.0.1 62585
+[2020-May-05 14:56:18.331824]  [+] fwAAAfR4
+[2020-May-05 14:56:40.390042]  [-] fwAAAfR4
+[2020-May-05 14:56:44.237000]  [+] fwAAAfR5
+[2020-May-05 14:57:35.934645]  TCP Socket _processData() failed 127.0.0.1 62584 End of file
+[2020-May-05 14:57:35.934645]  TCP Socket closing 127.0.0.1 62584
+[2020-May-05 14:57:37.577327]  TCP Socket _processData() failed 127.0.0.1 62585 End of file
+[2020-May-05 14:57:37.577327]  TCP Socket closing 127.0.0.1 62585

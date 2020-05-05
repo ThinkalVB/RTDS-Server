@@ -142,6 +142,13 @@ public:
 * @param[out] strBuffer			String buffer to which the data will be written.
 ********************************************************************************************/
 	static void printUID(const BaseEntry*, std::string&);
+/*******************************************************************************************
+* @brief Print the Version,UID, IP address, Port number, Permission and Description
+*
+* @param[in] writeBuffer		Entry for which the expanded form is to be printed
+* @param[out] strBuffer			String buffer to which the data will be written.
+********************************************************************************************/
+	static void printExpand(BaseEntry*, std::string&);
 };
 
 #endif

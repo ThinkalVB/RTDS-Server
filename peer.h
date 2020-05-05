@@ -1,22 +1,10 @@
 #ifndef PEER_H
 #define PEER_H
 
-#include <vector>
 #include <boost/asio.hpp>
 #include "sp_entry.h"
 #include "cmd_element.h"
-
-struct Notification
-{
-	std::string noteString;
-	int notificationNo;
-
-	Notification(const std::string& note, int noteNo)
-	{
-		noteString = note;
-		notificationNo = noteNo;
-	}
-};
+#include "notification.h"
 
 using namespace boost;
 constexpr short RTDS_BUFF_SIZE = 300;
@@ -24,17 +12,14 @@ constexpr short RTDS_BUFF_SIZE = 300;
 class Peer
 {
 	static short peerCount;								//!< Keep the total count of peers
-	static int notificationCount;						//!< Total number of notifications created
-	static std::list<Notification> notificationList;	//!< List of notifications
-	static std::mutex NListLock;						//!< Notification list lock
-	
-	static std::vector<Peer*> mirroringGroup;			//!< Keep the list of peers mirroring the directory
-	static std::mutex MListLock;						//!< Mirroring list lock
+	static DLLController<Peer> dllController;			//!< Controller to add and remove peer from mirroring list
+	DLLNode<Peer> dllNode;								//!< DLL node to keep track of previous and next peer
 
 	Entry peerEntry;									//!< Union DS that store the SourcePair entry(v4/v6) pointers
 	asio::ip::tcp::socket* peerSocket;					//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;					//!< Endpoint of the peerSocket with info on peer system
 	bool isMirroring = false;							//!< True if this peer is in mirroring mode
+	int lastNoteNumber;									//!< Last notification number
 
 	std::array<char, RTDS_BUFF_SIZE> dataBuffer;		//!< Buffer to which the commands are received
 	CommandElement commandElement;						//!< String view Array of command elements
@@ -83,9 +68,17 @@ class Peer
 * If ec state a error in connection, this peer object will be deleted.
 ********************************************************************************************/
 	void _sendNotification(const boost::system::error_code&, std::size_t);
+/*******************************************************************************************
+* @brief Send notification to all peers in MList except the calling peer
+*
+* @param[in] note				Notification to be send
+*
+* @details
+* [Not thread safe] Need explicit thread safety
+********************************************************************************************/
+	void _notifyAll(const Note&);
 
 public:
-
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
 *
@@ -168,6 +161,15 @@ void terminatePeer();
 * Send the noteString to all the peers in the mirroring group
 ********************************************************************************************/
 	void sendNotification(const std::string&);
+/*******************************************************************************************
+* @brief Sync all updates after last Notification number
+*
+* @details
+* Create update record for this peer and send it to the client.
+* Update the lastNoteNumber to the last streamed notification number.
+********************************************************************************************/
+	void syncUpdate();
+	template<typename T2> friend class DLLNode;
 };
 
 #endif

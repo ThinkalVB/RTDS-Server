@@ -92,7 +92,7 @@ int Directory::getEntryCount()
 {
 	std::lock_guard<std::mutex> lock1(V4insertionLock);
 	std::lock_guard<std::mutex> lock2(V6insertionLock);
-	return BaseEntry::entryCount;
+	return BaseEntry::dllController.size();
 }
 
 void Directory::clearDirectory()
@@ -160,16 +160,15 @@ Response Directory::updateEntry(UpdateTocken* updateTocken, const MutableData& d
 
 void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 {
-	if (BaseEntry::begin == nullptr)
+	if (BaseEntry::dllController.begin() == nullptr)
 		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
 	else
 	{
-		auto entryPtr = BaseEntry::begin;
+		auto entryPtr = BaseEntry::dllController.begin();
 		while (entryPtr != nullptr && flushCount != 0)
 		{
-			std::lock_guard<std::mutex> lock(entryPtr->accessLock);
-			entryPtr->printExpand(writeBuffer);
-			entryPtr = entryPtr->next;
+			printExpand(entryPtr, writeBuffer);
+			entryPtr = entryPtr->dllNode.next();
 			flushCount--;
 			if (entryPtr != nullptr)
 				writeBuffer += '\x1f';		//!< Unit separator
@@ -204,4 +203,10 @@ void Directory::printBrief(BaseEntry* entry, std::string& writeBuffer)
 void Directory::printUID(const BaseEntry* entry, std::string& writeBuffer)
 {
 	writeBuffer += entry->UID;
+}
+
+void Directory::printExpand(BaseEntry* entry, std::string& writeBuffer)
+{
+	std::lock_guard<std::mutex> lock(entry->accessLock);
+	entry->printExpand(writeBuffer);
 }

@@ -7,10 +7,7 @@ const std::string BaseEntry::VER[] =
 	"v6"
 };
 
-int BaseEntry::entryCount = 0;
-BaseEntry* BaseEntry::begin = nullptr;
-BaseEntry* BaseEntry::end = nullptr;
-std::mutex BaseEntry::entryTrainLock;
+DLLController<BaseEntry> BaseEntry::dllController;
 
 short BaseEntry::_tmAfterLastChrg()
 {
@@ -91,58 +88,18 @@ const std::string& BaseEntry::uid()
 
 void BaseEntry::addToDirectory(TTL ttl)
 {
-	std::lock_guard<std::mutex> lock(entryTrainLock);
 	isInDirectory = true;
 	charge(ttl);
-	entryCount++;
-
-	if (begin == nullptr)
-	{
-		begin = this;
-		end = this;
-		this->next = nullptr;
-		this->previous = nullptr;
-	}
-	else
-	{
-		end->next = this;
-		this->previous = end;
-		this->next = nullptr;
-		end = this;
-	}
+	dllNode.addToDLL(this);
 }
 
 void BaseEntry::removeFromDirectory()
 {
-	std::lock_guard<std::mutex> lock(entryTrainLock);
 	timeToLive = TTL::LIBERAL_TTL;
 	if (isInDirectory)
 	{
 		isInDirectory = false;
-		entryCount--;
-
-		auto this_next = this->next;
-		auto this_previous = this->previous;
-		if (this_next == nullptr && this_previous == nullptr)
-		{
-			begin = nullptr;
-			end = nullptr;
-		}
-		else if (this_next != nullptr && this_previous != nullptr)
-		{
-			this_previous->next = this_next;
-			this_next->previous = this_previous;
-		}
-		else if (begin == this)
-		{
-			begin = this_next;
-			begin->previous = nullptr;
-		}
-		else if (end == this)
-		{
-			this_previous->next = nullptr;
-			end = this;
-		}
+		dllNode.removeFromDLL(this);
 	}
 }
 

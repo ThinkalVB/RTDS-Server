@@ -3,7 +3,6 @@
 #include "directory.h"
 #include "tockens.h"
 #include <regex>
-#include "log.h"
 
 using namespace boost;
 
@@ -419,7 +418,9 @@ void CmdInterpreter::_update(Peer& peer)
 	auto entry = extractBaseEntry(thisEntry, peer.cmdElement());
 	auto mutableData = extractMutableData(peer.cmdElement());
 
-	if (!peer.cmdElement().isEmpty() || mutableData.isEmpty())
+	if (peer.cmdElement().isEmpty() && mutableData.isEmpty())
+		peer.syncUpdate();
+	else if (!peer.cmdElement().isEmpty() || mutableData.isEmpty())
 		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
 	{
@@ -486,7 +487,7 @@ void CmdInterpreter::_search(BaseEntry* thisEntry, CommandElement& cmdElement, s
 	if (!cmdElement.isEmpty())
 		writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else if (Directory::isInDirectory(entry))
-		Directory::printBrief(entry, writeBuffer);
+		Directory::printExpand(entry, writeBuffer);
 	else
 		writeBuffer += RESP[(short)Response::NO_EXIST];
 	writeBuffer += '\x1e';

@@ -5,12 +5,7 @@
 #include "log.h"
 
 short Peer::peerCount = 0;
-int Peer::notificationCount = 0;
-std::list<Notification> Peer::notificationList;
-
-std::vector<Peer*> Peer::mirroringGroup;
-std::mutex Peer::MListLock;
-std::mutex Peer::NListLock;
+DLLController<Peer> Peer::dllController;
 
 Peer::Peer(asio::ip::tcp::socket* socketPtr)
 {
@@ -24,6 +19,7 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 		peerEntry.EvB = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
 
 	peerEntry.EvB->attachToPeer();
+	lastNoteNumber = Notification::lastNoteNumber();
 	_peerReceiveData();
 	peerCount++;
 }
@@ -83,6 +79,25 @@ void Peer::_sendNotification(const boost::system::error_code& ec, std::size_t si
 	}
 }
 
+void Peer::_notifyAll(const Note& note)
+{
+	if (Peer::dllController.begin() == nullptr)
+		return;
+	else
+	{
+		auto peerPtr = Peer::dllController.begin();
+		while (peerPtr != nullptr)
+		{
+			if (peerPtr != this)
+			{
+				peerPtr->peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
+					bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
+			}
+			peerPtr = peerPtr->dllNode.next();
+		}
+	}
+}
+
 void Peer::sendPeerData()
 {
 	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
@@ -91,24 +106,14 @@ void Peer::sendPeerData()
 
 void Peer::sendNotification(const std::string& noteString)
 {
-	std::lock_guard<std::mutex> lock(MListLock);
-	NListLock.lock();
-	notificationCount++;
-	auto note = notificationList.emplace_back(noteString, notificationCount);
-	if (notificationList.size() > MAX_NOTE_SIZE)
-		notificationList.pop_front();
-	NListLock.unlock();
-
-	for (int i = 0; i < mirroringGroup.size(); i++)
-	{
-		if (mirroringGroup[i] != this)
-		{
-			mirroringGroup[i]->peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
-				bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-		}
-	}
+	auto note = Notification::newNotification(noteString);
+	_notifyAll(note);
 }
 
+void Peer::syncUpdate()
+{
+	Notification::createNoteRecord(writeBuffer, lastNoteNumber);
+}
 
 void Peer::terminatePeer()
 {
@@ -123,23 +128,20 @@ short Peer::getPeerCount()
 
 void Peer::addToMirroringGroup()
 {
-	std::lock_guard<std::mutex> lock(MListLock);
 	if (!isMirroring)
 	{
 		isMirroring = true;
-		mirroringGroup.push_back(this);
+		dllNode.addToDLL(this);
 	}
 }
 
 void Peer::removeFromMirroringGroup()
 {
-	std::lock_guard<std::mutex> lock(MListLock);
 	if (isMirroring)
 	{
 		isMirroring = false;
-		auto itr = std::find(mirroringGroup.begin(), mirroringGroup.end(), this);
-		std::iter_swap(itr, mirroringGroup.end() - 1);
-		mirroringGroup.pop_back();
+		dllNode.removeFromDLL(this);
+		lastNoteNumber = Notification::lastNoteNumber();
 	}
 }
 

@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 #include "cppcodec/base64_rfc4648.hpp"
+#include "advanced_dll.h"
 #include <variant>
 #include <boost/asio.hpp>
 
@@ -29,29 +30,25 @@ class BaseEntry
 	void _doExpiryCheck();
 
 protected:
-	static const std::string VER[];				//!< All version code in string.
+	static const std::string VER[];						//!< All version code in string.
+	
+	static DLLController<BaseEntry> dllController;		//!< Controller to add and remove entry from directory
+	DLLNode<BaseEntry> dllNode;							//!< DLL node to keep track of previous and next entries
 
-	static int entryCount;						//!< Total entries in the directory.
-	static BaseEntry* begin;					//!< Starting pointer to the entry list.
-	static BaseEntry* end;						//!< Starting pointer to the entry list.
-	static std::mutex entryTrainLock;			//!< Lock this mutex before inserting and removing from train.
+	Version version;									//!< Version of the derived class IPV4 or IPV6.
+	Permission permission;								//!< Level of privilage needed by the peer to execute commands.
+	TTL timeToLive;										//!< Keep the time to live for this entry.
 
-	BaseEntry* next;							//!< Pointer to the next entry.
-	BaseEntry* previous;						//!< Pointer to the previous entry.
-	Version version;							//!< Version of the derived class IPV4 or IPV6.
-	Permission permission;						//!< Level of privilage needed by the peer to execute commands.
-	TTL timeToLive;								//!< Keep the time to live for this entry.
-
-	bool iswithPeer = false;					//!< True if this entry is associated with a peer.
-	bool isInDirectory = false;					//!< True if the entry is a directory entry.
-	posix_time::ptime lastChargT;				//!< The time at which this entry was last charged.
-	posix_time::ptime createdT;					//!< The time at which this entry was added to the directory.
+	bool iswithPeer = false;							//!< True if this entry is associated with a peer.
+	bool isInDirectory = false;							//!< True if the entry is a directory entry.
+	posix_time::ptime lastChargT;						//!< The time at which this entry was last charged.
+	posix_time::ptime createdT;							//!< The time at which this entry was added to the directory.
 			
-	std::mutex accessLock;						//!< Lock these mutex when accessing or modfying data.
-	std::string UID;							//!< Base 64 encoding of the source pair address.	
-	std::string ipAddress;						//!< IPaddress associated with the entry.
-	std::string portNumber;						//!< Port number associated with the entry.
-	std::string description;					//!< Description associated with the entry.
+	std::mutex accessLock;								//!< Lock these mutex when accessing or modfying data.
+	std::string UID;									//!< Base 64 encoding of the source pair address.	
+	std::string ipAddress;								//!< IPaddress associated with the entry.
+	std::string portNumber;								//!< Port number associated with the entry.
+	std::string description;							//!< Description associated with the entry.
 
 /*******************************************************************************************
 * @brief Get number of minutes after which the entry expires
@@ -185,6 +182,7 @@ public:
 	const Version& getVersion();
 	friend class Directory;
 	friend class Tocken;
+	template<typename T2> friend class DLLNode;
 };
 
 
