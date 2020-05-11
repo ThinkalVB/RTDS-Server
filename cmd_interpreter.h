@@ -1,24 +1,26 @@
 #ifndef CMD_INTERPRETER_H
 #define CMD_INTERPRETER_H
 
-#include "peer.h"
+#include "cmd_element.h"
+#include "common.hpp"
 #include "tockens.h"
+#include "peer.h"
+#include <string>
 
 class CmdInterpreter
 {
-	static void s_ping(BaseEntry*, std::string&);
+	static void s_ping(Entry*, std::string&);
 	static void s_count(std::string&);
 	static void s_mirror(Peer&);
 	static void s_leave(Peer&);
 
 	static void _add(Peer&);
-	static void _search(BaseEntry*, CommandElement&, std::string&);
-	static void _charge(BaseEntry*, CommandElement&, std::string&);
+	static void _search(Entry*, CommandElement&, std::string&);
+	static void _charge(Entry*, CommandElement&, std::string&);
 	static void _remove(Peer&);
 	static void _flush(CommandElement&, std::string&);
-	static void _ttl(BaseEntry*, CommandElement&, std::string&);
+	static void _ttl(Entry*, CommandElement&, std::string&);
 	static void _update(Peer&);
-
 public:
 	static const std::string RESP[];			//!< All responses in string.
 	static const std::string COMM[];			//!< All commands in string.
@@ -31,88 +33,25 @@ public:
 ********************************************************************************************/
 	static void processCommand(Peer&);
 /*******************************************************************************************
-* @brief Extract all command elements from the command line.
+* @brief Convert permission to string
 *
-* @param[in] dataBuffer			Buffer that store the incoming data
-* @param[in] cmdElement			Data structure to store the command elements
-* @param[in] size				Number of characters received from the socket
-* @return						True if command elements is found
-*
-* @details
-* The command elements will be populated in the cmdElements.
-* If their are more than 5 command elements, then the command line will be considered invalid.
-* For this function to return true their must be atleast 1 command element present.
+* @param[in] permission			Permission
+* @return						Permission as string
 ********************************************************************************************/
-	static bool makeCmdElement(std::array<char, RTDS_BUFF_SIZE>&, CommandElement&, std::size_t);
+	static std::string toPermission(const Permission&);
 /*******************************************************************************************
-* @brief Return true if a valid source pair is generated
+* @brief Convert the string to permission [use only after verfying by _isPermission()]
 *
-* @param[in] ipAddrStr			String view of the ip address
-* @param[in] portNum			String view of the port number
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
+* @param[in] perm				The string view of the permission string
+* @return						Permission
 ********************************************************************************************/
-	static bool makeSourcePair(const std::string_view&, const std::string_view&, SourcePair&);
+	static Permission toPermission(const std::string_view&);
 /*******************************************************************************************
-* @brief Return true if a valid source pair is generated
+* @brief Convert the string to permission [use only after verfying by _isPermission()]
 *
-* @param[in] ipAddrStr			String view of the ip address
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if the string view for UID is valid.
+* @param[in] privilege			Character l,p or r for different privileges
 ********************************************************************************************/
-	static bool makeSourcePair(const std::string_view&, SourcePair&);
-/*******************************************************************************************
-* @brief Return true if a valid source pair is generated
-*
-* @param[in] cmdElement			Command element holding the elements of the command
-* @param[out] sourcePair		SourcePair as result
-* @return						True if a source pair is generated
-*
-* @details
-* Return true and a valid sourcePair if a valid source pair is found.
-* The values used for generating the source pair will be purged from the cmdElement.
-********************************************************************************************/
-	static bool extractSourcePair(CommandElement&, SourcePair&);
-/*******************************************************************************************
-* @brief Extract flush count from the command line
-*
-* @param[in] cmdElement			Command element holding the elements of the command
-* @param[out] flushCount		Number of elements to be flushed from directory
-*
-* @details
-* The values used for generating the flushCount will be purged from the cmdElement.
-********************************************************************************************/
-	static void extractFlushCount(CommandElement&, std::size_t&);
-/*******************************************************************************************
-* @brief Return mutable data from the commandElement
-*
-* @param[in] cmdElement			Command element holding the elements of the command
-* @return						Mutable data
-*
-* @details
-* The values used for generating the mutable data will be purged from the commandElement
-********************************************************************************************/
-	static const MutableData extractMutableData(CommandElement&);
-/*******************************************************************************************
-* @brief Extract sourcePair address and find corresponding base entry pointer
-*
-* @param[in] entry				Entry requesting extraction
-* @param[in] cmdElement			Command element from which sourcePair is extracted
-* @return						Pointer to the BaseEntry pointer
-*
-* @details
-* If a sourcePair is found which is not in directory then return nullptr.
-* If a sourcePair is found which is in directory then return it's BaseEntry pointer.
-* If no sourcePair address is found then assume the BaseEntry to be itself.
-********************************************************************************************/
-	static BaseEntry* extractBaseEntry(BaseEntry*, CommandElement&);
-
+	static Privilege toPrivilege(const char&);
 /*******************************************************************************************
 * @brief Convert the string to it's equivalent intiger value
 *
@@ -124,32 +63,12 @@ public:
 ********************************************************************************************/
 	static int toIntiger(const std::string_view& intValue);
 /*******************************************************************************************
-* @brief Convert the string to permission [use only after verfying by _isPermission()]
-*
-* @param[in] privilege			Character l,p or r for different privileges
-********************************************************************************************/
-	static Privilege toPrivilege(const char&);
-/*******************************************************************************************
-* @brief Convert the string to permission [use only after verfying by _isPermission()]
-*
-* @param[in] perm				The string view of the permission string
-* @param[in] privilege			Permission
-********************************************************************************************/
-	static void toPermission(const std::string_view&, Permission&);
-/*******************************************************************************************
 * @brief Get the TTL for the privilege
 *
 * @param[in] maxPrivilege		The maximum privilege the entry have
 * @return						Time to live for that particular privilege
 ********************************************************************************************/
 	static TTL toTTL(Privilege);
-/*******************************************************************************************
-* @brief Convert permission to string
-*
-* @param[in] permission			Permission
-* @return						Permission as string
-********************************************************************************************/
-	static std::string toPermission(const Permission&);
 
 /*******************************************************************************************
 * @brief Check if the string is an Base64 encoded text
@@ -195,6 +114,100 @@ public:
 	static bool isIntiger(const std::string_view&);
 
 /*******************************************************************************************
+* @brief Extract all command elements from the command line.
+*
+* @param[in] dataBuffer			Buffer that store the incoming data
+* @param[in] cmdElement			Data structure to store the command elements
+* @param[in] size				Number of characters received from the socket
+* @return						True if command elements is found
+*
+* @details
+* The command elements will be populated in the cmdElements.
+* If their are more than 5 command elements, then the command line will be considered invalid.
+* For this function to return true their must be atleast 1 command element present.
+********************************************************************************************/
+	static bool makeCmdElement(ReceiveBuffer&, CommandElement&, std::size_t);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[in] portNum			String view of the port number
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for ipAddrStr and portNum are valid.
+********************************************************************************************/
+	static bool makeSourcePair(const std::string_view&, const std::string_view&, SPAddress&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] ipAddrStr			String view of the ip address
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if the string view for UID is valid.
+********************************************************************************************/
+	static bool makeSourcePair(const std::string_view&, SPAddress&);
+
+
+/*******************************************************************************************
+* @brief Return portNumber from the sourcePair address
+*
+* @param[out] spa				SourcePair address
+* @return						Port number from sourcePair address
+********************************************************************************************/
+	static unsigned short portNumber(const SPAddress&);
+
+
+/*******************************************************************************************
+* @brief Return mutable data from the commandElement
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @return						Mutable data
+*
+* @details
+* The values used for generating the mutable data will be purged from the commandElement
+********************************************************************************************/
+	static const MutableData extractMutableData(CommandElement&);
+/*******************************************************************************************
+* @brief Extract flush count from the command line
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @param[out] flushCount		Number of elements to be flushed from directory
+*
+* @details
+* The values used for generating the flushCount will be purged from the cmdElement.
+********************************************************************************************/
+	static void extractFlushCount(CommandElement&, std::size_t&);
+/*******************************************************************************************
+* @brief Return true if a valid source pair is generated
+*
+* @param[in] cmdElement			Command element holding the elements of the command
+* @param[out] sourcePair		SourcePair as result
+* @return						True if a source pair is generated
+*
+* @details
+* Return true and a valid sourcePair if a valid source pair is found.
+* The values used for generating the source pair will be purged from the cmdElement.
+********************************************************************************************/
+	static bool extractSourcePair(CommandElement&, SPAddress&);
+/*******************************************************************************************
+* @brief Extract sourcePair address and find corresponding base entry pointer
+*
+* @param[in] entry				Entry requesting extraction
+* @param[in] cmdElement			Command element from which sourcePair is extracted
+* @return						Pointer to the BaseEntry pointer
+*
+* @details
+* If a sourcePair is found which is not in directory then return nullptr.
+* If a sourcePair is found which is in directory then return it's BaseEntry pointer.
+* If no sourcePair address is found then assume the BaseEntry to be itself.
+********************************************************************************************/
+	static Entry* extractBaseEntry(Entry*, CommandElement&);
+
+/*******************************************************************************************
 * @brief Swap the bytes ( Little endian <---> Big endian )
 *
 * @param[out] Data				The data to be swapped.
@@ -211,9 +224,10 @@ public:
 * @details
 * Make source pair address in network byte order. For little endian systems swap bytes for port number.
 ********************************************************************************************/
-	template <typename IPaddress,typename sourcePair>
+	template <typename IPaddress, typename sourcePair>
 	static void makeSourcePair(const IPaddress&, unsigned short, sourcePair&);
 };
+
 
 template <typename Data>
 inline void CmdInterpreter::byteSwap(Data& portNumber)
@@ -234,5 +248,4 @@ inline void CmdInterpreter::makeSourcePair(const IPaddress& ipAddress, unsigned 
 	#endif
 	memcpy(&sourcePair[sourcePair.size() - 2], &portNum, 2);
 }
-
 #endif

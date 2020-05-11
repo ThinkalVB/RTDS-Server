@@ -1,8 +1,9 @@
 #ifndef ADVANCED_DLL_H
 #define ADVANCED_DLL_H
 
+#include <mutex>
 template<typename T1>
-struct DLLController
+class DLLController
 {
 	T1* _begin = nullptr;
 	T1* _end = nullptr;
@@ -22,6 +23,7 @@ class DLLNode
 public:
 	void addToDLL(T2*);
 	void removeFromDLL(T2*);
+
 	T2* next();
 	T2* previous();
 };
@@ -75,6 +77,7 @@ inline void DLLNode<T2>::removeFromDLL(T2* thisPtr)
 	}
 }
 
+
 template<typename T2>
 inline T2* DLLNode<T2>::next()
 {
@@ -87,8 +90,6 @@ inline T2* DLLNode<T2>::previous()
 	return _previous;
 }
 
-#endif
-
 template<typename T1>
 inline T1* DLLController<T1>::begin()
 {
@@ -100,3 +101,5 @@ inline int DLLController<T1>::size()
 {
 	return _size;
 }
+
+#endif

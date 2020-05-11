@@ -18,28 +18,28 @@
     <ClCompile Include="log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="peer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="rtds.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sp_entry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cmd_interpreter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="directory.cpp">
+    <ClCompile Include="entry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cmd_element.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cmd_interpreter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="tockens.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="directory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="peer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="notification.cpp">
@@ -53,28 +53,28 @@
     <ClInclude Include="log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="peer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="rtds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="sp_entry.h">
+    <ClInclude Include="advanced_dll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cmd_interpreter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="directory.h">
+    <ClInclude Include="entry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cmd_element.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cmd_interpreter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="tockens.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="advanced_dll.h">
+    <ClInclude Include="directory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="peer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="notification.h">

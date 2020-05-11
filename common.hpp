@@ -13,6 +13,7 @@
 #define PORT_NUM_MAX_CHAR 5
 #define MAX_PORT_NUM_VALUE 65535
 #define MAX_DESC_SIZE 202
+#define RTDS_BUFF_SIZE 300
 
 #include <cstdint>
 #include <array>
@@ -21,6 +22,7 @@ typedef std::array<uint8_t, 6> SourcePairV4;
 typedef std::array< unsigned char, 4 > IPVersion4;
 typedef std::array<uint8_t, 18> SourcePairV6;
 typedef std::array< unsigned char, 16 > IPVersion6;
+typedef std::array<char, RTDS_BUFF_SIZE> ReceiveBuffer;
 
 /*******************************************************************************************
 * @brief Enum class representing the levels of privilege
@@ -135,4 +137,18 @@ struct Permission
 	Privilege remove;
 };
 
+/*******************************************************************************************
+ * @brief Struct to hold both SourcePairV4 and SourcePairV6
+ ********************************************************************************************/
+struct SPAddress
+{
+	union __sp_address
+	{
+		SourcePairV4 V4;
+		IPVersion4 IPV4;
+		SourcePairV6 V6;
+		IPVersion6 IPV6;
+	}SPA;
+	Version version;
+};
 #endif

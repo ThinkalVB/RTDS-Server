@@ -1,12 +1,13 @@
 #include "directory.h"
+#include "cmd_interpreter.h"
 
-std::map<SourcePairV4, EntryV4*> Directory::V4EntryMap;
-std::map<SourcePairV6, EntryV6*> Directory::V6EntryMap;
+std::map<SourcePairV4, Entry*> Directory::V4EntryMap;
+std::map<SourcePairV6, Entry*> Directory::V6EntryMap;
 
 std::mutex Directory::V4insertionLock;
 std::mutex Directory::V6insertionLock;
 
-BaseEntry* Directory::_findEntry(const SourcePairV4& sourcePair)
+Entry* Directory::_findEntry(const SourcePairV4& sourcePair)
 {
 	auto entry = V4EntryMap.find(sourcePair);
 	if (entry != V4EntryMap.end())
@@ -15,7 +16,7 @@ BaseEntry* Directory::_findEntry(const SourcePairV4& sourcePair)
 		return nullptr;
 }
 
-BaseEntry* Directory::_findEntry(const SourcePairV6& sourcePair)
+Entry* Directory::_findEntry(const SourcePairV6& sourcePair)
 {
 	auto entry = V6EntryMap.find(sourcePair);
 	if (entry != V6EntryMap.end())
@@ -24,15 +25,15 @@ BaseEntry* Directory::_findEntry(const SourcePairV6& sourcePair)
 		return nullptr;
 }
 
-BaseEntry* Directory::_findEntry(const SourcePair& sourcePair)
+Entry* Directory::_findEntry(const SPAddress& sourcePair)
 {
 	if (sourcePair.version == Version::V4)
-		return _findEntry(sourcePair.SP.V4);
+		return _findEntry(sourcePair.SPA.V4);
 	else
-		return _findEntry(sourcePair.SP.V6);
+		return _findEntry(sourcePair.SPA.V6);
 }
 
-BaseEntry* Directory::findEntry(const SourcePair& sourcePair)
+Entry* Directory::findEntry(const SPAddress& sourcePair)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry != nullptr && entry->inDirectory())
@@ -42,7 +43,7 @@ BaseEntry* Directory::findEntry(const SourcePair& sourcePair)
 }
 
 
-BaseEntry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
+Entry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
 {
 	SourcePairV4 sourcePair;
 	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
@@ -51,13 +52,13 @@ BaseEntry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portN
 	auto entryPtr = _findEntry(sourcePair);
 	if (entryPtr == nullptr)
 	{
-		entryPtr = new EntryV4(sourcePair, ipAdd, portNum);
-		V4EntryMap.insert(std::pair<SourcePairV4, EntryV4*>(sourcePair, (EntryV4*)entryPtr));
+		entryPtr = new Entry(sourcePair, ipAdd, portNum);
+		V4EntryMap.insert(std::pair<SourcePairV4, Entry*>(sourcePair, entryPtr));
 	}
 	return entryPtr;
 }
 
-BaseEntry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum)
+Entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum)
 {
 	SourcePairV6 sourcePair;
 	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
@@ -66,13 +67,13 @@ BaseEntry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portN
 	auto entryPtr = _findEntry(sourcePair);
 	if (entryPtr == nullptr)
 	{
-		entryPtr = new EntryV6(sourcePair, ipAdd, portNum);
-		V6EntryMap.insert(std::pair<SourcePairV6, EntryV6*>(sourcePair, (EntryV6*)entryPtr));
+		entryPtr = new Entry(sourcePair, ipAdd, portNum);
+		V6EntryMap.insert(std::pair<SourcePairV6, Entry*>(sourcePair, entryPtr));
 	}
 	return entryPtr;
 }
 
-BaseEntry* Directory::makeEntry(SourcePair& sourcePair)
+Entry* Directory::makeEntry(SPAddress& sourcePair)
 {
 	auto entry = _findEntry(sourcePair);
 	if (entry != nullptr)
@@ -80,9 +81,9 @@ BaseEntry* Directory::makeEntry(SourcePair& sourcePair)
 	else
 	{
 		if (sourcePair.version == Version::V4)
-			entry = makeEntry(asio::ip::make_address_v4(sourcePair.SP.IPV4), sourcePair.portNumber());
+			entry = makeEntry(asio::ip::make_address_v4(sourcePair.SPA.IPV4), CmdInterpreter::portNumber(sourcePair));
 		else
-			entry = makeEntry(asio::ip::make_address_v6(sourcePair.SP.IPV6), sourcePair.portNumber());
+			entry = makeEntry(asio::ip::make_address_v6(sourcePair.SPA.IPV6), CmdInterpreter::portNumber(sourcePair));
 	}
 	return entry;
 }
@@ -92,29 +93,29 @@ int Directory::getEntryCount()
 {
 	std::lock_guard<std::mutex> lock1(V4insertionLock);
 	std::lock_guard<std::mutex> lock2(V6insertionLock);
-	return BaseEntry::dllController.size();
+	return Entry::dllController.size();
 }
 
 void Directory::clearDirectory()
 {
-	std::map<SourcePairV4, EntryV4*>::iterator itV4 = V4EntryMap.begin();
+	std::map<SourcePairV4, Entry*>::iterator itV4 = V4EntryMap.begin();
 	while (itV4 != V4EntryMap.end())
 	{
-		delete (EntryV4*)itV4->second;
+		delete itV4->second;
 		itV4++;
 	}
 	V4EntryMap.clear();
 
-	std::map<SourcePairV6, EntryV6*>::iterator itV6 = V6EntryMap.begin();
+	std::map<SourcePairV6, Entry*>::iterator itV6 = V6EntryMap.begin();
 	while (itV6 != V6EntryMap.end())
 	{
-		delete (EntryV6*)itV6->second;
+		delete itV6->second;
 		itV6++;
 	}
 	V6EntryMap.clear();
 }
 
-bool Directory::isInDirectory(BaseEntry* entry)
+bool Directory::isInDirectory(Entry* entry)
 {
 	if (entry != nullptr && entry->inDirectory())
 		return true;
@@ -125,18 +126,18 @@ bool Directory::isInDirectory(BaseEntry* entry)
 Response Directory::insertEntry(InsertionTocken* insertionTocken, const MutableData& data)
 {
 	auto entry = insertionTocken->EvB;
-	if (data.havePermission)
+	if (data._havePermission)
 	{
-		if (insertionTocken->haveValid(data.permission))
-			entry->permission = data.permission;
+		if (insertionTocken->haveValid(data._permission))
+			entry->permission = data._permission;
 		else
 			return Response::NO_PRIVILAGE;
 	}
 	else
 		entry->assignDefualtPermission(insertionTocken->maxPrivilege);
 
-	if (data.haveDescription)
-		entry->description = data.description;
+	if (data._haveDescription)
+		entry->description = data._description;
 
 	entry->addToDirectory(CmdInterpreter::toTTL(insertionTocken->maxPrivilege));
 	return Response::SUCCESS;
@@ -145,26 +146,26 @@ Response Directory::insertEntry(InsertionTocken* insertionTocken, const MutableD
 Response Directory::updateEntry(UpdateTocken* updateTocken, const MutableData& data)
 {
 	auto entry = updateTocken->EvB;
-	if (data.havePermission)
+	if (data._havePermission)
 	{
-		if (updateTocken->haveValid(data.permission))
-			entry->permission = data.permission;
+		if (updateTocken->haveValid(data._permission))
+			entry->permission = data._permission;
 		else
 			return Response::NO_PRIVILAGE;
 	}
 
-	if (data.haveDescription)
-		entry->description = data.description;
+	if (data._haveDescription)
+		entry->description = data._description;
 	return Response::SUCCESS;
 }
 
 void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 {
-	if (BaseEntry::dllController.begin() == nullptr)
+	if (Entry::dllController.begin() == nullptr)
 		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
 	else
 	{
-		auto entryPtr = BaseEntry::dllController.begin();
+		auto entryPtr = Entry::dllController.begin();
 		while (entryPtr != nullptr && flushCount != 0)
 		{
 			printExpand(entryPtr, writeBuffer);
@@ -189,23 +190,23 @@ short Directory::chargeEntry(ChargeTocken* chargeTocken)
 	return entry->charge(newTTL);
 }
 
-short Directory::getTTL(BaseEntry* entry)
+short Directory::getTTL(Entry* entry)
 {
 	std::lock_guard<std::mutex> lock(entry->accessLock);
 	return entry->getTTL();
 }
 
-void Directory::printBrief(BaseEntry* entry, std::string& writeBuffer)
+void Directory::printBrief(Entry* entry, std::string& writeBuffer)
 {
 	entry->printBrief(writeBuffer);
 }
 
-void Directory::printUID(const BaseEntry* entry, std::string& writeBuffer)
+void Directory::printUID(const Entry* entry, std::string& writeBuffer)
 {
 	writeBuffer += entry->UID;
 }
 
-void Directory::printExpand(BaseEntry* entry, std::string& writeBuffer)
+void Directory::printExpand(Entry* entry, std::string& writeBuffer)
 {
 	std::lock_guard<std::mutex> lock(entry->accessLock);
 	entry->printExpand(writeBuffer);

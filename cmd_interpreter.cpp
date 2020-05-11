@@ -1,12 +1,10 @@
 #include "cmd_interpreter.h"
-#include <charconv>
 #include "directory.h"
-#include "tockens.h"
+#include <charconv>
 #include <regex>
+#include <cppcodec/base64_rfc4648.hpp>
 
-using namespace boost;
-
-const std::string CmdInterpreter::RESP[] = 
+const std::string CmdInterpreter::RESP[] =
 {
 	"redudant_data",
 	"success",
@@ -40,7 +38,93 @@ const char CmdInterpreter::PRI[] =
 	'r'
 };
 
-bool CmdInterpreter::makeCmdElement(std::array<char, RTDS_BUFF_SIZE>& dataBuffer, CommandElement& cmdElement, std::size_t size)
+std::string CmdInterpreter::toPermission(const Permission& permission)
+{
+	std::string permStr;
+	permStr += PRI[(short)permission.change];
+	permStr += PRI[(short)permission.charge];
+	permStr += PRI[(short)permission.remove];
+	return permStr;
+}
+
+Permission CmdInterpreter::toPermission(const std::string_view& perm)
+{
+	Permission permission;
+	permission.charge = toPrivilege(perm[0]);
+	permission.change = toPrivilege(perm[1]);
+	permission.remove = toPrivilege(perm[2]);
+	return permission;
+}
+
+Privilege CmdInterpreter::toPrivilege(const char& privilege)
+{
+	if (privilege == 'l')
+		return Privilege::LIBERAL_ENTRY;
+	else if (privilege == 'p')
+		return Privilege::PROTECTED_ENTRY;
+	else
+		return Privilege::RESTRICTED_ENTRY;
+}
+
+int CmdInterpreter::toIntiger(const std::string_view& intValue)
+{
+	int intiger;
+	std::from_chars(intValue.data(), intValue.data() + intValue.size(), intiger);
+	return intiger;
+}
+
+TTL CmdInterpreter::toTTL(Privilege maxPrivilege)
+{
+	if (maxPrivilege == Privilege::LIBERAL_ENTRY)
+		return TTL::LIBERAL_TTL;
+	else if (maxPrivilege == Privilege::PROTECTED_ENTRY)
+		return TTL::PROTECTED_TTL;
+	else
+		return TTL::RESTRICTED_TTL;
+}
+
+
+bool CmdInterpreter::isBase64(const std::string_view& uid)
+{
+	std::regex regx("[a-zA-Z0-9\+/]*");
+	return std::regex_match(uid.cbegin(), uid.cend(), regx);
+}
+
+bool CmdInterpreter::isDescription(const std::string_view& desc)
+{
+	if (desc[0] == '[' && desc[desc.size() - 1] == ']' && desc.size() <= MAX_DESC_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdInterpreter::isPermission(const std::string_view& permission)
+{
+	std::regex regx("[plr]{3}");
+	return std::regex_match(permission.cbegin(), permission.cend(), regx);
+}
+
+bool CmdInterpreter::isPortNumber(const std::string_view& portNumStr, unsigned short& portNum)
+{
+	if (isIntiger(portNumStr))
+	{
+		auto portNumber = toIntiger(portNumStr);
+		if (portNumber <= MAX_PORT_NUM_VALUE)
+		{
+			portNum = (unsigned short)portNumber;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CmdInterpreter::isIntiger(const std::string_view& intValue)
+{
+	std::regex regx("[0-9]{1,8}");
+	return std::regex_match(intValue.cbegin(), intValue.cend(), regx);
+}
+
+
+bool CmdInterpreter::makeCmdElement(ReceiveBuffer& dataBuffer, CommandElement& cmdElement, std::size_t size)
 {
 	std::string_view commandLine;
 	if (dataBuffer[size - 1] == ';')
@@ -102,7 +186,7 @@ bool CmdInterpreter::makeCmdElement(std::array<char, RTDS_BUFF_SIZE>& dataBuffer
 		return false;
 }
 
-bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std::string_view& portNum, SourcePair& sourcePair)
+bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std::string_view& portNum, SPAddress& sourcePair)
 {
 	system::error_code ec;
 	auto ipAddress = asio::ip::make_address(ipAddrStr, ec);
@@ -111,12 +195,12 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std
 	{
 		if (ipAddress.is_v4())
 		{
-			makeSourcePair(ipAddress.to_v4(), portNumber, sourcePair.SP.V4);
+			makeSourcePair(ipAddress.to_v4(), portNumber, sourcePair.SPA.V4);
 			sourcePair.version = Version::V4;
 		}
 		else
 		{
-			makeSourcePair(ipAddress.to_v6(), portNumber, sourcePair.SP.V6);
+			makeSourcePair(ipAddress.to_v6(), portNumber, sourcePair.SPA.V6);
 			sourcePair.version = Version::V6;
 		}
 		return true;
@@ -126,19 +210,19 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std
 
 }
 
-bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SourcePair& sourcePair)
+bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SPAddress& sourcePair)
 {
 	if (isBase64(uid))
 	{
 		if (uid.size() == V4_UID_MAX_CHAR)
 		{
-			cppcodec::base64_rfc4648::decode(sourcePair.SP.V4.data(), sourcePair.SP.V4.size(), uid);
+			cppcodec::base64_rfc4648::decode(sourcePair.SPA.V4.data(), sourcePair.SPA.V4.size(), uid);
 			sourcePair.version = Version::V4;
 			return true;
 		}
 		else if (uid.size() == V6_UID_MAX_CHAR)
 		{
-			cppcodec::base64_rfc4648::decode(sourcePair.SP.V6.data(), sourcePair.SP.V6.size(), uid);
+			cppcodec::base64_rfc4648::decode(sourcePair.SPA.V6.data(), sourcePair.SPA.V6.size(), uid);
 			sourcePair.version = Version::V6;
 			return true;
 		}
@@ -146,7 +230,51 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SourcePair& sou
 	return false;
 }
 
-bool CmdInterpreter::extractSourcePair(CommandElement& cmdElement, SourcePair& sourcePair)
+
+unsigned short CmdInterpreter::portNumber(const SPAddress& spa)
+{
+	unsigned short portNumber;
+	if (spa.version == Version::V4)
+		memcpy(&portNumber, spa.SPA.V4.data() + spa.SPA.IPV4.size(), 2);
+	else
+		memcpy(&portNumber, spa.SPA.V6.data() + spa.SPA.IPV6.size(), 2);
+
+	#ifdef BOOST_ENDIAN_LITTLE_BYTE
+	CmdInterpreter::byteSwap(portNumber);
+	#endif
+	return portNumber;
+}
+
+
+const MutableData CmdInterpreter::extractMutableData(CommandElement& cmdElement)
+{
+	MutableData mutableData;
+	if (cmdElement.size() >= 1 && isPermission(cmdElement.peek()))
+	{
+		auto permission = toPermission(cmdElement.pop_front());
+		mutableData.setPermission(permission);
+	}
+
+	if (cmdElement.size() >= 1 && isDescription(cmdElement.peek()))
+		mutableData.setDescription(cmdElement.pop_front());
+
+	return mutableData;
+}
+
+void CmdInterpreter::extractFlushCount(CommandElement& cmdElement, std::size_t& flushCount)
+{
+	if (cmdElement.size() >= 1 && isIntiger(cmdElement.peek()))
+	{
+		auto count = toIntiger(cmdElement.peek());
+		if (count > 0)
+		{
+			flushCount = count;
+			cmdElement.pop_front(1);
+		}
+	}
+}
+
+bool CmdInterpreter::extractSourcePair(CommandElement& cmdElement, SPAddress& sourcePair)
 {
 	if (cmdElement.size() >= 1)
 	{
@@ -168,128 +296,13 @@ bool CmdInterpreter::extractSourcePair(CommandElement& cmdElement, SourcePair& s
 	return false;
 }
 
-void CmdInterpreter::extractFlushCount(CommandElement& cmdElement, std::size_t& flushCount)
+Entry* CmdInterpreter::extractBaseEntry(Entry* entry, CommandElement& cmdElement)
 {
-	if (cmdElement.size() >= 1 && isIntiger(cmdElement.peek()))
-	{
-		auto count = toIntiger(cmdElement.peek());
-		if (count > 0)
-		{
-			flushCount = count;
-			cmdElement.pop_front(1);
-		}
-	}
-}
-
-const MutableData CmdInterpreter::extractMutableData(CommandElement& cmdElement)
-{
-	MutableData mutableData;
-	if (cmdElement.size() >= 1 && isPermission(cmdElement.peek()))
-	{
-		toPermission(cmdElement.peek(), mutableData.permission);
-		cmdElement.pop_front(1);
-		mutableData.havePermission = true;
-	}
-
-	if (cmdElement.size() >= 1 && isDescription(cmdElement.peek()))
-	{
-		mutableData.description = cmdElement.pop_front();
-		mutableData.haveDescription = true;
-	}
-	return mutableData;
-}
-
-BaseEntry* CmdInterpreter::extractBaseEntry(BaseEntry* entry, CommandElement& cmdElement)
-{
-	SourcePair sourcePair;
+	SPAddress sourcePair;
 	if (extractSourcePair(cmdElement, sourcePair))
 		return Directory::findEntry(sourcePair);
 	else
 		return entry;
-}
-
-
-int CmdInterpreter::toIntiger(const std::string_view& intValue)
-{
-	int intiger;
-	std::from_chars(intValue.data(), intValue.data() + intValue.size(), intiger);
-	return intiger;
-}
-
-Privilege CmdInterpreter::toPrivilege(const char& privilege)
-{
-	if (privilege == 'l')
-		return Privilege::LIBERAL_ENTRY;
-	else if (privilege == 'p')
-		return Privilege::PROTECTED_ENTRY;
-	else
-		return Privilege::RESTRICTED_ENTRY;
-}
-
-void CmdInterpreter::toPermission(const std::string_view& perm, Permission& permission)
-{
-	permission.charge = toPrivilege(perm[0]);
-	permission.change = toPrivilege(perm[1]);
-	permission.remove = toPrivilege(perm[2]);
-}
-
-TTL CmdInterpreter::toTTL(Privilege maxPrivilege)
-{
-	if (maxPrivilege == Privilege::LIBERAL_ENTRY)
-		return TTL::LIBERAL_TTL;
-	else if (maxPrivilege == Privilege::PROTECTED_ENTRY)
-		return TTL::PROTECTED_TTL;
-	else
-		return TTL::RESTRICTED_TTL;
-}
-
-std::string CmdInterpreter::toPermission(const Permission& permission)
-{
-	std::string permStr;
-	permStr += PRI[(short)permission.change];
-	permStr += PRI[(short)permission.charge];
-	permStr += PRI[(short)permission.remove];
-	return permStr;
-}
-
-
-bool CmdInterpreter::isBase64(const std::string_view& uid)
-{
-	std::regex regx("[a-zA-Z0-9\+/]*");
-	return std::regex_match(uid.cbegin(), uid.cend(), regx);
-}
-
-bool CmdInterpreter::isDescription(const std::string_view& desc)
-{
-	if (desc[0] == '[' && desc[desc.size() - 1] == ']' && desc.size() <= MAX_DESC_SIZE)
-		return true;
-	return false;
-}
-
-bool CmdInterpreter::isPermission(const std::string_view& permission)
-{
-	std::regex regx("[plr]{3}");
-	return std::regex_match(permission.cbegin(), permission.cend(), regx);
-}
-
-bool CmdInterpreter::isPortNumber(const std::string_view& portNumStr, unsigned short& portNum)
-{
-	if (isIntiger(portNumStr))
-	{
-		auto portNumber = toIntiger(portNumStr);
-		if (portNumber <= MAX_PORT_NUM_VALUE)
-		{
-			portNum = (unsigned short)portNumber;
-			return true;
-		}
-	}
-	return false;
-}
-
-bool CmdInterpreter::isIntiger(const std::string_view& intValue)
-{
-	std::regex regx("[0-9]{1,8}");
-	return std::regex_match(intValue.cbegin(), intValue.cend(), regx);
 }
 
 /* Function that process the commands from peer.....*/
@@ -331,8 +344,8 @@ void CmdInterpreter::processCommand(Peer& peer)
 	peer.sendPeerData();
 }
 
-/* Commands without any arguments...................*/		
-void CmdInterpreter::s_ping(BaseEntry* thisEntry, std::string& writeBuffer)
+/* Commands without any arguments...................*/
+void CmdInterpreter::s_ping(Entry* thisEntry, std::string& writeBuffer)
 {
 	Directory::printBrief(thisEntry, writeBuffer);
 	writeBuffer += '\x1e';					//!< Record separator
@@ -359,7 +372,7 @@ void CmdInterpreter::s_leave(Peer& peer)
 }
 
 /* Commands with arguments..........................*/
-void CmdInterpreter::_ttl(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_ttl(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
@@ -444,8 +457,8 @@ void CmdInterpreter::_update(Peer& peer)
 void CmdInterpreter::_add(Peer& peer)
 {
 	auto thisEntry = peer.entry();
-	SourcePair sourcePair;
-	BaseEntry* entry;
+	SPAddress sourcePair;
+	Entry* entry;
 
 	if (extractSourcePair(peer.cmdElement(), sourcePair))
 		entry = Directory::makeEntry(sourcePair);
@@ -480,7 +493,7 @@ void CmdInterpreter::_add(Peer& peer)
 	peer.Buffer() += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::_search(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_search(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
@@ -493,7 +506,7 @@ void CmdInterpreter::_search(BaseEntry* thisEntry, CommandElement& cmdElement, s
 	writeBuffer += '\x1e';
 }
 
-void CmdInterpreter::_charge(BaseEntry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_charge(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
 {
 	auto entry = extractBaseEntry(thisEntry, cmdElement);
 
@@ -509,7 +522,7 @@ void CmdInterpreter::_charge(BaseEntry* thisEntry, CommandElement& cmdElement, s
 			Tocken::destroyTocken(chargeTocken);
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE ];
+			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
 	}
 	else
 		writeBuffer += RESP[(short)Response::NO_EXIST];

@@ -22,12 +22,12 @@
     <ClCompile Include="cmd_element.cpp" />
     <ClCompile Include="cmd_interpreter.cpp" />
     <ClCompile Include="directory.cpp" />
+    <ClCompile Include="entry.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="notification.cpp" />
     <ClCompile Include="peer.cpp" />
     <ClCompile Include="rtds.cpp" />
     <ClCompile Include="source.cpp" />
-    <ClCompile Include="sp_entry.cpp" />
     <ClCompile Include="tockens.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -36,11 +36,11 @@
     <ClInclude Include="cmd_interpreter.h" />
     <ClInclude Include="common.hpp" />
     <ClInclude Include="directory.h" />
+    <ClInclude Include="entry.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="notification.h" />
     <ClInclude Include="peer.h" />
     <ClInclude Include="rtds.h" />
-    <ClInclude Include="sp_entry.h" />
     <ClInclude Include="tockens.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

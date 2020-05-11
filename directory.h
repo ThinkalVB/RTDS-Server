@@ -2,14 +2,14 @@
 #define DIRECTORY_H
 
 #include <map>
+#include "common.hpp"
+#include "entry.h"
 #include "tockens.h"
-#include "cmd_interpreter.h"
-#include "peer.h"
 
 class Directory
 {
-	static std::map<SourcePairV4, EntryV4*> V4EntryMap;		//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
-	static std::map<SourcePairV6, EntryV6*> V6EntryMap;		//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
+	static std::map<SourcePairV4, Entry*> V4EntryMap;		//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
+	static std::map<SourcePairV6, Entry*> V6EntryMap;		//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
 
 	static std::mutex V4insertionLock;						//!< Lock this mutex before searching and insertion into V4map
 	static std::mutex V6insertionLock;						//!< Lock this mutex before searching and insertion into V6map
@@ -23,9 +23,9 @@ class Directory
 * @details
 * Find the pointer to the Entry's base class if it exists in the map.
 ********************************************************************************************/
-	static BaseEntry* _findEntry(const SourcePairV4&);
-	static BaseEntry* _findEntry(const SourcePairV6&);
-	static BaseEntry* _findEntry(const SourcePair&);
+	static Entry* _findEntry(const SourcePairV4&);
+	static Entry* _findEntry(const SourcePairV6&);
+	static Entry* _findEntry(const SPAddress&);
 
 public:
 /*******************************************************************************************
@@ -38,7 +38,7 @@ public:
 * If the entry is in the directory then return the pointer to it's BaseEntry.
 * Return nullptr if the entry is not in the directory.
 ********************************************************************************************/
-	static BaseEntry* findEntry(const SourcePair&);
+	static Entry* findEntry(const SPAddress&);
 /*******************************************************************************************
 * @brief Return a pointer to V4/V6 Entry for the given IPv4/IPv6 address and port number
 *
@@ -52,8 +52,8 @@ public:
 * No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
 * Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
 ********************************************************************************************/
-	static BaseEntry* makeEntry(asio::ip::address_v4, unsigned short);
-	static BaseEntry* makeEntry(asio::ip::address_v6, unsigned short);
+	static Entry* makeEntry(asio::ip::address_v4, unsigned short);
+	static Entry* makeEntry(asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
 * @brief Return a pointer to V4/V6 Entry for the given source pair address
 *
@@ -66,7 +66,7 @@ public:
 * No entry exists then generate EntryV4 dynamically, insert it to map and return it's pointer.
 * Values of portNumber, UID, sourcePort V4/V6 address and IP4/IP6 address will be initialized.
 ********************************************************************************************/
-	static BaseEntry* makeEntry(SourcePair&);
+	static Entry* makeEntry(SPAddress&);
 
 /*******************************************************************************************
 * @brief Get the total number of entries in the directory
@@ -84,7 +84,7 @@ public:
 * @param[in] entry				The pointer to the entry
 * @return						True if the entry is in directory
 ********************************************************************************************/
-	static bool isInDirectory(BaseEntry*);
+	static bool isInDirectory(Entry*);
 
 	static Response insertEntry(InsertionTocken*, const MutableData&);
 /*******************************************************************************************
@@ -127,28 +127,28 @@ public:
 * @param[in] entry				The pointer to the entry
 * @return						Time To Live
 ********************************************************************************************/
-	static short getTTL(BaseEntry*);
+	static short getTTL(Entry*);
 /*******************************************************************************************
 * @brief Print the brief info - IPversion, IPaddress, PortNumber
 *
 * @param[in] writeBuffer		Entry for which the brief is to be printed
 * @param[out] writeBuffer		String buffer to which the data will be written.
 ********************************************************************************************/
-	static void printBrief(BaseEntry*, std::string&);
+	static void printBrief(Entry*, std::string&);
 /*******************************************************************************************
 * @brief Print the UID
 *
 * @param[in] writeBuffer		Entry for which the UID is to be printed
 * @param[out] strBuffer			String buffer to which the data will be written.
 ********************************************************************************************/
-	static void printUID(const BaseEntry*, std::string&);
+	static void printUID(const Entry*, std::string&);
 /*******************************************************************************************
 * @brief Print the Version,UID, IP address, Port number, Permission and Description
 *
 * @param[in] writeBuffer		Entry for which the expanded form is to be printed
 * @param[out] strBuffer			String buffer to which the data will be written.
 ********************************************************************************************/
-	static void printExpand(BaseEntry*, std::string&);
+	static void printExpand(Entry*, std::string&);
 };
 
 #endif

@@ -14,7 +14,7 @@ class RTDS
 	asio::ip::tcp::endpoint tcpEp;				//!< TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
 	asio::ip::tcp::acceptor tcpAcceptor;		//!< TCP acceptor socket that accept incoming tcp connections
 
-	short activeThreadCount;					//!< Keep account of number of threads running ioContex.run()
+	short activeThreadCount = 0;				//!< Keep account of number of threads running ioContex.run()
 	std::atomic<bool> tcpServerRunning;			//!< Track if the TCP server is running
 	std::atomic<bool> keepAccepting;			//!< Only accept new connections if True
 

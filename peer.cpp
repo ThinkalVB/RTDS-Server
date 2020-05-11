@@ -1,7 +1,7 @@
 #include "peer.h"
 #include <boost/bind.hpp>
-#include "cmd_interpreter.h"
 #include "directory.h"
+#include "cmd_interpreter.h"
 #include "log.h"
 
 short Peer::peerCount = 0;
@@ -14,11 +14,11 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr)
 	remoteEp = socketPtr->remote_endpoint();
 
 	if (remoteEp.address().is_v4())
-		peerEntry.EvB = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
+		peerEntry = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
 	else
-		peerEntry.EvB = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
+		peerEntry = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
 
-	peerEntry.EvB->attachToPeer();
+	peerEntry->attachToPeer();
 	lastNoteNumber = Notification::lastNoteNumber();
 	_peerReceiveData();
 	peerCount++;
@@ -145,9 +145,9 @@ void Peer::removeFromMirroringGroup()
 	}
 }
 
-BaseEntry* Peer::entry()
+Entry* Peer::entry()
 {
-	return peerEntry.EvB;
+	return peerEntry;
 }
 
 std::string& Peer::Buffer()
@@ -174,7 +174,7 @@ Peer::~Peer()
 		#endif
 	}
 
-	peerEntry.EvB->detachFromPeer();
+	peerEntry->detachFromPeer();
 	removeFromMirroringGroup();
 	peerCount--;
 	delete peerSocket;

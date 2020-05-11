@@ -1,41 +1,39 @@
-#ifndef SP_ENTRY_H
-#define SP_ENTRY_H
+#ifndef ENTRY_H
+#define ENTRY_H
 
-#include "common.hpp"
-#include "cppcodec/base64_rfc4648.hpp"
 #include "advanced_dll.h"
-#include <variant>
 #include <boost/asio.hpp>
+#include <mutex>
+#include "common.hpp"
 
 using namespace boost;
 
 /*******************************************************************************************
- * @brief Base class for every entry into the directory.
+ * @brief Class for every entry into the directory.
  *
  * @details
  * Base class for the Entry for IPv4 and IPV6
  * The member functions of this class in not thread safe. Directory class must guarantee safety.
  ********************************************************************************************/
-class BaseEntry
+class Entry
 {
 /*******************************************************************************************
 * @brief Return the time passed after the last charge
 *
 * @return						Time in minutes, passed after last charge.
 ********************************************************************************************/
-	short _tmAfterLastChrg();
+    short _tmAfterLastChrg();
 /*******************************************************************************************
 * @brief Turn the isInDirectory flag to false if the entry's TTL have expired
 ********************************************************************************************/
-	void _doExpiryCheck();
+    void _doExpiryCheck();
 
-protected:
 	static const std::string VER[];						//!< All version code in string.
-	
-	static DLLController<BaseEntry> dllController;		//!< Controller to add and remove entry from directory
-	DLLNode<BaseEntry> dllNode;							//!< DLL node to keep track of previous and next entries
 
-	Version version;									//!< Version of the derived class IPV4 or IPV6.
+	static DLLController<Entry> dllController;			//!< Controller to add and remove entry from directory
+	DLLNode<Entry> dllNode;								//!< DLL node to keep track of previous and next entries
+
+	SPAddress spAddress;								//!< Source pair address of the entry.
 	Permission permission;								//!< Level of privilage needed by the peer to execute commands.
 	TTL timeToLive;										//!< Keep the time to live for this entry.
 
@@ -43,13 +41,15 @@ protected:
 	bool isInDirectory = false;							//!< True if the entry is a directory entry.
 	posix_time::ptime lastChargT;						//!< The time at which this entry was last charged.
 	posix_time::ptime createdT;							//!< The time at which this entry was added to the directory.
-			
+
 	std::mutex accessLock;								//!< Lock these mutex when accessing or modfying data.
 	std::string UID;									//!< Base 64 encoding of the source pair address.	
 	std::string ipAddress;								//!< IPaddress associated with the entry.
 	std::string portNumber;								//!< Port number associated with the entry.
 	std::string description;							//!< Description associated with the entry.
 
+	Entry(const SourcePairV4&, asio::ip::address_v4, unsigned short);
+	Entry(const SourcePairV6&, asio::ip::address_v6, unsigned short);
 /*******************************************************************************************
 * @brief Get number of minutes after which the entry expires
 *
@@ -104,7 +104,7 @@ protected:
 * PROTECTED_ENTRY if either protected or restricted, else LIBERAL_ENTRY.
 * [Not thread safe]
 ********************************************************************************************/
-	void assignDefualtPermission(Privilege);
+	void assignDefualtPermission(const Privilege&);
 /*******************************************************************************************
 * @brief Print the brief info - IPversion, IPaddress, PortNumber
 *
@@ -123,6 +123,24 @@ protected:
 ********************************************************************************************/
 	short charge(const TTL&);
 /*******************************************************************************************
+* @brief Lock this entry of further access from other threads
+********************************************************************************************/
+	void lock();
+/*******************************************************************************************
+* @brief Unlock this entry
+********************************************************************************************/
+	void unlock();
+/*******************************************************************************************
+* @brief Return the maximum privilage cmdEntry have on this entry
+*
+* @param[in] cmdEntry			The command issuing entry
+* @return						Return the maximum privilage
+*
+* @details
+* [Not thread safe]
+********************************************************************************************/
+	Privilege maxPrivilege(Entry*);
+/*******************************************************************************************
 * @brief Return true if have the privilege to charge, change or remove
 *
 * @param[in] maxPrivilege		The maximum privilege cmdEntry have on entry
@@ -134,24 +152,6 @@ protected:
 	bool canChargeWith(const Privilege&);
 	bool canChangeWith(const Privilege&);
 	bool canRemoveWith(const Privilege&);
-/*******************************************************************************************
-* @brief Return the maximum privilage cmdEntry have on this entry
-*
-* @param[in] cmdEntry			The command issuing entry
-* @return						Return the maximum privilage
-*
-* @details
-* [Not thread safe]
-********************************************************************************************/
-	Privilege maxPrivilege(BaseEntry*);
-/*******************************************************************************************
-* @brief Lock this entry of further access from other threads
-********************************************************************************************/
-	void lock();
-/*******************************************************************************************
-* @brief Unlock this entry
-********************************************************************************************/
-	void unlock();
 
 public:
 /*******************************************************************************************
@@ -179,100 +179,12 @@ public:
 *
 * @return						Version type V4 or V6
 ********************************************************************************************/
-	const Version& getVersion();
-	friend class Directory;
-	friend class Tocken;
+	const Version& version();
+
 	template<typename T2> friend class DLLNode;
-};
-
-
-template <typename SP, typename IPaddrT>
-class SPentry : public BaseEntry
-{
-	SPentry(SP&, IPaddrT&, unsigned short);
-	const SP sourcePair;
-public:
-/*******************************************************************************************
-* @brief Return the maximum privilege the command issuing entry have
-*
-* @param[in] cmdEntry			The ptr to the command issuing Entry.
-* @return						The maximum privilage the comEntry have on entry.
-*
-* @details
-* If both IP address are not the same then - return Privilege::LIBERAL_ENTRY.
-* Both have the same IP  version address - return Privilege::PROTECTED_ENTRY.
-********************************************************************************************/
-	Privilege maxPrivilege(BaseEntry*);
+	friend class Tocken;
 	friend class Directory;
 };
-
-/*******************************************************************************************
-* @brief Construct SPentry of type EntryV4 or EntryV6
-*
-* @param[in] srcPair			SourcePair type V4 or V6
-* @param[in] ipAdd				IP address IPv4 or IPv6
-* @param[in] portNum			Port Number of the sourcePair
-*
-* @details
-* Create a sourcePair of type V4 or V6 ( only use with directory ). Initialize values.
-********************************************************************************************/
-template <typename SP, typename IPaddrT>
-SPentry<SP, IPaddrT>::SPentry(SP& srcPair, IPaddrT& ipAdd, unsigned short portNum) : sourcePair(srcPair)
-{
-	portNumber = std::to_string(portNum);
-	ipAddress = ipAdd.to_string();
-	UID = cppcodec::base64_rfc4648::encode(sourcePair);
-	createdT = posix_time::second_clock::universal_time();
-	description = "[]";
-
-	if constexpr (std::is_same_v<IPaddrT, asio::ip::address_v4>)
-		version = Version::V4;
-	else
-		version = Version::V6;
-}
-
-template<typename SP, typename IPaddrT>
-inline Privilege SPentry<SP, IPaddrT>::maxPrivilege(BaseEntry* cmdEntry)
-{
-	if (version == cmdEntry->getVersion())
-	{
-		auto cmdEntrySP = (void*)&((SPentry*)cmdEntry)->sourcePair[0];
-		if (std::memcmp((void*)&sourcePair[0], cmdEntrySP, sourcePair.size() - 2) == 0)
-			return Privilege::PROTECTED_ENTRY;
-		else
-			return Privilege::LIBERAL_ENTRY;
-	}
-	else
-		return Privilege::LIBERAL_ENTRY;
-}
-
-typedef SPentry<SourcePairV4, asio::ip::address_v4> EntryV4;
-typedef SPentry<SourcePairV6, asio::ip::address_v6> EntryV6;
-/*******************************************************************************************
- * @brief Union to hold the poiter to either EntryV4 or EntryV6
- ********************************************************************************************/
-union Entry
-{
-	BaseEntry* EvB;
-	EntryV4* Ev4;
-	EntryV6* Ev6;
-};
-
-/*******************************************************************************************
- * @brief Struct to hold both SourcePairV4 and SourcePairV6
- ********************************************************************************************/
-struct SourcePair
-{
-	union __source_pair
-	{
-		SourcePairV4 V4;
-		IPVersion4 IPV4;
-		SourcePairV6 V6;
-		IPVersion6 IPV6;
-	}SP;
-	
-	unsigned short portNumber();
-	Version version;
-};
-
 #endif
+
+

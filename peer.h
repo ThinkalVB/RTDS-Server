@@ -2,12 +2,12 @@
 #define PEER_H
 
 #include <boost/asio.hpp>
-#include "sp_entry.h"
+#include "advanced_dll.h"
 #include "cmd_element.h"
 #include "notification.h"
+#include "entry.h"
 
 using namespace boost;
-constexpr short RTDS_BUFF_SIZE = 300;
 
 class Peer
 {
@@ -15,13 +15,13 @@ class Peer
 	static DLLController<Peer> dllController;			//!< Controller to add and remove peer from mirroring list
 	DLLNode<Peer> dllNode;								//!< DLL node to keep track of previous and next peer
 
-	Entry peerEntry;									//!< Union DS that store the SourcePair entry(v4/v6) pointers
+	Entry* peerEntry;									//!< Union DS that store the SourcePair entry(v4/v6) pointers
 	asio::ip::tcp::socket* peerSocket;					//!< Socket handling the data from peer system
 	asio::ip::tcp::endpoint remoteEp;					//!< Endpoint of the peerSocket with info on peer system
 	bool isMirroring = false;							//!< True if this peer is in mirroring mode
 	int lastNoteNumber;									//!< Last notification number
 
-	std::array<char, RTDS_BUFF_SIZE> dataBuffer;		//!< Buffer to which the commands are received
+	ReceiveBuffer dataBuffer;							//!< Buffer to which the commands are received
 	CommandElement commandElement;						//!< String view Array of command elements
 	std::string writeBuffer;							//!< Buffer from which the response will be send
 
@@ -138,7 +138,7 @@ void terminatePeer();
 *
 * @return						Pointer to the base class
 ********************************************************************************************/
-	BaseEntry* entry();
+	Entry* entry();
 /*******************************************************************************************
 * @brief Return the write buffer
 *

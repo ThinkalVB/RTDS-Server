@@ -1,7 +1,7 @@
 #include "tockens.h"
 #include "cmd_interpreter.h"
 
-AdvancedTocken* Tocken::makeUpdateTocken(BaseEntry* entry, BaseEntry* cmdEntry)
+AdvancedTocken* Tocken::makeUpdateTocken(Entry* entry, Entry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (entry->canChangeWith(maxPrivilege))
@@ -16,7 +16,7 @@ AdvancedTocken* Tocken::makeUpdateTocken(BaseEntry* entry, BaseEntry* cmdEntry)
 		return nullptr;
 }
 
-AdvancedTocken* Tocken::makeChargeTocken(BaseEntry* entry, BaseEntry* cmdEntry)
+AdvancedTocken* Tocken::makeChargeTocken(Entry* entry, Entry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (entry->canChargeWith(maxPrivilege))
@@ -31,7 +31,7 @@ AdvancedTocken* Tocken::makeChargeTocken(BaseEntry* entry, BaseEntry* cmdEntry)
 		return nullptr;
 }
 
-AdvancedTocken* Tocken::makeInsertionTocken(BaseEntry* entry, BaseEntry* cmdEntry)
+AdvancedTocken* Tocken::makeInsertionTocken(Entry* entry, Entry* cmdEntry)
 {
 	auto insertionTocken = new AdvancedTocken;
 	insertionTocken->EvB = entry;
@@ -40,7 +40,7 @@ AdvancedTocken* Tocken::makeInsertionTocken(BaseEntry* entry, BaseEntry* cmdEntr
 	return insertionTocken;
 }
 
-BasicTocken* Tocken::makePurgeTocken(BaseEntry* entry, BaseEntry* cmdEntry)
+BasicTocken* Tocken::makePurgeTocken(Entry* entry, Entry* cmdEntry)
 {
 	auto maxPrivilege = entry->maxPrivilege(cmdEntry);
 	if (entry->canRemoveWith(maxPrivilege))
@@ -86,10 +86,10 @@ std::string AdvancedTocken::makeInsertionNote()
 std::string AdvancedTocken::makeUpdateNote(const MutableData& data)
 {
 	std::string notification = "[$] " + EvB->uid();
-	if (data.havePermission)
-		notification += " " + CmdInterpreter::toPermission(data.permission);
-	if (data.haveDescription)
-		notification += " " + std::string(data.description);
+	if (data._havePermission)
+		notification += " " + CmdInterpreter::toPermission(data._permission);
+	if (data._haveDescription)
+		notification += " " + std::string(data._description);
 
 	notification += '\x1e';				//!< Record separator
 	return notification;
@@ -100,4 +100,21 @@ std::string BasicTocken::makePurgeNote()
 	std::string notification = "[-] " + EvB->uid();
 	notification += '\x1e';				//!< Record separator
 	return notification;
+}
+
+bool MutableData::isEmpty()
+{
+	return !(_haveDescription || _havePermission);
+}
+
+void MutableData::setDescription(const std::string_view& desc)
+{
+	_description = desc;
+	_haveDescription = true;
+}
+
+void MutableData::setPermission(const Permission& perm)
+{
+	_permission = perm;
+	_havePermission = true;
 }

@@ -1,25 +1,29 @@
 #ifndef TOCKENS_H
 #define TOCKENS_H
 
-#include "sp_entry.h"
+#include "entry.h"
 
-struct MutableData
+class MutableData
 {
-	std::string_view description;
-	Permission permission;
+	bool _havePermission = false;
+	bool _haveDescription = false;
 
-	bool havePermission = false;
-	bool haveDescription = false;
-	bool isEmpty()
-	{
-		return !(haveDescription || havePermission);
-	}
+	std::string_view _description;
+	Permission _permission;
+
+public:
+	bool isEmpty();
+
+	void setDescription(const std::string_view&);
+	void setPermission(const Permission&);
+	friend class AdvancedTocken;
+	friend class Directory;
 };
 
 class BasicTocken
 {
 	BasicTocken() {}
-	BaseEntry* EvB = nullptr;
+	Entry* EvB = nullptr;
 public:
 	std::string makePurgeNote();
 	friend class Tocken;
@@ -30,7 +34,7 @@ typedef BasicTocken PurgeTocken;
 class AdvancedTocken
 {
 	AdvancedTocken() {}
-	BaseEntry* EvB = nullptr;
+	Entry* EvB = nullptr;
 	Privilege maxPrivilege = Privilege::LIBERAL_ENTRY;
 public:
 /*******************************************************************************************
@@ -52,10 +56,10 @@ typedef AdvancedTocken InsertionTocken;
 class Tocken
 {
 public:
-	static AdvancedTocken* makeUpdateTocken(BaseEntry*, BaseEntry*);
-	static AdvancedTocken* makeChargeTocken(BaseEntry*, BaseEntry*);
-	static AdvancedTocken* makeInsertionTocken(BaseEntry*, BaseEntry*);
-	static BasicTocken* makePurgeTocken(BaseEntry*, BaseEntry*);
+	static AdvancedTocken* makeUpdateTocken(Entry*, Entry*);
+	static AdvancedTocken* makeChargeTocken(Entry*, Entry*);
+	static AdvancedTocken* makeInsertionTocken(Entry*, Entry*);
+	static BasicTocken* makePurgeTocken(Entry*, Entry*);
 
 	static void destroyTocken(BasicTocken*);
 	static void destroyTocken(AdvancedTocken*);

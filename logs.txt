@@ -1,18 +1,9 @@
-[2020-May-05 14:55:16.094349]  RTDS starting
-[2020-May-05 14:55:16.095346]  New IO Thread added
-[2020-May-05 14:55:16.097342]  New IO Thread added
-[2020-May-05 14:55:16.102329]  New IO Thread added
-[2020-May-05 14:55:16.103325]  New IO Thread added
-[2020-May-05 14:55:16.104323]  New IO Thread added
-[2020-May-05 14:55:16.104323]  TCP server initiating
-[2020-May-05 14:55:16.104323]  TCP Accepting starting
-[2020-May-05 14:55:16.104323]  TCP server started
-[2020-May-05 14:55:22.381869]  Incoming TCP connection 127.0.0.1 62584
-[2020-May-05 14:55:27.429548]  Incoming TCP connection 127.0.0.1 62585
-[2020-May-05 14:56:18.331824]  [+] fwAAAfR4
-[2020-May-05 14:56:40.390042]  [-] fwAAAfR4
-[2020-May-05 14:56:44.237000]  [+] fwAAAfR5
-[2020-May-05 14:57:35.934645]  TCP Socket _processData() failed 127.0.0.1 62584 End of file
-[2020-May-05 14:57:35.934645]  TCP Socket closing 127.0.0.1 62584
-[2020-May-05 14:57:37.577327]  TCP Socket _processData() failed 127.0.0.1 62585 End of file
-[2020-May-05 14:57:37.577327]  TCP Socket closing 127.0.0.1 62585
+[2020-May-11 18:42:47.533553]  RTDS starting
+[2020-May-11 18:42:47.534517]  New IO Thread added
+[2020-May-11 18:42:47.535514]  New IO Thread added
+[2020-May-11 18:42:47.539504]  New IO Thread added
+[2020-May-11 18:42:47.539504]  New IO Thread added
+[2020-May-11 18:42:47.539504]  New IO Thread added
+[2020-May-11 18:42:47.542496]  TCP server initiating
+[2020-May-11 18:42:47.542496]  TCP Accepting starting
+[2020-May-11 18:42:47.542496]  TCP server started
