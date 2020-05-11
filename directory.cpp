@@ -169,10 +169,9 @@ void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
 		while (entryPtr != nullptr && flushCount != 0)
 		{
 			printExpand(entryPtr, writeBuffer);
+			writeBuffer += '\x1f';		//!< Unit separator
 			entryPtr = entryPtr->dllNode.next();
 			flushCount--;
-			if (entryPtr != nullptr)
-				writeBuffer += '\x1f';		//!< Unit separator
 		}
 	}
 }

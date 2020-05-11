@@ -28,9 +28,8 @@ void Notification::createNoteRecord(std::string& writeBuffer, int& lastNoteNo)
 	{
 		if (noteItr->notificationNo > lastNoteNo)
 		{
-			if (writeBuffer.size() != 0)
-				writeBuffer += '\x1f';		//!< Unit separator
 			writeBuffer += noteItr->noteString.substr(0, noteItr->noteString.size() - 1);
+			writeBuffer += '\x1f';		//!< Unit separator
 			lastNoteNo++;
 		}
 	}
