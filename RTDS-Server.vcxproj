@@ -26,12 +26,12 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="notification.cpp" />
     <ClCompile Include="peer.cpp" />
+    <ClCompile Include="mutable_data.cpp" />
     <ClCompile Include="rtds.cpp" />
     <ClCompile Include="source.cpp" />
-    <ClCompile Include="tockens.cpp" />
+    <ClCompile Include="spaddress.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="advanced_dll.h" />
     <ClInclude Include="cmd_element.h" />
     <ClInclude Include="cmd_interpreter.h" />
     <ClInclude Include="common.hpp" />
@@ -40,8 +40,9 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="notification.h" />
     <ClInclude Include="peer.h" />
+    <ClInclude Include="mutable_data.h" />
     <ClInclude Include="rtds.h" />
-    <ClInclude Include="tockens.h" />
+    <ClInclude Include="spaddress.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

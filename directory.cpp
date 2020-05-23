@@ -1,212 +1,440 @@
 #include "directory.h"
 #include "cmd_interpreter.h"
 
-std::map<SourcePairV4, Entry*> Directory::V4EntryMap;
-std::map<SourcePairV6, Entry*> Directory::V6EntryMap;
+V4EntryMap Directory::entryMapV4;
+V6EntryMap Directory::entryMapV6;
 
-std::mutex Directory::V4insertionLock;
-std::mutex Directory::V6insertionLock;
+std::mutex Directory::v4MapAccess;
+std::mutex Directory::v6MapAccess;
 
-Entry* Directory::_findEntry(const SourcePairV4& sourcePair)
+ResponsePair Directory::_searchEntry(const SourcePairV4& targetSPA)
 {
-	auto entry = V4EntryMap.find(sourcePair);
-	if (entry != V4EntryMap.end())
-		return entry->second;
-	else 
-		return nullptr;
-}
-
-Entry* Directory::_findEntry(const SourcePairV6& sourcePair)
-{
-	auto entry = V6EntryMap.find(sourcePair);
-	if (entry != V6EntryMap.end())
-		return entry->second;
-	else
-		return nullptr;
-}
-
-Entry* Directory::_findEntry(const SPAddress& sourcePair)
-{
-	if (sourcePair.version == Version::V4)
-		return _findEntry(sourcePair.SPA.V4);
-	else
-		return _findEntry(sourcePair.SPA.V6);
-}
-
-Entry* Directory::findEntry(const SPAddress& sourcePair)
-{
-	auto entry = _findEntry(sourcePair);
-	if (entry != nullptr && entry->inDirectory())
-		return entry;
-	else
-		return nullptr;	
-}
-
-
-Entry* Directory::makeEntry(asio::ip::address_v4 ipAdd, unsigned short portNum)
-{
-	SourcePairV4 sourcePair;
-	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
-
-	std::lock_guard<std::mutex> lock(V4insertionLock);
-	auto entryPtr = _findEntry(sourcePair);
-	if (entryPtr == nullptr)
-	{
-		entryPtr = new Entry(sourcePair, ipAdd, portNum);
-		V4EntryMap.insert(std::pair<SourcePairV4, Entry*>(sourcePair, entryPtr));
-	}
-	return entryPtr;
-}
-
-Entry* Directory::makeEntry(asio::ip::address_v6 ipAdd, unsigned short portNum)
-{
-	SourcePairV6 sourcePair;
-	CmdInterpreter::makeSourcePair(ipAdd, portNum, sourcePair);
-
-	std::lock_guard<std::mutex> lock(V6insertionLock);
-	auto entryPtr = _findEntry(sourcePair);
-	if (entryPtr == nullptr)
-	{
-		entryPtr = new Entry(sourcePair, ipAdd, portNum);
-		V6EntryMap.insert(std::pair<SourcePairV6, Entry*>(sourcePair, entryPtr));
-	}
-	return entryPtr;
-}
-
-Entry* Directory::makeEntry(SPAddress& sourcePair)
-{
-	auto entry = _findEntry(sourcePair);
-	if (entry != nullptr)
-		return entry;
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
 	else
 	{
-		if (sourcePair.version == Version::V4)
-			entry = makeEntry(asio::ip::make_address_v4(sourcePair.SPA.IPV4), CmdInterpreter::portNumber(sourcePair));
+		auto entry = entryItr->second;
+		if (entry->expired())
+		{
+			entryMapV4.erase(entryItr);
+			Entry::recycleEntry(entry);
+			return std::make_pair(Response::NO_EXIST, entry);
+		}
 		else
-			entry = makeEntry(asio::ip::make_address_v6(sourcePair.SPA.IPV6), CmdInterpreter::portNumber(sourcePair));
+			return std::make_pair(Response::SUCCESS, entry);
 	}
-	return entry;
+}
+
+ResponsePair Directory::_searchEntry(const SourcePairV6& targetSPA)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+	else
+	{
+		auto entry = entryItr->second;
+		if (entry->expired())
+		{
+			entryMapV6.erase(entryItr);
+			Entry::recycleEntry(entry);
+			return std::make_pair(Response::NO_EXIST, entry);
+		}
+		else
+			return std::make_pair(Response::SUCCESS, entry);
+	}
+}
+
+void Directory::_searchV4Entry(const Policy& policy, std::string& writeBuffer)
+{
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.begin();
+	while (entryItr != entryMapV4.end())
+	{
+		auto entry = entryItr->second;
+		if (entry->expired())
+		{
+			entryMapV4.erase(entryItr);
+			Entry::recycleEntry(entry);
+		}
+		else
+		{
+			if (entry->haveSamePolicy(policy))
+			{
+				entry->printExpand(writeBuffer);
+				writeBuffer += '\x1f';		//!< Unit separator
+			}
+		}
+		entryItr++;
+	}
+}
+
+void Directory::_searchV6Entry(const Policy& policy, std::string& writeBuffer)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.begin();
+	while (entryItr != entryMapV6.end())
+	{
+		auto entry = entryItr->second;
+		if (entry->expired())
+		{
+			entryMapV6.erase(entryItr);
+			Entry::recycleEntry(entry);
+		}
+		else
+		{
+			if (entry->haveSamePolicy(policy))
+			{
+				entry->printExpand(writeBuffer);
+				writeBuffer += '\x1f';		//!< Unit separator
+			}
+		}
+		entryItr++;
+	}
 }
 
 
-int Directory::getEntryCount()
+ResponsePair Directory::_createV4Entry(const SPaddress& spAddr, const MutableData& mutData, const Privilege maxPriv)
 {
-	std::lock_guard<std::mutex> lock1(V4insertionLock);
-	std::lock_guard<std::mutex> lock2(V6insertionLock);
-	return Entry::dllController.size();
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(spAddr.spAddressV4());
+	if (entryItr == entryMapV4.end())
+	{
+		auto newEntry = new Entry(spAddr, mutData, maxPriv);
+		entryMapV4.insert(std::pair<SourcePairV4, Entry*>(spAddr.spAddressV4(), newEntry));
+		return std::make_pair(Response::SUCCESS, newEntry);
+	}
+	else
+	{
+		auto oldEntry = entryItr->second;
+		if (oldEntry->expired())
+		{
+			Entry::recycleEntry(oldEntry);
+			auto newEntry = new Entry(spAddr, mutData, maxPriv);
+			entryItr->second = newEntry;
+			return std::make_pair(Response::SUCCESS, newEntry);
+		}
+		else
+			return std::make_pair(Response::REDUDANT_DATA, oldEntry);
+	}
+}
+
+ResponsePair Directory::_createV6Entry(const SPaddress& spAddr, const MutableData& mutData, const Privilege maxPriv)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(spAddr.spAddressV6());
+	if (entryItr == entryMapV6.end())
+	{
+		auto newEntry = new Entry(spAddr, mutData, maxPriv);
+		entryMapV6.insert(std::pair<SourcePairV6, Entry*>(spAddr.spAddressV6(), newEntry));
+		return std::make_pair(Response::SUCCESS, newEntry);
+	}
+	else
+	{
+		auto oldEntry = entryItr->second;
+		if (oldEntry->expired())
+		{
+			Entry::recycleEntry(oldEntry);
+			auto newEntry = new Entry(spAddr, mutData, maxPriv);
+			entryItr->second = newEntry;
+			return std::make_pair(Response::SUCCESS, newEntry);
+		}
+		else
+			return std::make_pair(Response::REDUDANT_DATA, oldEntry);
+	}
+}
+
+
+ResponsePair Directory::_removeEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA)
+{
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(targetSPA);
+
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+	
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV4.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, entry);
+	}
+	else
+	{
+		if (entry->canRemoveWith(cmdSPA))
+		{
+			entryMapV4.erase(entryItr);
+			Entry::recycleEntry(entry);
+			return std::make_pair(Response::SUCCESS, entry);
+		}
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, entry);
+	}
+}
+
+ResponsePair Directory::_removeEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(targetSPA);
+
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV6.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, entry);
+	}
+	else
+	{
+		if (entry->canRemoveWith(cmdSPA))
+		{
+			entryMapV6.erase(entryItr);
+			Entry::recycleEntry(entry);
+			return std::make_pair(Response::SUCCESS, entry);
+		}
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, entry);
+	}
+}
+
+
+ResponsePair Directory::_updateEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
+{
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(targetSPA);
+
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV4.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, entry);
+	}
+	else
+	{
+		if (entry->tryUpdateEntry(cmdSPA, mutData))
+			return std::make_pair(Response::SUCCESS, entry);
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, entry);
+	}
+}
+
+ResponsePair Directory::_updateEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(targetSPA);
+
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV6.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, entry);
+	}
+	else
+	{
+		if (entry->tryUpdateEntry(cmdSPA, mutData))
+			return std::make_pair(Response::SUCCESS, entry);
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, entry);
+	}
+}
+
+
+ResponseTTL Directory::_ttlEntry(const SourcePairV4& targetSPA)
+{
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(targetSPA);
+
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV4.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, 0);
+	}
+	else
+	{
+		auto ttl = entry->getTTL();
+		return std::make_pair(Response::SUCCESS, ttl);
+	}
+}
+
+ResponseTTL Directory::_ttlEntry(const SourcePairV6& targetSPA)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(targetSPA);
+
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV6.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, 0);
+	}
+	else
+	{
+		auto ttl = entry->getTTL();
+		return std::make_pair(Response::SUCCESS, ttl);
+	}
+}
+
+
+ResponseTTL Directory::_chargeEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA)
+{
+	std::lock_guard<std::mutex> lock(v4MapAccess);
+	auto entryItr = entryMapV4.find(targetSPA);
+
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV4.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, 0);
+	}
+	else
+	{
+		if (entry->canChargeWith(cmdSPA))
+		{
+			auto ttl = entry->charge();
+			return std::make_pair(Response::SUCCESS, ttl);
+		}
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, 0);
+	}
+}
+
+ResponseTTL Directory::_chargeEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA)
+{
+	std::lock_guard<std::mutex> lock(v6MapAccess);
+	auto entryItr = entryMapV6.find(targetSPA);
+
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+	{
+		entryMapV6.erase(entryItr);
+		Entry::recycleEntry(entry);
+		return std::make_pair(Response::NO_EXIST, 0);
+	}
+	else
+	{
+		if (entry->canChargeWith(cmdSPA))
+		{
+			auto ttl = entry->charge();
+			return std::make_pair(Response::SUCCESS, ttl);
+		}
+		else
+			return std::make_pair(Response::NO_PRIVILAGE, 0);
+	}
+}
+
+
+ResponsePair Directory::createEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
+{
+	auto maxPriv = targetSPA.maxPrivilege(cmdSPA);
+	if (mutData.havePermission())
+		if (!CmdInterpreter::isValid(mutData.permission(), maxPriv))
+			return std::make_pair(Response::NO_PRIVILAGE, nullptr);
+
+	if (targetSPA.version() == Version::V4)
+		return _createV4Entry(targetSPA, mutData, maxPriv);
+	else
+		return _createV6Entry(targetSPA, mutData, maxPriv);
+}
+
+ResponsePair Directory::removeEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA)
+{
+	if (targetSPA.version() == Version::V4)
+		return _removeEntry(targetSPA.spAddressV4(), cmdSPA);
+	else
+		return _removeEntry(targetSPA.spAddressV6(), cmdSPA);
+}
+
+ResponsePair Directory::updateEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
+{
+	if (targetSPA.version() == Version::V4)
+		return _updateEntry(targetSPA.spAddressV4(), cmdSPA, mutData);
+	else
+		return _updateEntry(targetSPA.spAddressV6(), cmdSPA, mutData);
+}
+
+ResponseTTL Directory::ttlEntry(const SPaddress& targetSPA)
+{
+	if (targetSPA.version() == Version::V4)
+		return _ttlEntry(targetSPA.spAddressV4());
+	else
+		return _ttlEntry(targetSPA.spAddressV6());
+}
+
+ResponseTTL Directory::chargeEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA)
+{
+	if (targetSPA.version() == Version::V4)
+		return _chargeEntry(targetSPA.spAddressV4(), cmdSPA);
+	else
+		return _chargeEntry(targetSPA.spAddressV6(), cmdSPA);
+}
+
+ResponsePair Directory::searchEntry(const SPaddress& targetSPA)
+{
+	if (targetSPA.version() == Version::V4)
+		return _searchEntry(targetSPA.spAddressV4());
+	else
+		return _searchEntry(targetSPA.spAddressV6());
+}
+
+void Directory::searchEntry(const Policy& policy, std::string& writeBuffer)
+{
+	_searchV4Entry(policy, writeBuffer);
+	_searchV6Entry(policy, writeBuffer);
+}
+
+
+std::size_t Directory::entryCount()
+{
+	return (entryMapV4.size() + entryMapV6.size());
 }
 
 void Directory::clearDirectory()
 {
-	std::map<SourcePairV4, Entry*>::iterator itV4 = V4EntryMap.begin();
-	while (itV4 != V4EntryMap.end())
+	std::lock_guard<std::mutex> v4Lock(v4MapAccess);
+	std::lock_guard<std::mutex> v6Lock(v6MapAccess);
+	std::map<SourcePairV4, Entry*>::iterator itV4 = entryMapV4.begin();
+	while (itV4 != entryMapV4.end())
 	{
 		delete itV4->second;
 		itV4++;
 	}
-	V4EntryMap.clear();
+	entryMapV4.clear();
 
-	std::map<SourcePairV6, Entry*>::iterator itV6 = V6EntryMap.begin();
-	while (itV6 != V6EntryMap.end())
+	std::map<SourcePairV6, Entry*>::iterator itV6 = entryMapV6.begin();
+	while (itV6 != entryMapV6.end())
 	{
 		delete itV6->second;
 		itV6++;
 	}
-	V6EntryMap.clear();
-}
-
-bool Directory::isInDirectory(Entry* entry)
-{
-	if (entry != nullptr && entry->inDirectory())
-		return true;
-	else
-		return false;
-}
-
-Response Directory::insertEntry(InsertionTocken* insertionTocken, const MutableData& data)
-{
-	auto entry = insertionTocken->EvB;
-	if (data._havePermission)
-	{
-		if (insertionTocken->haveValid(data._permission))
-			entry->permission = data._permission;
-		else
-			return Response::NO_PRIVILAGE;
-	}
-	else
-		entry->assignDefualtPermission(insertionTocken->maxPrivilege);
-
-	if (data._haveDescription)
-		entry->description = data._description;
-
-	entry->addToDirectory(CmdInterpreter::toTTL(insertionTocken->maxPrivilege));
-	return Response::SUCCESS;
-}
-
-Response Directory::updateEntry(UpdateTocken* updateTocken, const MutableData& data)
-{
-	auto entry = updateTocken->EvB;
-	if (data._havePermission)
-	{
-		if (updateTocken->haveValid(data._permission))
-			entry->permission = data._permission;
-		else
-			return Response::NO_PRIVILAGE;
-	}
-
-	if (data._haveDescription)
-		entry->description = data._description;
-	return Response::SUCCESS;
-}
-
-void Directory::flushEntries(std::string& writeBuffer, std::size_t flushCount)
-{
-	if (Entry::dllController.begin() == nullptr)
-		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
-	else
-	{
-		auto entryPtr = Entry::dllController.begin();
-		while (entryPtr != nullptr && flushCount != 0)
-		{
-			printExpand(entryPtr, writeBuffer);
-			writeBuffer += '\x1f';		//!< Unit separator
-			entryPtr = entryPtr->dllNode.next();
-			flushCount--;
-		}
-	}
-}
-
-void Directory::removeEntry(PurgeTocken* purgeTocken)
-{
-	auto entry = purgeTocken->EvB;
-	entry->removeFromDirectory();
-}
-
-short Directory::chargeEntry(ChargeTocken* chargeTocken)
-{
-	auto entry = chargeTocken->EvB;
-	auto newTTL = CmdInterpreter::toTTL(chargeTocken->maxPrivilege);
-	return entry->charge(newTTL);
-}
-
-short Directory::getTTL(Entry* entry)
-{
-	std::lock_guard<std::mutex> lock(entry->accessLock);
-	return entry->getTTL();
-}
-
-void Directory::printBrief(Entry* entry, std::string& writeBuffer)
-{
-	entry->printBrief(writeBuffer);
-}
-
-void Directory::printUID(const Entry* entry, std::string& writeBuffer)
-{
-	writeBuffer += entry->UID;
-}
-
-void Directory::printExpand(Entry* entry, std::string& writeBuffer)
-{
-	std::lock_guard<std::mutex> lock(entry->accessLock);
-	entry->printExpand(writeBuffer);
+	entryMapV6.clear();
 }

@@ -26,7 +26,7 @@ public:
 	void reset();
 
 	const std::string_view& pop_front();
-	void pop_front(int);
+	void pop_front(const int);
 	const std::string_view& peek();
 	const std::string_view& peek_next();
 	void push_back(std::string_view);

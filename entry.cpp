@@ -1,59 +1,61 @@
 #include "entry.h"
 #include "cmd_interpreter.h"
-#include <cppcodec/base64_rfc4648.hpp>
 
-DLLController<Entry> Entry::dllController;
+std::queue<Entry*> Entry::entryRecycler;
+std::mutex Entry::recycleLock;
 
-const std::string Entry::VER[] =
-{
-	"v4",
-	"v6"
-};
-
-short Entry::_tmAfterLastChrg()
+unsigned short Entry::_tmAfterLastChrg() const
 {
 	auto timeNow = posix_time::second_clock::universal_time();
-	auto diffTime = timeNow - lastChargT;
-	return (short)diffTime.minutes();
+	auto diffTime = timeNow - _lastChargT;
+	return (unsigned short)diffTime.minutes();
 }
 
-void Entry::_doExpiryCheck()
+void Entry::recycleEntry(Entry* entryPtr)
 {
-	if (_tmAfterLastChrg() > (unsigned short)timeToLive)
-		removeFromDirectory();
+	std::lock_guard<std::mutex> lock(recycleLock);
+	entryRecycler.push(entryPtr);
 }
 
-Entry::Entry(const SourcePairV4& sourcePair, asio::ip::address_v4 ipAddr, unsigned short portNum)
-{
-	spAddress.SPA.V4 = sourcePair;
-	UID = cppcodec::base64_rfc4648::encode(spAddress.SPA.V4);
-	spAddress.version = Version::V4;
 
-	portNumber = std::to_string(portNum);
-	ipAddress = ipAddr.to_string();
-	createdT = posix_time::second_clock::universal_time();
-	description = "[]";
+Entry::Entry(const SPaddress& spAddr) : _spAddress(spAddr)
+{
+	_uid = _spAddress.toUID();
+	_portNumber = _spAddress.portNumber();
+	_ipAddress = _spAddress.ipAddress();
+	_createdT = posix_time::second_clock::universal_time();
 }
 
-Entry::Entry(const SourcePairV6& sourcePair, asio::ip::address_v6 ipAddr, unsigned short portNum)
+Entry::Entry(const SPaddress& spAddr, const MutableData& mutData, const Privilege maxPriv) : Entry(spAddr)
 {
-	spAddress.SPA.V6 = sourcePair;
-	UID = cppcodec::base64_rfc4648::encode(spAddress.SPA.V6);
-	spAddress.version = Version::V6;
+	if (mutData.haveDescription())
+		_description = mutData.description();
+	else
+		_description = "[]";
 
-	portNumber = std::to_string(portNum);
-	ipAddress = ipAddr.to_string();
-	createdT = posix_time::second_clock::universal_time();
-	description = "[]";
+	if (mutData.havePermission())
+		_permission = mutData.permission();
+	else
+		_permission = CmdInterpreter::toDefPermission(maxPriv);
+	_timeToLive = CmdInterpreter::toInitialTTL(maxPriv);
 }
 
-short Entry::getTTL()
+
+bool Entry::expired() const
 {
-	if (iswithPeer)
-		return (short)timeToLive;
+	if (_tmAfterLastChrg() > _timeToLive)
+		return true;
+	else
+		return false;
+}
+
+short Entry::getTTL() const
+{
+	if (_iswithPeer)
+		return (short)_timeToLive;
 	else
 	{
-		short ttl = (short)timeToLive - _tmAfterLastChrg();
+		short ttl = (short)_timeToLive - _tmAfterLastChrg();
 		if (ttl > 0)
 			return ttl;
 		else
@@ -61,160 +63,77 @@ short Entry::getTTL()
 	}
 }
 
-void Entry::printExpand(std::string& writeBuffer)
+const std::string& Entry::uid() const
 {
-	if (version() == Version::V4)
-		writeBuffer += VER[(short)Version::V4];
+	return _uid;
+}
+
+void Entry::printExpand(std::string& writeBuffer) const
+{
+	if (_spAddress.version() == Version::V4)
+		writeBuffer += STR_V4;
 	else
-		writeBuffer += VER[(short)Version::V6];
-	writeBuffer += " " + UID + " " + ipAddress + " " + portNumber + " ";
-	writeBuffer += CmdInterpreter::toPermission(permission);
-	writeBuffer += " " + description;
+		writeBuffer += STR_V6;
+	writeBuffer += " " + _uid + " " + _ipAddress + " " + _portNumber + " ";
+	writeBuffer += CmdInterpreter::toPermission(_permission);
+	writeBuffer += " " + _description;
 }
 
-bool Entry::inDirectory()
+short Entry::charge()
 {
-	if (!iswithPeer && isInDirectory)
-		_doExpiryCheck();
-	return isInDirectory;
+	auto timePassed = _tmAfterLastChrg();
+	_lastChargT = posix_time::second_clock::universal_time();
+	_timeToLive += timePassed;
+
+	if (_timeToLive > MAX_TTL)
+		_timeToLive = MAX_TTL;
+	return _timeToLive;
 }
 
-void Entry::addToDirectory(TTL ttl)
+bool Entry::haveSamePolicy(const Policy& policy)
 {
-	isInDirectory = true;
-	charge(ttl);
-	dllNode.addToDLL(this);
-}
-
-void Entry::removeFromDirectory()
-{
-	timeToLive = TTL::LIBERAL_TTL;
-	if (isInDirectory)
-	{
-		isInDirectory = false;
-		dllNode.removeFromDLL(this);
-	}
-}
-
-void Entry::assignDefualtPermission(const Privilege& maxPrivilege)
-{
-	if (maxPrivilege == Privilege::RESTRICTED_ENTRY || maxPrivilege == Privilege::PROTECTED_ENTRY)
-	{
-		permission.charge = Privilege::PROTECTED_ENTRY;
-		permission.change = Privilege::PROTECTED_ENTRY;
-		permission.remove = Privilege::PROTECTED_ENTRY;
-	}
+	if (_description == policy.description() &&
+		_permission == policy.permission())
+		return true;
 	else
-	{
-		permission.charge = Privilege::LIBERAL_ENTRY;
-		permission.change = Privilege::LIBERAL_ENTRY;
-		permission.remove = Privilege::LIBERAL_ENTRY;
-	}
+		return false;
 }
 
-void Entry::printBrief(std::string& writeBuffer)
+bool Entry::canChargeWith(const SPaddress& spAddr) const
 {
-	if (version() == Version::V4)
-		writeBuffer += VER[(short)Version::V4];
+	auto maxPrivilege = _spAddress.maxPrivilege(spAddr);
+	if (maxPrivilege >= _permission.charge)
+		return true;
 	else
-		writeBuffer += VER[(short)Version::V6];
-	writeBuffer += " " + ipAddress + " " + portNumber;
+		return false;
 }
 
-short Entry::charge(const TTL& newTTL)
+bool Entry::canRemoveWith(const SPaddress& spAddr) const
 {
-	auto timeRemaining = getTTL();
-	if (timeRemaining < (short)newTTL)
-	{
-		lastChargT = posix_time::second_clock::universal_time();
-		timeToLive = newTTL;
-		return (short)newTTL;
-	}
+	auto maxPrivilege = _spAddress.maxPrivilege(spAddr);
+	if (maxPrivilege >= _permission.remove)
+		return true;
 	else
-		return timeRemaining;
+		return false;
 }
 
-void Entry::lock()
+bool Entry::tryUpdateEntry(const SPaddress& spAddr, const MutableData& data)
 {
-	accessLock.lock();
-}
-
-void Entry::unlock()
-{
-	accessLock.unlock();
-}
-
-const std::string& Entry::uid()
-{
-	return UID;
-}
-
-Privilege Entry::maxPrivilege(Entry* cmdEntry)
-{
-	if (version() != cmdEntry->version())
-		return Privilege::LIBERAL_ENTRY;
-
-	if (version() == Version::V4)
+	auto maxPriv = _spAddress.maxPrivilege(spAddr);
+	if (maxPriv >= _permission.change)
 	{
-		auto ipSize = spAddress.SPA.IPV4.size();
-		if (spAddress.SPA.IPV4 == cmdEntry->spAddress.SPA.IPV4)
-			if (portNumber == cmdEntry->portNumber)
-				return Privilege::RESTRICTED_ENTRY;
+		if (data.havePermission())
+		{
+			if (CmdInterpreter::isValid(data.permission(), maxPriv))
+				_permission = data.permission();
 			else
-				return Privilege::PROTECTED_ENTRY;
-		else
-			return Privilege::LIBERAL_ENTRY;
+				return false;
+		}
+
+		if (data.haveDescription())
+			_description = data.description();
+		return true;
 	}
 	else
-	{
-		auto ipSize = spAddress.SPA.IPV6.size();
-		if (spAddress.SPA.IPV6 == cmdEntry->spAddress.SPA.IPV6)
-			if (portNumber == cmdEntry->portNumber)
-				return Privilege::RESTRICTED_ENTRY;
-			else
-				return Privilege::PROTECTED_ENTRY;
-		else
-			return Privilege::LIBERAL_ENTRY;
-	}
-}
-
-bool Entry::canChargeWith(const Privilege& maxPrivilege)
-{
-	if (maxPrivilege >= permission.charge)
-		return true;
-	else
 		return false;
-}
-
-bool Entry::canChangeWith(const Privilege& maxPrivilege)
-{
-	if (maxPrivilege >= permission.change)
-		return true;
-	else
-		return false;
-}
-
-bool Entry::canRemoveWith(const Privilege& maxPrivilege)
-{
-	if (maxPrivilege >= permission.remove)
-		return true;
-	else
-		return false;
-}
-
-void Entry::attachToPeer()
-{
-	timeToLive = TTL::RESTRICTED_TTL;
-	iswithPeer = true;
-}
-
-void Entry::detachFromPeer()
-{
-	iswithPeer = false;
-	lastChargT = posix_time::second_clock::universal_time();
-}
-
-const Version& Entry::version()
-{
-	return spAddress.version;
 }

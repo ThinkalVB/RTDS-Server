@@ -33,16 +33,19 @@
     <ClCompile Include="cmd_interpreter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tockens.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="directory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="peer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="notification.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="spaddress.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mutable_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="directory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -56,9 +59,6 @@
     <ClInclude Include="rtds.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="advanced_dll.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="entry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -68,16 +68,19 @@
     <ClInclude Include="cmd_interpreter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="tockens.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="directory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="peer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="notification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="spaddress.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mutable_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="directory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

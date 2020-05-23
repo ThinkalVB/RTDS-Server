@@ -18,9 +18,9 @@ using namespace boost;
 
 class Log
 {
-    static std::ofstream logFile;               //!< File stream
-    static bool goodToLog;                      //!< Mutex for thread safety
-    static std::mutex writeLock;                //!< True if the file is open for writing
+    static std::ofstream _logFile;              //!< File stream
+    static bool _goodToLog;                     //!< Mutex for thread safety
+    static std::mutex _writeLock;               //!< True if the file is open for writing
 
 /*******************************************************************************************
 * @brief Print the system time 

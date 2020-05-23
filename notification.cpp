@@ -2,38 +2,48 @@
 #include "log.h"
 #include "cmd_interpreter.h"
 
-int Notification::notificationCount;
-std::list<Note> Notification::notificationList;
-std::mutex Notification::NListLock;
+int Notification::_notificationCount;
+std::list<Note> Notification::_notificationList;
+std::mutex Notification::_NListLock;
 
-const Note& Notification::newNotification(const std::string& noteString)
+const Note& Notification::_newNote(const std::string& noteStr)
 {
-	Log::log(noteString);
-	std::lock_guard<std::mutex> lock(NListLock);
-	notificationCount++;
-	if (notificationList.size() > MAX_NOTE_SIZE)
-		notificationList.pop_front();
-	return notificationList.emplace_back(noteString, notificationCount);
+	Log::log(noteStr);
+	std::lock_guard<std::mutex> lock(_NListLock);
+	_notificationCount++;
+	if (_notificationList.size() > MAX_NOTE_SIZE)
+		_notificationList.pop_front();
+	return _notificationList.emplace_back(noteStr, _notificationCount);
 }
 
-int Notification::lastNoteNumber()
+const Note& Notification::makeUpdateNote(const Entry* entry, const MutableData& mutData)
 {
-	std::lock_guard<std::mutex> lock(NListLock);
-	return notificationCount;
+	std::string noteStr = "[$] " + entry->uid();
+	if (mutData.havePermission())
+		noteStr += " " + CmdInterpreter::toPermission(mutData.permission());
+	if (mutData.haveDescription())
+		noteStr += " " + std::string(mutData.description());
+	noteStr += '\x1e';				//!< Record separator
+	return _newNote(noteStr);
 }
 
-void Notification::createNoteRecord(std::string& writeBuffer, int& lastNoteNo)
+const Note& Notification::makeAddNote(const Entry* entry)
 {
-	for (auto noteItr = notificationList.begin(); noteItr != notificationList.end(); ++noteItr) 
-	{
-		if (noteItr->notificationNo > lastNoteNo)
-		{
-			writeBuffer += noteItr->noteString.substr(0, noteItr->noteString.size() - 1);
-			writeBuffer += '\x1f';		//!< Unit separator
-			lastNoteNo++;
-		}
-	}
+	std::string noteStr = "[+] ";
+	entry->printExpand(noteStr);
+	noteStr += '\x1e';				//!< Record separator
+	return _newNote(noteStr);
+}
 
-	if (writeBuffer.size() == 0)
-		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
+const Note& Notification::makeRemoveNote(const Entry* entry)
+{
+	std::string noteStr = "[-] " + entry->uid();
+	noteStr += '\x1e';				//!< Record separator
+	return _newNote(noteStr);
+}
+
+Note::Note(const std::string& note, const int noteNo)
+{
+	noteString = note;
+	notificationNo = noteNo;
 }

@@ -4,9 +4,9 @@
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v6::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v6::any(), portNumber), _tcpAcceptor(_ioContext), _worker(_ioContext)
 #else 
-RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v4::any(), portNumber), tcpAcceptor(ioContext), worker(ioContext)
+RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v4::any(), portNumber), _tcpAcceptor(_ioContext), _worker(_ioContext)
 #endif
 {
 	#if defined(PRINT_LOG) || defined(PRINT_ERROR)
@@ -20,15 +20,15 @@ RTDS::RTDS(unsigned short portNumber) : tcpEp(asio::ip::address_v4::any(), portN
 
 bool RTDS::startTCPserver()
 {
-	tcpServerRunning = false;
-	activeThreadCount = 0;
+	_tcpServerRunning = false;
+	_activeThreadCount = 0;
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server initiating");
 	#endif
 
 	system::error_code ec;
-	tcpAcceptor.open(tcpEp.protocol(), ec);
+	_tcpAcceptor.open(_tcpEp.protocol(), ec);
 	if (ec != system::errc::success)
 	{
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
@@ -37,20 +37,20 @@ bool RTDS::startTCPserver()
 		return false;
 	}
 
-	tcpAcceptor.bind(tcpEp, ec);
+	_tcpAcceptor.bind(_tcpEp, ec);
 	if (ec != system::errc::success)
 	{
-		tcpAcceptor.close();
+		_tcpAcceptor.close();
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("Failed to bind TCP acceptor", ec);
 		#endif
 		return false;
 	}
 
-	tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
+	_tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
 	if (ec != system::errc::success)
 	{
-		tcpAcceptor.close();
+		_tcpAcceptor.close();
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("TCP acceptor cannot listen to port", ec);
 		#endif
@@ -61,11 +61,11 @@ bool RTDS::startTCPserver()
 	#ifdef PRINT_LOG
 	Log::log("TCP server started");
 	#endif
-	tcpServerRunning = true;
+	_tcpServerRunning = true;
 	return true;
 }
 
-bool RTDS::addThread(int threadCount)
+bool RTDS::addThread(const int threadCount)
 {
 	for (int i = 0; i < threadCount; i++)
 	{
@@ -98,36 +98,36 @@ void RTDS::startAccepting()
 	#ifdef PRINT_LOG
 	Log::log("TCP Accepting starting");
 	#endif
-	keepAccepting = true;
+	_keepAccepting = true;
 	_peerAcceptRoutine();
 }
 
 void RTDS::stopAccepting()
 {
-	keepAccepting = false;
-	tcpAcceptor.cancel();
+	_keepAccepting = false;
+	_tcpAcceptor.cancel();
 }
 
 void RTDS::_ioThreadJob()
 {	
 	system::error_code ec;
-	activeThreadCount++;
-	ioContext.run(ec);
+	_activeThreadCount++;
+	_ioContext.run(ec);
 	if (ec != system::errc::success)
 	{
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
 		Log::log("ioContext.run() failed", ec);
 		#endif
 	}
-	activeThreadCount--;
+	_activeThreadCount--;
 	return;
 }
 
 void RTDS::_peerAcceptRoutine()
 {
-	auto peerSocket = new asio::ip::tcp::socket(ioContext);
+	auto peerSocket = new asio::ip::tcp::socket(_ioContext);
 
-	tcpAcceptor.async_accept(*peerSocket,
+	_tcpAcceptor.async_accept(*peerSocket,
 		[peerSocket, this](boost::system::error_code ec)
 		{
 			if (ec != system::errc::success)
@@ -171,23 +171,23 @@ void RTDS::_peerAcceptRoutine()
 					delete peerSocket;
 				}
 			}
-			if (keepAccepting)
+			if (_keepAccepting)
 				_peerAcceptRoutine();
 		});
 }
 
 void RTDS::_stopIoContext()
 {
-	ioContext.stop();
+	_ioContext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	} while (!ioContext.stopped() && activeThreadCount == 0);
+	} while (!_ioContext.stopped() && _activeThreadCount == 0);
 }
 
 void RTDS::_stopTCPacceptor()
 {
 	system::error_code ec;
-	tcpAcceptor.cancel(ec);
+	_tcpAcceptor.cancel(ec);
 	if (ec != system::errc::success)
 	{
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
@@ -195,7 +195,7 @@ void RTDS::_stopTCPacceptor()
 		#endif
 	}
 
-	tcpAcceptor.close(ec);
+	_tcpAcceptor.close(ec);
 	if (ec != system::errc::success)
 	{
 		#if defined(PRINT_LOG) || defined(PRINT_ERROR)
@@ -207,14 +207,14 @@ void RTDS::_stopTCPacceptor()
 void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
-	ioContext.reset();
+	_ioContext.reset();
 
 	#ifdef PRINT_LOG
 	Log::log("TCP server stopped");
 	#endif
 
-	keepAccepting = false;
-	tcpServerRunning = false;
+	_keepAccepting = false;
+	_tcpServerRunning = false;
 }
 
 short RTDS::getPeerCount()
@@ -224,7 +224,7 @@ short RTDS::getPeerCount()
 
 RTDS::~RTDS()
 {
-	if (tcpServerRunning)
+	if (_tcpServerRunning)
 		stopTCPserver();
 	_stopIoContext();
 

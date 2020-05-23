@@ -1,49 +1,59 @@
 #ifndef NOTIFICATION_H
 #define NOTIFICATION_H
 
+#include "notification.h"
 #include <string>
 #include <list>
 #include <mutex>
+#include "entry.h"
 #include "common.hpp"
 
 struct Note
 {
-	const std::string noteString;						//!< Notification string	
-	const int notificationNo;							//!< Notification number
-	Note(const std::string& note, const int& noteNo) : noteString(note), notificationNo(noteNo) {}
+	std::string noteString;								//!< Notification string	
+	int notificationNo;									//!< Notification number
+	Note(const std::string& note, const int noteNo);
 };
 
 class Notification
 {
-	static int notificationCount;						//!< Total number of notifications created
-	static std::list<Note> notificationList;			//!< List of notifications
-	static std::mutex NListLock;						//!< Notification list lock
-public:
+	static int _notificationCount;						//!< Total number of notifications created
+	static std::list<Note> _notificationList;			//!< List of notifications
+	static std::mutex _NListLock;						//!< Notification list lock
 /*******************************************************************************************
 * @brief Return Notification
 *
-* @param[in] noteString			Notification string for which the notification is to be created			
-* @return						Return the notification
+* @param[in] noteString			Notification string for which the notification is to be created.
+* @return						Return the notification.
 *
 * @details
 * Assign notification number and insert the notification into the list.
 ********************************************************************************************/
-	static const Note& newNotification(const std::string&);
+	static const Note& _newNote(const std::string&);
+	Notification() = delete;
+
+public:
 /*******************************************************************************************
-* @brief Return the notification number of the last notification generated
+* @brief Make update Nottification
 *
-* @return						The last notification number
+* @param[in] entry				Entry for which the notification is to be created.
+* @param[in] mutData			Mutable data containing the changes in the entry.
+* @return						Return the notification.
 ********************************************************************************************/
-	static int lastNoteNumber();
+	static const Note& makeUpdateNote(const Entry*, const MutableData&);
 /*******************************************************************************************
-* @brief Create update notification record
+* @brief Make remove Nottification
 *
-* @param[in] writeBuffer		Buffer to which all notifications are to be written down
-* @param[out] lastNoteNo		Notification number after which the update record is to be generated
-*
-* @details
-* Update the lastNoteNo with the latest notification update number.
+* @param[in] entry				Entry for which the notification is to be created.
+* @return						Return the notification.
 ********************************************************************************************/
-	static void createNoteRecord(std::string&, int&);
+	static const Note& makeAddNote(const Entry*);
+/*******************************************************************************************
+* @brief Make remove Nottification
+*
+* @param[in] spa				SPAddress of the entry being removed.
+* @return						Return the notification.
+********************************************************************************************/
+	static const Note& makeRemoveNote(const Entry*);
 };
 #endif

@@ -5,15 +5,21 @@
 #define DEBUG
 /* #define RTDS_DUAL_STACK */
 
-#define MAX_NOTE_SIZE 100
+#define MAX_TTL 24*60					//!< Maximum telescopic TTL	(24hrs * 60min)
+#define RTDS_PORT 389					//!< Default RTDS port number
 
-#define V4_UID_MAX_CHAR 8
-#define V6_UID_MAX_CHAR 24
+#define STR_V4 "v4"						//!< Version V4 in string
+#define STR_V6 "v6"						//!< Version V6 in string
 
-#define PORT_NUM_MAX_CHAR 5
-#define MAX_PORT_NUM_VALUE 65535
-#define MAX_DESC_SIZE 202
-#define RTDS_BUFF_SIZE 300
+#define MAX_NOTE_SIZE 200				//!< Maximum number of notifications to be cached
+
+#define V4_UID_MAX_CHAR 8				//!< 8 characters for V4 UID
+#define V6_UID_MAX_CHAR 24				//!< 24 characters for V6 UID
+
+#define PORT_NUM_MAX_CHAR 5				//!< Maximum number of digits as port number
+#define MAX_PORT_NUM_VALUE 65535		//!< Maximum value for port number
+#define MAX_DESC_SIZE 202				//!< Maximum size of description including '[' and ']'
+#define RTDS_BUFF_SIZE 300				//!< Maximum size of the readBuffer
 
 #include <cstdint>
 #include <array>
@@ -31,22 +37,23 @@ typedef std::array<char, RTDS_BUFF_SIZE> ReceiveBuffer;
 * LIBERAL_ENTRY		All Peers with any IP address and port number will have authority.
 * PROTECTED_ENTRY	All Peers with the same IP address will have authority.
 * RESTRICTED_ENTRY	Only peer with the same IP address and port number have authority.
+* ALL_ENTRY			Either 3 of the above.
 ********************************************************************************************/
 enum class Privilege : char
 {
 	LIBERAL_ENTRY		= 0,
 	PROTECTED_ENTRY		= 1,
-	RESTRICTED_ENTRY	= 2
+	RESTRICTED_ENTRY	= 2,
+	ALL_ENTRY			= 3
 };
 
 /*******************************************************************************************
-* @brief Enum class represeting maximum TTL of different entrys
+* @brief Enum class representing the starting TTL of entrys with different maxPrivilege
 *
 * @details
-* CONNECTED_TTL		This entry won't expire hence value -1.
-* LIBERAL_TTL		This entry can survice upto 10 minutes.
-* PROTECTED_TTL		This entry can survive upto 30 minutes.
-* RESTRICTED_TTL	This entry can survive upto 60 minutes.
+* LIBERAL_TTL		10 minutes.
+* PROTECTED_TTL		30 minutes.
+* RESTRICTED_TTL	60 minutes.
 ********************************************************************************************/
 enum class TTL
 {
@@ -79,6 +86,13 @@ enum class Response
 	WAIT_RETRY		= 6
 };
 
+/*******************************************************************************************
+* @brief Enum class for Version
+*
+* @details
+* V4				Version 4 (IPV4)
+* V6				Version 6 (IPV6)
+********************************************************************************************/
 enum class Version
 {
 	V4 = 0,
@@ -111,13 +125,12 @@ enum class Command
 	SEARCH	= 2,
 	TTL		= 3,
 	CHARGE	= 4,
-	FLUSH	= 5,
-	UPDATE	= 6,
-	REMOVE	= 7,
-	COUNT	= 8,
-	MIRROR	= 9,
-	LEAVE	= 10,
-	EXIT	= 11
+	UPDATE	= 5,
+	REMOVE	= 6,
+	COUNT	= 7,
+	MIRROR	= 8,
+	LEAVE	= 9,
+	EXIT	= 10
 };
 
 /*******************************************************************************************
@@ -135,20 +148,15 @@ struct Permission
 	Privilege charge;
 	Privilege change;
 	Privilege remove;
-};
 
-/*******************************************************************************************
- * @brief Struct to hold both SourcePairV4 and SourcePairV6
- ********************************************************************************************/
-struct SPAddress
-{
-	union __sp_address
+	bool operator ==(const Permission& perm)
 	{
-		SourcePairV4 V4;
-		IPVersion4 IPV4;
-		SourcePairV6 V6;
-		IPVersion6 IPV6;
-	}SPA;
-	Version version;
+		if ((charge == perm.charge || perm.charge == Privilege::ALL_ENTRY) && 
+			(change == perm.change || perm.change == Privilege::ALL_ENTRY) && 
+			(remove == perm.remove || perm.remove == Privilege::ALL_ENTRY))
+			return true;
+		else
+			return false;
+	}
 };
 #endif

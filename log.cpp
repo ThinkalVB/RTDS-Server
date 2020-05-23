@@ -12,29 +12,29 @@
 #endif
 using namespace boost;
 
-std::ofstream Log::logFile;
-std::mutex Log::writeLock;
-bool Log::goodToLog = false;
+std::ofstream Log::_logFile;
+std::mutex Log::_writeLock;
+bool Log::_goodToLog = false;
 
 void Log::_printTime()
 {
 	auto localTime = posix_time::microsec_clock::local_time();
-	logFile << "[" << posix_time::to_simple_string(localTime) << "]  ";
+	_logFile << "[" << posix_time::to_simple_string(localTime) << "]  ";
 }
 
 void Log::startLog(std::string fileName)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (!goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (!_goodToLog)
 	{
 		try {
-			logFile.open(fileName, std::ios::out);
+			_logFile.open(fileName, std::ios::out);
 		}
 		catch (...)
 		{
 			RTDS_CLI(std::cout << "Logging failed";)
 		}
-		goodToLog = true;
+		_goodToLog = true;
 	}
 	else
 		return;
@@ -42,12 +42,12 @@ void Log::startLog(std::string fileName)
 
 void Log::log(std::string message, const std::runtime_error& ec)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (_goodToLog)
 	{
 		_printTime();
 		try {
-			logFile << message << " " << ec.what() << std::endl;
+			_logFile << message << " " << ec.what() << std::endl;
 		}catch (...)
 		{
 			RTDS_CLI(std::cout << "Logging failed";)
@@ -57,12 +57,12 @@ void Log::log(std::string message, const std::runtime_error& ec)
 
 void Log::log(std::string message, const system::error_code& ec)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (_goodToLog)
 	{
 		try {
 			_printTime();
-			logFile << message << " " << ec.value() << " " << ec.message() << std::endl;
+			_logFile << message << " " << ec.value() << " " << ec.message() << std::endl;
 		}catch (...)
 		{
 			RTDS_CLI(std::cout << "Logging failed";)
@@ -72,15 +72,15 @@ void Log::log(std::string message, const system::error_code& ec)
 
 void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (_goodToLog)
 	{
 		try {
 			auto remoteEp = socketPtr->remote_endpoint();
 			auto IPaddress = remoteEp.address();
 			auto portNumber = remoteEp.port();
 			_printTime();
-			logFile << message << " " << IPaddress.to_string() << " " << portNumber << std::endl;
+			_logFile << message << " " << IPaddress.to_string() << " " << portNumber << std::endl;
 		}
 		catch (...)
 		{
@@ -91,16 +91,16 @@ void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr)
 
 void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr, const std::error_code& ec)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (_goodToLog)
 	{
 		try {
 			auto remoteEp = socketPtr->remote_endpoint();
 			auto IPaddress = remoteEp.address();
 			auto portNumber = remoteEp.port();
 			_printTime();
-			logFile << message << " " << IPaddress.to_string() << " " << portNumber << " ";
-			logFile << ec.message() << std::endl;
+			_logFile << message << " " << IPaddress.to_string() << " " << portNumber << " ";
+			_logFile << ec.message() << std::endl;
 		}
 		catch (...)
 		{
@@ -111,12 +111,12 @@ void Log::log(std::string message, const asio::ip::tcp::socket* socketPtr, const
 
 void Log::log(std::string message)
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	if (goodToLog)
+	std::lock_guard<std::mutex> lock(_writeLock);
+	if (_goodToLog)
 	{
 		try {
 			_printTime();
-			logFile << message << std::endl;
+			_logFile << message << std::endl;
 		}catch (...)
 		{
 			RTDS_CLI(std::cout << "Logging failed";)
@@ -126,7 +126,7 @@ void Log::log(std::string message)
 
 void Log::stopLog()
 {
-	std::lock_guard<std::mutex> lock(writeLock);
-	goodToLog = false;
-	logFile.close();
+	std::lock_guard<std::mutex> lock(_writeLock);
+	_goodToLog = false;
+	_logFile.close();
 }

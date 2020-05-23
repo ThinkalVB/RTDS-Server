@@ -4,19 +4,18 @@
 #include <boost/asio.hpp>
 #include "common.hpp"
 
-constexpr unsigned short RTDS_PORT = 389;
 using namespace boost;
 
 class RTDS
 {
-	asio::io_context ioContext;					//!< ioContext controls all the async functions related to ASIO
-	asio::io_context::work worker;				//!< Worker object to prevent ioContext.run() from exiting when without async jobs
-	asio::ip::tcp::endpoint tcpEp;				//!< TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
-	asio::ip::tcp::acceptor tcpAcceptor;		//!< TCP acceptor socket that accept incoming tcp connections
+	asio::io_context _ioContext;				//!< ioContext controls all the async functions related to ASIO
+	asio::io_context::work _worker;				//!< Worker object to prevent ioContext.run() from exiting when without async jobs
+	asio::ip::tcp::endpoint _tcpEp;				//!< TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
+	asio::ip::tcp::acceptor _tcpAcceptor;		//!< TCP acceptor socket that accept incoming tcp connections
 
-	short activeThreadCount = 0;				//!< Keep account of number of threads running ioContex.run()
-	std::atomic<bool> tcpServerRunning;			//!< Track if the TCP server is running
-	std::atomic<bool> keepAccepting;			//!< Only accept new connections if True
+	short _activeThreadCount = 0;				//!< Keep account of number of threads running ioContex.run()
+	std::atomic<bool> _tcpServerRunning;		//!< Track if the TCP server is running
+	std::atomic<bool> _keepAccepting;			//!< Only accept new connections if True
 
  /*******************************************************************************************
  * @brief Contain activities to be done by a thread (async operation)
@@ -79,7 +78,7 @@ public:
 * @details
 * Spawn child threads to run _ioThreadJob() and detach it from main thread.
 ********************************************************************************************/
-	bool addThread(int threadCount = 1);
+	bool addThread(const int threadCount = 1);
 /*******************************************************************************************
 * @brief Add the calling thread to run ioContex.run()
 *

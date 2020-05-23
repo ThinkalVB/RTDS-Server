@@ -1,32 +1,25 @@
 #include "peer.h"
 #include <boost/bind.hpp>
-#include "directory.h"
 #include "cmd_interpreter.h"
 #include "log.h"
 
-short Peer::peerCount = 0;
-DLLController<Peer> Peer::dllController;
+short Peer::_peerCount = 0;
+std::vector<Peer*> Peer::_mirrorGroup;
+std::mutex Peer::_mgAccessLock;
 
-Peer::Peer(asio::ip::tcp::socket* socketPtr)
+Peer::Peer(asio::ip::tcp::socket* socketPtr) :_remoteEp(socketPtr->remote_endpoint()), spAddress(_remoteEp)
 {
-	peerSocket = socketPtr;
+	_peerSocket = socketPtr;
 	writeBuffer.reserve(RTDS_BUFF_SIZE);
-	remoteEp = socketPtr->remote_endpoint();
+	_peerIsActive = true;
 
-	if (remoteEp.address().is_v4())
-		peerEntry = Directory::makeEntry(remoteEp.address().to_v4(), remoteEp.port());
-	else
-		peerEntry = Directory::makeEntry(remoteEp.address().to_v6(), remoteEp.port());
-
-	peerEntry->attachToPeer();
-	lastNoteNumber = Notification::lastNoteNumber();
 	_peerReceiveData();
-	peerCount++;
+	_peerCount++;
 }
 
 void Peer::_peerReceiveData()
 {
-	peerSocket->async_receive(asio::buffer(dataBuffer.data(), RTDS_BUFF_SIZE), 0, bind(&Peer::_processData,
+	_peerSocket->async_receive(asio::buffer(_dataBuffer.data(), RTDS_BUFF_SIZE), 0, bind(&Peer::_processData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 }
 
@@ -35,13 +28,14 @@ void Peer::_processData(const boost::system::error_code& ec, std::size_t size)
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket _processData() failed", peerSocket, ec);
+		Log::log("TCP Socket _processData() failed", _peerSocket, ec);
 		#endif
 		terminatePeer();
 	}
 	else
 	{
-		if (CmdInterpreter::makeCmdElement(dataBuffer, commandElement, size))
+		std::lock_guard<std::mutex> lock(_resourceMtx);
+		if (CmdInterpreter::makeCmdElement(_dataBuffer, cmdElement, size))
 			CmdInterpreter::processCommand(*this);
 		else
 		{
@@ -57,7 +51,7 @@ void Peer::_sendData(const boost::system::error_code& ec, std::size_t size)
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket _sendData() failed", peerSocket, ec);
+		Log::log("TCP Socket _sendData() failed", _peerSocket, ec);
 		#endif
 		terminatePeer();
 	}
@@ -73,109 +67,83 @@ void Peer::_sendNotification(const boost::system::error_code& ec, std::size_t si
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket _sendNotification() failed", peerSocket, ec);
+		Log::log("TCP Socket _sendNotification() failed", _peerSocket, ec);
 		#endif
 		terminatePeer();
 	}
 }
 
-void Peer::_notifyAll(const Note& note)
-{
-	if (Peer::dllController.begin() == nullptr)
-		return;
-	else
-	{
-		auto peerPtr = Peer::dllController.begin();
-		while (peerPtr != nullptr)
-		{
-			if (peerPtr != this)
-			{
-				peerPtr->peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
-					bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-			}
-			peerPtr = peerPtr->dllNode.next();
-		}
-	}
-}
-
 void Peer::sendPeerData()
 {
-	peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
+	if (_peerIsActive)
+	_peerSocket->async_send(asio::buffer(writeBuffer.data(), writeBuffer.size()), bind(&Peer::_sendData,
 		this, asio::placeholders::error, asio::placeholders::bytes_transferred));
-}
-
-void Peer::sendNotification(const std::string& noteString)
-{
-	auto note = Notification::newNotification(noteString);
-	_notifyAll(note);
-}
-
-void Peer::syncUpdate()
-{
-	Notification::createNoteRecord(writeBuffer, lastNoteNumber);
 }
 
 void Peer::terminatePeer()
 {
-	peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
+	_peerIsActive = false;
+	_peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
 	delete this;
 }
 
 short Peer::getPeerCount()
 {
-	return peerCount;
+	return _peerCount;
 }
 
-void Peer::addToMirroringGroup()
+void Peer::addToMG(const Policy& policy)
 {
-	if (!isMirroring)
+	if (!_isMirroring)
 	{
-		isMirroring = true;
-		dllNode.addToDLL(this);
+		std::lock_guard<std::mutex> lock(_mgAccessLock);
+		_isMirroring = true;
+		_mirrorGroup.push_back(this);
+		_mirrorPolicy = policy;
+	}
+	else
+		_mirrorPolicy = policy;
+}
+
+void Peer::removeFromMG()
+{
+	if (_isMirroring)
+	{
+		_isMirroring = false;
+		std::lock_guard<std::mutex> lock(_mgAccessLock);
+		auto itr = std::find(_mirrorGroup.begin(), _mirrorGroup.end(), this);
+		std::iter_swap(itr, _mirrorGroup.end() - 1);
+		_mirrorGroup.pop_back();
 	}
 }
 
-void Peer::removeFromMirroringGroup()
+void Peer::sendNoteToMG(const Note& note)
 {
-	if (isMirroring)
+	std::lock_guard<std::mutex> lock(_mgAccessLock);
+	for (auto peerItr = _mirrorGroup.begin(); peerItr != _mirrorGroup.end(); ++peerItr)
 	{
-		isMirroring = false;
-		dllNode.removeFromDLL(this);
-		lastNoteNumber = Notification::lastNoteNumber();
+		if ((*peerItr)->_peerIsActive)
+		(*peerItr)->_peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
+			bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 	}
-}
-
-Entry* Peer::entry()
-{
-	return peerEntry;
-}
-
-std::string& Peer::Buffer()
-{
-	return writeBuffer;
-}
-
-CommandElement& Peer::cmdElement()
-{
-	return commandElement;
 }
 
 Peer::~Peer()
 {
 	#ifdef PRINT_LOG
-	Log::log("TCP Socket closing", peerSocket);
+	Log::log("TCP Socket closing", _peerSocket);
 	#endif
 	system::error_code ec;
-	peerSocket->close(ec);
+	_peerSocket->close(ec);
 	if (ec != system::errc::success)
 	{
 		#ifdef PRINT_LOG
-		Log::log("TCP Socket cannot close", peerSocket, ec);
+		Log::log("TCP Socket cannot close", _peerSocket, ec);
 		#endif
 	}
 
-	peerEntry->detachFromPeer();
-	removeFromMirroringGroup();
-	peerCount--;
-	delete peerSocket;
+	removeFromMG();
+	_peerCount--;
+	std::lock_guard<std::mutex> lock(_resourceMtx);
+	delete _peerSocket;
 }

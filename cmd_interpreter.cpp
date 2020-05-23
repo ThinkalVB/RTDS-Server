@@ -1,8 +1,7 @@
 #include "cmd_interpreter.h"
-#include "directory.h"
 #include <charconv>
+#include "directory.h"
 #include <regex>
-#include <cppcodec/base64_rfc4648.hpp>
 
 const std::string CmdInterpreter::RESP[] =
 {
@@ -22,7 +21,6 @@ const std::string CmdInterpreter::COMM[] =
 	"search",
 	"ttl",
 	"charge",
-	"flush",
 	"update",
 	"remove",
 	"count",
@@ -35,7 +33,8 @@ const char CmdInterpreter::PRI[] =
 {
 	'l',
 	'p',
-	'r'
+	'r',
+	'~'
 };
 
 std::string CmdInterpreter::toPermission(const Permission& permission)
@@ -56,14 +55,16 @@ Permission CmdInterpreter::toPermission(const std::string_view& perm)
 	return permission;
 }
 
-Privilege CmdInterpreter::toPrivilege(const char& privilege)
+Privilege CmdInterpreter::toPrivilege(const char privilege)
 {
-	if (privilege == 'l')
+	if (privilege == PRI[(short)Privilege::LIBERAL_ENTRY])
 		return Privilege::LIBERAL_ENTRY;
-	else if (privilege == 'p')
+	else if (privilege == PRI[(short)Privilege::PROTECTED_ENTRY])
 		return Privilege::PROTECTED_ENTRY;
-	else
+	else if (privilege == PRI[(short)Privilege::RESTRICTED_ENTRY])
 		return Privilege::RESTRICTED_ENTRY;
+	else
+		return Privilege::ALL_ENTRY;
 }
 
 int CmdInterpreter::toIntiger(const std::string_view& intValue)
@@ -73,16 +74,33 @@ int CmdInterpreter::toIntiger(const std::string_view& intValue)
 	return intiger;
 }
 
-TTL CmdInterpreter::toTTL(Privilege maxPrivilege)
+unsigned short CmdInterpreter::toInitialTTL(const Privilege maxPrivilege)
 {
 	if (maxPrivilege == Privilege::LIBERAL_ENTRY)
-		return TTL::LIBERAL_TTL;
+		return (unsigned short)TTL::LIBERAL_TTL;
 	else if (maxPrivilege == Privilege::PROTECTED_ENTRY)
-		return TTL::PROTECTED_TTL;
+		return (unsigned short)TTL::PROTECTED_TTL;
 	else
-		return TTL::RESTRICTED_TTL;
+		return (unsigned short)TTL::RESTRICTED_TTL;
 }
 
+Permission CmdInterpreter::toDefPermission(const Privilege maxPriv)
+{
+	Permission permission;
+	if (maxPriv == Privilege::RESTRICTED_ENTRY || maxPriv == Privilege::PROTECTED_ENTRY)
+	{
+		permission.charge = Privilege::PROTECTED_ENTRY;
+		permission.change = Privilege::PROTECTED_ENTRY;
+		permission.remove = Privilege::PROTECTED_ENTRY;
+	}
+	else
+	{
+		permission.charge = Privilege::LIBERAL_ENTRY;
+		permission.change = Privilege::LIBERAL_ENTRY;
+		permission.remove = Privilege::LIBERAL_ENTRY;
+	}
+	return permission;
+}
 
 bool CmdInterpreter::isBase64(const std::string_view& uid)
 {
@@ -95,6 +113,12 @@ bool CmdInterpreter::isDescription(const std::string_view& desc)
 	if (desc[0] == '[' && desc[desc.size() - 1] == ']' && desc.size() <= MAX_DESC_SIZE)
 		return true;
 	return false;
+}
+
+bool CmdInterpreter::isPolicyPermission(const std::string_view& permission)
+{
+	std::regex regx("[~plr]{3}");
+	return std::regex_match(permission.cbegin(), permission.cend(), regx);
 }
 
 bool CmdInterpreter::isPermission(const std::string_view& permission)
@@ -123,8 +147,16 @@ bool CmdInterpreter::isIntiger(const std::string_view& intValue)
 	return std::regex_match(intValue.cbegin(), intValue.cend(), regx);
 }
 
+bool CmdInterpreter::isValid(const Permission& perm, const Privilege maxPriv)
+{
+	if (maxPriv >= perm.change && maxPriv >= perm.remove && maxPriv >= perm.charge)
+		return true;
+	else
+		return false;
+}
 
-bool CmdInterpreter::makeCmdElement(ReceiveBuffer& dataBuffer, CommandElement& cmdElement, std::size_t size)
+
+bool CmdInterpreter::makeCmdElement(ReceiveBuffer& dataBuffer, CommandElement& cmdElement, const std::size_t size)
 {
 	std::string_view commandLine;
 	if (dataBuffer[size - 1] == ';')
@@ -186,7 +218,20 @@ bool CmdInterpreter::makeCmdElement(ReceiveBuffer& dataBuffer, CommandElement& c
 		return false;
 }
 
-bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std::string_view& portNum, SPAddress& sourcePair)
+bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SPaddress& spAddress)
+{
+	if (isBase64(uid))
+	{
+		if (uid.size() == V4_UID_MAX_CHAR || uid.size() == V6_UID_MAX_CHAR)
+		{
+			spAddress = SPaddress(uid);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std::string_view& portNum, SPaddress& spAddress)
 {
 	system::error_code ec;
 	auto ipAddress = asio::ip::make_address(ipAddrStr, ec);
@@ -194,59 +239,17 @@ bool CmdInterpreter::makeSourcePair(const std::string_view& ipAddrStr, const std
 	if (ec == system::errc::success && isPortNumber(portNum, portNumber))
 	{
 		if (ipAddress.is_v4())
-		{
-			makeSourcePair(ipAddress.to_v4(), portNumber, sourcePair.SPA.V4);
-			sourcePair.version = Version::V4;
-		}
+			spAddress = SPaddress(ipAddress.to_v4(), portNumber);
 		else
-		{
-			makeSourcePair(ipAddress.to_v6(), portNumber, sourcePair.SPA.V6);
-			sourcePair.version = Version::V6;
-		}
+			spAddress = SPaddress(ipAddress.to_v6(), portNumber);
 		return true;
 	}
 	else
 		return false;
-
-}
-
-bool CmdInterpreter::makeSourcePair(const std::string_view& uid, SPAddress& sourcePair)
-{
-	if (isBase64(uid))
-	{
-		if (uid.size() == V4_UID_MAX_CHAR)
-		{
-			cppcodec::base64_rfc4648::decode(sourcePair.SPA.V4.data(), sourcePair.SPA.V4.size(), uid);
-			sourcePair.version = Version::V4;
-			return true;
-		}
-		else if (uid.size() == V6_UID_MAX_CHAR)
-		{
-			cppcodec::base64_rfc4648::decode(sourcePair.SPA.V6.data(), sourcePair.SPA.V6.size(), uid);
-			sourcePair.version = Version::V6;
-			return true;
-		}
-	}
-	return false;
 }
 
 
-unsigned short CmdInterpreter::portNumber(const SPAddress& spa)
-{
-	unsigned short portNumber;
-	if (spa.version == Version::V4)
-		memcpy(&portNumber, spa.SPA.V4.data() + spa.SPA.IPV4.size(), 2);
-	else
-		memcpy(&portNumber, spa.SPA.V6.data() + spa.SPA.IPV6.size(), 2);
-
-	#ifdef BOOST_ENDIAN_LITTLE_BYTE
-	CmdInterpreter::byteSwap(portNumber);
-	#endif
-	return portNumber;
-}
-
-
-const MutableData CmdInterpreter::extractMutableData(CommandElement& cmdElement)
+const MutableData CmdInterpreter::tryExtractMutData(CommandElement& cmdElement)
 {
 	MutableData mutableData;
 	if (cmdElement.size() >= 1 && isPermission(cmdElement.peek()))
@@ -257,274 +260,254 @@ const MutableData CmdInterpreter::extractMutableData(CommandElement& cmdElement)
 
 	if (cmdElement.size() >= 1 && isDescription(cmdElement.peek()))
 		mutableData.setDescription(cmdElement.pop_front());
-
 	return mutableData;
 }
 
-void CmdInterpreter::extractFlushCount(CommandElement& cmdElement, std::size_t& flushCount)
+const Policy CmdInterpreter::tryExtractPolicy(CommandElement& cmdElement)
 {
-	if (cmdElement.size() >= 1 && isIntiger(cmdElement.peek()))
+	MutableData mutableData;
+	if (cmdElement.size() >= 1 && isPolicyPermission(cmdElement.peek()))
 	{
-		auto count = toIntiger(cmdElement.peek());
-		if (count > 0)
-		{
-			flushCount = count;
-			cmdElement.pop_front(1);
-		}
+		auto permission = toPermission(cmdElement.pop_front());
+		mutableData.setPermission(permission);
 	}
+
+	if (cmdElement.size() >= 1 && isDescription(cmdElement.peek()))
+		mutableData.setDescription(cmdElement.pop_front());
+	return mutableData;
 }
 
-bool CmdInterpreter::extractSourcePair(CommandElement& cmdElement, SPAddress& sourcePair)
+void CmdInterpreter::tryExtractSPA(CommandElement& cmdElement, SPaddress& spAddress)
 {
 	if (cmdElement.size() >= 1)
 	{
-		if (makeSourcePair(cmdElement.peek(), sourcePair))
+		if (makeSourcePair(cmdElement.peek(), spAddress))
 		{
 			cmdElement.pop_front(1);
-			return true;
+			return;
 		}
 	}
 
 	if (cmdElement.size() >= 2)
 	{
-		if (makeSourcePair(cmdElement.peek(), cmdElement.peek_next(), sourcePair))
+		if (makeSourcePair(cmdElement.peek(), cmdElement.peek_next(), spAddress))
 		{
 			cmdElement.pop_front(2);
-			return true;
+			return;
 		}
 	}
-	return false;
-}
-
-Entry* CmdInterpreter::extractBaseEntry(Entry* entry, CommandElement& cmdElement)
-{
-	SPAddress sourcePair;
-	if (extractSourcePair(cmdElement, sourcePair))
-		return Directory::findEntry(sourcePair);
-	else
-		return entry;
 }
 
 /* Function that process the commands from peer.....*/
 void CmdInterpreter::processCommand(Peer& peer)
 {
-	auto command = peer.cmdElement().pop_front();
-	if (command == COMM[(short)Command::PING] && peer.cmdElement().size() == 0)
-		s_ping(peer.entry(), peer.Buffer());
-	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement().size() == 0)
-		s_count(peer.Buffer());
-	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement().size() == 0)
-		s_mirror(peer);
-	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement().size() == 0)
+	auto command = peer.cmdElement.pop_front();
+	if (command == COMM[(short)Command::PING] && peer.cmdElement.size() == 0)
+		s_ping(peer);
+	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement.size() == 0)
+		s_count(peer);
+	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement.size() == 0)
+		_mirror(peer);
+	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement.size() == 0)
 		s_leave(peer);
 	else if (command == COMM[(short)Command::ADD])
 		_add(peer);
 	else if (command == COMM[(short)Command::SEARCH])
-		_search(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_search(peer);
 	else if (command == COMM[(short)Command::CHARGE])
-		_charge(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_charge(peer);
 	else if (command == COMM[(short)Command::TTL])
-		_ttl(peer.entry(), peer.cmdElement(), peer.Buffer());
+		_ttl(peer);
 	else if (command == COMM[(short)Command::REMOVE])
 		_remove(peer);
-	else if (command == COMM[(short)Command::FLUSH])
-		_flush(peer.cmdElement(), peer.Buffer());
 	else if (command == COMM[(short)Command::UPDATE])
 		_update(peer);
-	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement().size() == 0)
+	else if (command == COMM[(short)Command::EXIT] && peer.cmdElement.size() == 0)
 	{
 		peer.terminatePeer();
 		return;
 	}
 	else
 	{
-		peer.Buffer() = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
-		peer.Buffer() += '\x1e';
+		peer.writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
+		peer.writeBuffer += '\x1e';
 	}
 	peer.sendPeerData();
 }
 
 /* Commands without any arguments...................*/
-void CmdInterpreter::s_ping(Entry* thisEntry, std::string& writeBuffer)
+void CmdInterpreter::s_ping(Peer& peer)
 {
-	Directory::printBrief(thisEntry, writeBuffer);
-	writeBuffer += '\x1e';					//!< Record separator
+	peer.writeBuffer += peer.spAddress.briefInfo();
+	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::s_count(std::string& writeBuffer)
+void CmdInterpreter::s_count(Peer& peer)
 {
-	writeBuffer += std::to_string(Directory::getEntryCount());
-	writeBuffer += '\x1e';					//!< Record separator
-}
-
-void CmdInterpreter::s_mirror(Peer& peer)
-{
-	peer.addToMirroringGroup();
-	peer.Buffer() += RESP[(short)Response::SUCCESS];
-	peer.Buffer() += '\x1e';				//!< Record separator
+	peer.writeBuffer += std::to_string(Directory::entryCount());
+	peer.writeBuffer += '\x1e';					//!< Record separator
 }
 
 void CmdInterpreter::s_leave(Peer& peer)
 {
-	peer.removeFromMirroringGroup();
-	peer.Buffer() += RESP[(short)Response::SUCCESS];
-	peer.Buffer() += '\x1e';				//!< Record separator
+	peer.removeFromMG();
+	peer.writeBuffer += peer.spAddress.briefInfo();
+	peer.writeBuffer += '\x1e';			//!< Record separator
 }
 
 /* Commands with arguments..........................*/
-void CmdInterpreter::_ttl(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_mirror(Peer& peer)
 {
-	auto entry = extractBaseEntry(thisEntry, cmdElement);
-
-	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
-	else if (Directory::isInDirectory(entry))
+	auto policy = tryExtractPolicy(peer.cmdElement);
+	if (peer.cmdElement.isEmpty() && policy.isValidPolicy())
 	{
-		auto ttl = Directory::getTTL(entry);
-		writeBuffer += std::to_string(ttl);
+		peer.addToMG(policy);
+		peer.writeBuffer += RESP[(short)Response::SUCCESS];
+		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST];
-	writeBuffer += '\x1e';				//!< Record separator
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+}
+
+void CmdInterpreter::_ttl(Peer& peer)
+{
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
+
+	if (!peer.cmdElement.isEmpty())
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	else
+	{
+		auto responseTTL = Directory::ttlEntry(targetSPA);
+		if (responseTTL.first == Response::SUCCESS)
+			peer.writeBuffer += std::to_string(responseTTL.second);
+		else
+			peer.writeBuffer += RESP[(short)responseTTL.first];
+		peer.writeBuffer += '\x1e';				//!< Record separator
+	}
 }
 
 void CmdInterpreter::_remove(Peer& peer)
 {
-	auto thisEntry = peer.entry();
-	auto entry = extractBaseEntry(thisEntry, peer.cmdElement());
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
 
-	if (!peer.cmdElement().isEmpty())
-		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
-	else if (Directory::isInDirectory(entry))
+	if (!peer.cmdElement.isEmpty())
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	else
 	{
-		auto purgeTocken = Tocken::makePurgeTocken(entry, thisEntry);
-		if (purgeTocken != nullptr)
+		auto responsePair = Directory::removeEntry(targetSPA, peer.spAddress);
+		if (responsePair.first == Response::SUCCESS)
 		{
-			Directory::removeEntry(purgeTocken);
-			peer.Buffer() += RESP[(short)Response::SUCCESS];
-			peer.sendNotification(purgeTocken->makePurgeNote());
-			Tocken::destroyTocken(purgeTocken);
+			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+			auto notification = Notification::makeRemoveNote(responsePair.second);
+			peer.sendNoteToMG(notification);
 		}
 		else
-			peer.Buffer() += RESP[(short)Response::NO_PRIVILAGE];
+			peer.writeBuffer += RESP[(short)responsePair.first];
+		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
-	else
-		peer.Buffer() += RESP[(short)Response::NO_EXIST];
-	peer.Buffer() += '\x1e';				//!< Record separator
-}
-
-void CmdInterpreter::_flush(CommandElement& cmdElement, std::string& writeBuffer)
-{
-	std::size_t flushCount = SIZE_MAX;
-	extractFlushCount(cmdElement, flushCount);
-
-	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
-	else
-		Directory::flushEntries(writeBuffer, flushCount);
-	writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_update(Peer& peer)
 {
-	auto thisEntry = peer.entry();
-	auto entry = extractBaseEntry(thisEntry, peer.cmdElement());
-	auto mutableData = extractMutableData(peer.cmdElement());
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
+	auto mutData = tryExtractMutData(peer.cmdElement);
 
-	if (peer.cmdElement().isEmpty() && mutableData.isEmpty())
-		peer.syncUpdate();
-	else if (!peer.cmdElement().isEmpty() || mutableData.isEmpty())
-		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
-	else if (Directory::isInDirectory(entry))
+	if (!peer.cmdElement.isEmpty() || mutData.isEmpty())
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	else
 	{
-		auto updateTocken = Tocken::makeUpdateTocken(entry, thisEntry);
-		if (updateTocken != nullptr)
+		auto responsePair = Directory::updateEntry(targetSPA, peer.spAddress, mutData);
+		if (responsePair.first == Response::SUCCESS)
 		{
-			auto response = Directory::updateEntry(updateTocken, mutableData);
-			if (response == Response::SUCCESS)
-				peer.sendNotification(updateTocken->makeUpdateNote(mutableData));
-			Tocken::destroyTocken(updateTocken);
-			peer.Buffer() += RESP[(short)response];
+			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+			auto notification = Notification::makeUpdateNote(responsePair.second, mutData);
+			peer.sendNoteToMG(notification);
 		}
 		else
-			peer.Buffer() += RESP[(short)Response::NO_PRIVILAGE];
+			peer.writeBuffer += RESP[(short)responsePair.first];
 	}
-	else
-		peer.Buffer() += RESP[(short)Response::NO_EXIST];
-	peer.Buffer() += '\x1e';				//!< Record separator
+	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_add(Peer& peer)
 {
-	auto thisEntry = peer.entry();
-	SPAddress sourcePair;
-	Entry* entry;
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
+	auto mutData = tryExtractMutData(peer.cmdElement);
 
-	if (extractSourcePair(peer.cmdElement(), sourcePair))
-		entry = Directory::makeEntry(sourcePair);
-	else
-		entry = thisEntry;
-	auto mutableData = extractMutableData(peer.cmdElement());
-
-	if (!peer.cmdElement().isEmpty())
-	{
-		peer.Buffer() += RESP[(short)Response::BAD_PARAM];
-		return;
-	}
-	else if (Directory::isInDirectory(entry))
-	{
-		peer.Buffer() += RESP[(short)Response::REDUDANT_DATA] + " ";
-		Directory::printUID(entry, peer.Buffer());
-	}
+	if (!peer.cmdElement.isEmpty())
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto insertionTocken = Tocken::makeInsertionTocken(entry, thisEntry);
-		auto response = Directory::insertEntry(insertionTocken, mutableData);
-		if (response == Response::SUCCESS)
+		auto responsePair = Directory::createEntry(targetSPA, peer.spAddress, mutData);
+		if (responsePair.first == Response::SUCCESS)
 		{
-			peer.Buffer() += RESP[(short)Response::SUCCESS] + " ";
-			Directory::printUID(entry, peer.Buffer());
-			peer.sendNotification(insertionTocken->makeInsertionNote());
+			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
+			peer.writeBuffer += responsePair.second->uid();
+
+			auto notification = Notification::makeAddNote(responsePair.second);
+			peer.sendNoteToMG(notification);
+		}
+		else if (responsePair.first == Response::REDUDANT_DATA)
+		{
+			peer.writeBuffer += RESP[(short)Response::REDUDANT_DATA] + " ";
+			peer.writeBuffer += responsePair.second->uid();
 		}
 		else
-			peer.Buffer() += RESP[(short)response];
-		Tocken::destroyTocken(insertionTocken);
+			peer.writeBuffer += RESP[(short)responsePair.first];
 	}
-	peer.Buffer() += '\x1e';				//!< Record separator
+	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::_search(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
+void CmdInterpreter::_search(Peer& peer)
 {
-	auto entry = extractBaseEntry(thisEntry, cmdElement);
-
-	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
-	else if (Directory::isInDirectory(entry))
-		Directory::printExpand(entry, writeBuffer);
-	else
-		writeBuffer += RESP[(short)Response::NO_EXIST];
-	writeBuffer += '\x1e';
-}
-
-void CmdInterpreter::_charge(Entry* thisEntry, CommandElement& cmdElement, std::string& writeBuffer)
-{
-	auto entry = extractBaseEntry(thisEntry, cmdElement);
-
-	if (!cmdElement.isEmpty())
-		writeBuffer += RESP[(short)Response::BAD_PARAM];
-	else if (Directory::isInDirectory(entry))
+	if (peer.cmdElement.size() == 1 || peer.cmdElement.size() == 0)
 	{
-		auto chargeTocken = Tocken::makeChargeTocken(entry, thisEntry);
-		if (chargeTocken != nullptr)
+		auto targetSPA = peer.spAddress;
+		tryExtractSPA(peer.cmdElement, targetSPA);
+		if (peer.cmdElement.size() == 0)
 		{
-			auto newTTL = Directory::chargeEntry(chargeTocken);
-			writeBuffer += std::to_string(newTTL);
-			Tocken::destroyTocken(chargeTocken);
+			auto responsePair = Directory::searchEntry(peer.spAddress);
+			if (responsePair.first == Response::SUCCESS)
+				responsePair.second->printExpand(peer.writeBuffer);
+			else
+				peer.writeBuffer += RESP[(short)responsePair.first];
 		}
 		else
-			writeBuffer += RESP[(short)Response::NO_PRIVILAGE];
+			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	}
 	else
-		writeBuffer += RESP[(short)Response::NO_EXIST];
-	writeBuffer += '\x1e';
+	{
+		auto policy = tryExtractPolicy(peer.cmdElement);
+		if (peer.cmdElement.isEmpty() && policy.isValidPolicy())
+		{
+			Directory::searchEntry(policy, peer.writeBuffer);
+			if (peer.writeBuffer.size() == 0)
+				peer.writeBuffer += RESP[(short)Response::NO_EXIST];
+			peer.writeBuffer += '\x1e';				//!< Record separator
+		}
+		else
+			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	}
+}
+
+void CmdInterpreter::_charge(Peer& peer)
+{
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
+
+	if (!peer.cmdElement.isEmpty())
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	else
+	{
+		auto responseTTL = Directory::chargeEntry(targetSPA, peer.spAddress);
+		if (responseTTL.first == Response::SUCCESS)
+			peer.writeBuffer += std::to_string(responseTTL.second);
+		else
+			peer.writeBuffer += RESP[(short)responseTTL.first];
+		peer.writeBuffer += '\x1e';				//!< Record separator
+	}
 }

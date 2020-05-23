@@ -32,7 +32,7 @@ const std::string_view& CommandElement::pop_front()
 	return element[currIndex];
 }
 
-void CommandElement::pop_front(int count)
+void CommandElement::pop_front(const int count)
 {
 	_size = _size - count;
 	_index = _index + count;

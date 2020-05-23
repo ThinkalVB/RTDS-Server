@@ -2,28 +2,26 @@
 #define PEER_H
 
 #include <boost/asio.hpp>
-#include "advanced_dll.h"
 #include "cmd_element.h"
 #include "notification.h"
-#include "entry.h"
+#include "spaddress.h"
 
 using namespace boost;
 
 class Peer
 {
-	static short peerCount;								//!< Keep the total count of peers
-	static DLLController<Peer> dllController;			//!< Controller to add and remove peer from mirroring list
-	DLLNode<Peer> dllNode;								//!< DLL node to keep track of previous and next peer
+	static short _peerCount;							//!< Keep the total count of peers
+	static std::vector<Peer*> _mirrorGroup;				//!< Mirroring group
+	static std::mutex _mgAccessLock;					//!< Lock this mutex before accessing mirror group
 
-	Entry* peerEntry;									//!< Union DS that store the SourcePair entry(v4/v6) pointers
-	asio::ip::tcp::socket* peerSocket;					//!< Socket handling the data from peer system
-	asio::ip::tcp::endpoint remoteEp;					//!< Endpoint of the peerSocket with info on peer system
-	bool isMirroring = false;							//!< True if this peer is in mirroring mode
-	int lastNoteNumber;									//!< Last notification number
+	ReceiveBuffer _dataBuffer;							//!< Buffer to which the commands are received
+	std::mutex _resourceMtx;							//!< Mutex to prevent resource expiry while processing
 
-	ReceiveBuffer dataBuffer;							//!< Buffer to which the commands are received
-	CommandElement commandElement;						//!< String view Array of command elements
-	std::string writeBuffer;							//!< Buffer from which the response will be send
+	asio::ip::tcp::socket* _peerSocket;					//!< Socket handling the data from peer system
+	bool _peerIsActive;									//!< True if the peer socket is operational
+	const asio::ip::tcp::endpoint _remoteEp;			//!< Endpoint of the peerSocket with info on peer system
+	std::atomic<Policy> _mirrorPolicy;					//!< Mirroring policy of the peer
+	bool _isMirroring = false;							//!< True if this peer is in mirroring mode
 
 /*******************************************************************************************
  * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
@@ -68,17 +66,12 @@ class Peer
 * If ec state a error in connection, this peer object will be deleted.
 ********************************************************************************************/
 	void _sendNotification(const boost::system::error_code&, std::size_t);
-/*******************************************************************************************
-* @brief Send notification to all peers in MList except the calling peer
-*
-* @param[in] note				Notification to be send
-*
-* @details
-* [Not thread safe] Need explicit thread safety
-********************************************************************************************/
-	void _notifyAll(const Note&);
 
 public:
+	const SPaddress spAddress;							//!< Source pair address of the entry.
+	CommandElement cmdElement;							//!< String view Array of command elements
+	std::string writeBuffer;							//!< Buffer from which the response will be send
+
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
 *
@@ -125,51 +118,23 @@ void terminatePeer();
 * @details
 * Set the flag isMirroring to true and add to the mirroring group list.
 ********************************************************************************************/
-	void addToMirroringGroup();
+void addToMG(const Policy&);
 /*******************************************************************************************
 * @brief Remove this peer to mirroring group
 *
 * @details
 * Set the flag isMirroring to false and remove peer from mirroring group list.
 ********************************************************************************************/
-	void removeFromMirroringGroup();
-/*******************************************************************************************
-* @brief Return the pointer to the Base entry class
-*
-* @return						Pointer to the base class
-********************************************************************************************/
-	Entry* entry();
-/*******************************************************************************************
-* @brief Return the write buffer
-*
-* @return						Reference to the write buffer
-********************************************************************************************/
-	std::string& Buffer();
-/*******************************************************************************************
-* @brief Return the command Elements
-*
-* @return						Reference to the command elements
-********************************************************************************************/
-	CommandElement& cmdElement();
+	void removeFromMG();
 /*******************************************************************************************
 * @brief Send notification to all the mirroring peers
 *
-* @param[in] noteString			The notification string
+* @param[in] note				The notification
 *
 * @details
-* Create a notification with the noteString
 * Send the noteString to all the peers in the mirroring group
 ********************************************************************************************/
-	void sendNotification(const std::string&);
-/*******************************************************************************************
-* @brief Sync all updates after last Notification number
-*
-* @details
-* Create update record for this peer and send it to the client.
-* Update the lastNoteNumber to the last streamed notification number.
-********************************************************************************************/
-	void syncUpdate();
-	template<typename T2> friend class DLLNode;
+	void sendNoteToMG(const Note&);
 };
 
 #endif
