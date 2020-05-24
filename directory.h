@@ -5,8 +5,6 @@
 #include "common.hpp"
 #include "entry.h"
 
-typedef std::pair<Response, const Entry*> ResponsePair;
-typedef std::pair<Response, short> ResponseTTL;
 typedef std::map<SourcePairV4, Entry*> V4EntryMap;
 typedef std::map<SourcePairV6, Entry*> V6EntryMap;
 

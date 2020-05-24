@@ -68,15 +68,22 @@ const std::string& Entry::uid() const
 	return _uid;
 }
 
-void Entry::printExpand(std::string& writeBuffer) const
+void Entry::printExpand(std::string& writeBuffer)
+{
+	printBrief(writeBuffer);
+
+	//std::lock_guard<std::mutex> lock(_entryLock);
+	//writeBuffer += CmdInterpreter::toPermission(_policy.permission());
+	//writeBuffer += " " + _policy.description();
+}
+
+void Entry::printBrief(std::string& writeBuffer) const
 {
 	if (_spAddress.version() == Version::V4)
 		writeBuffer += STR_V4;
 	else
 		writeBuffer += STR_V6;
 	writeBuffer += " " + _uid + " " + _ipAddress + " " + _portNumber + " ";
-	writeBuffer += CmdInterpreter::toPermission(_permission);
-	writeBuffer += " " + _description;
 }
 
 short Entry::charge()

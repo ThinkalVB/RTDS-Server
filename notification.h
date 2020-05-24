@@ -40,7 +40,7 @@ public:
 * @param[in] mutData			Mutable data containing the changes in the entry.
 * @return						Return the notification.
 ********************************************************************************************/
-	static const Note& makeUpdateNote(const Entry*, const MutableData&);
+	static const Note& makeUpdateNote(const Entry*);
 /*******************************************************************************************
 * @brief Make remove Nottification
 *

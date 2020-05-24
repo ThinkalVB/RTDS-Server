@@ -8,6 +8,9 @@
 #include "common.hpp"
 
 using namespace boost;
+class Entry;
+typedef std::pair<Response, Entry*> ResponsePair;
+typedef std::pair<Response, short> ResponseTTL;
 
 /*******************************************************************************************
  * @brief Class for every entry into the directory.
@@ -96,13 +99,23 @@ public:
 	* [Not thread safe]
 	********************************************************************************************/
 	const std::string& uid() const;
+
+
 /*******************************************************************************************
 * @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
 *
 * @param[out] strBuffer			String buffer to which the data will be written.
-* [Not thread safe]
 ********************************************************************************************/
-	void printExpand(std::string&) const;
+	void printExpand(std::string&);
+/*******************************************************************************************
+* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber
+*
+* @param[out] strBuffer			String buffer to which the data will be written.
+********************************************************************************************/
+	void printBrief(std::string&) const;
+
+
+
 /*******************************************************************************************
 * @brief Charge the entry (Increment TTL)
 *

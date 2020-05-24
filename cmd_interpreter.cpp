@@ -423,7 +423,7 @@ void CmdInterpreter::_update(Peer& peer)
 		if (responsePair.first == Response::SUCCESS)
 		{
 			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			auto notification = Notification::makeUpdateNote(responsePair.second, mutData);
+			auto notification = Notification::makeUpdateNote(responsePair.second);
 			peer.sendNoteToMG(notification);
 		}
 		else

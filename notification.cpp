@@ -16,13 +16,10 @@ const Note& Notification::_newNote(const std::string& noteStr)
 	return _notificationList.emplace_back(noteStr, _notificationCount);
 }
 
-const Note& Notification::makeUpdateNote(const Entry* entry, const MutableData& mutData)
+const Note& Notification::makeUpdateNote(const Entry* entry)
 {
-	std::string noteStr = "[$] " + entry->uid();
-	if (mutData.havePermission())
-		noteStr += " " + CmdInterpreter::toPermission(mutData.permission());
-	if (mutData.haveDescription())
-		noteStr += " " + std::string(mutData.description());
+	std::string noteStr = "[$] ";
+	entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
@@ -30,14 +27,15 @@ const Note& Notification::makeUpdateNote(const Entry* entry, const MutableData& 
 const Note& Notification::makeAddNote(const Entry* entry)
 {
 	std::string noteStr = "[+] ";
-	entry->printExpand(noteStr);
+	entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
 
 const Note& Notification::makeRemoveNote(const Entry* entry)
 {
-	std::string noteStr = "[-] " + entry->uid();
+	std::string noteStr = "[+] ";
+	entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
