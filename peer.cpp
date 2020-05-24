@@ -92,7 +92,7 @@ short Peer::getPeerCount()
 	return _peerCount;
 }
 
-void Peer::addToMG(const Policy& policy)
+void Peer::addToMG(const MutableData& policy)
 {
 	if (!_isMirroring)
 	{

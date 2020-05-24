@@ -191,7 +191,7 @@ public:
 * @details
 * The values used for generating the Policy will be purged from the commandElement
 ********************************************************************************************/
-	static const Policy tryExtractPolicy(CommandElement&);
+	static const MutableData tryExtractPolicyMD(CommandElement&);
 /*******************************************************************************************
 * @brief Generate a sourcePair address from the peer command element if available
 *

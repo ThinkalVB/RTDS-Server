@@ -20,7 +20,7 @@ class Peer
 	asio::ip::tcp::socket* _peerSocket;					//!< Socket handling the data from peer system
 	bool _peerIsActive;									//!< True if the peer socket is operational
 	const asio::ip::tcp::endpoint _remoteEp;			//!< Endpoint of the peerSocket with info on peer system
-	std::atomic<Policy> _mirrorPolicy;					//!< Mirroring policy of the peer
+	Policy _mirrorPolicy;								//!< Mirroring policy of the peer
 	bool _isMirroring = false;							//!< True if this peer is in mirroring mode
 
 /*******************************************************************************************
@@ -118,7 +118,7 @@ void terminatePeer();
 * @details
 * Set the flag isMirroring to true and add to the mirroring group list.
 ********************************************************************************************/
-void addToMG(const Policy&);
+void addToMG(const MutableData&);
 /*******************************************************************************************
 * @brief Remove this peer to mirroring group
 *

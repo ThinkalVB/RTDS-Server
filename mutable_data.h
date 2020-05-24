@@ -3,13 +3,24 @@
 
 #include "common.hpp"
 
-class MutableData
+class _perm_data
+{
+protected:
+	Permission _permission;
+
+public:
+	void setPermission(const Permission&);
+	const Permission& permission() const;
+	bool canRemoveWith(const Privilege&) const;
+	bool canUpdateWith(const Privilege&) const;
+	bool canChargeWith(const Privilege&) const;
+};
+
+class MutableData : public _perm_data
 {
 	bool _havePermission = false;
 	bool _haveDescription = false;
-
 	std::string_view _description;
-	Permission _permission;
 
 public:
 	bool isEmpty() const;
@@ -18,10 +29,20 @@ public:
 	bool isValidPolicy() const;
 
 	const std::string_view& description() const;
-	const Permission& permission() const;
 	void setDescription(const std::string_view&);
-	void setPermission(const Permission&);
 };
-typedef MutableData Policy;
+
+class Policy : public _perm_data
+{
+	std::string _description;
+
+public:
+	Policy();
+	Policy(const Permission& perm, const std::string_view& desc);
+
+	const std::string& description() const;
+	void setDescription(const std::string_view&);
+	void operator = (const MutableData&);
+};
 #endif
 

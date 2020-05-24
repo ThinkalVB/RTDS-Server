@@ -263,7 +263,7 @@ const MutableData CmdInterpreter::tryExtractMutData(CommandElement& cmdElement)
 	return mutableData;
 }
 
-const Policy CmdInterpreter::tryExtractPolicy(CommandElement& cmdElement)
+const MutableData CmdInterpreter::tryExtractPolicyMD(CommandElement& cmdElement)
 {
 	MutableData mutableData;
 	if (cmdElement.size() >= 1 && isPolicyPermission(cmdElement.peek()))
@@ -358,10 +358,10 @@ void CmdInterpreter::s_leave(Peer& peer)
 /* Commands with arguments..........................*/
 void CmdInterpreter::_mirror(Peer& peer)
 {
-	auto policy = tryExtractPolicy(peer.cmdElement);
-	if (peer.cmdElement.isEmpty() && policy.isValidPolicy())
+	auto policyMD = tryExtractPolicyMD(peer.cmdElement);
+	if (peer.cmdElement.isEmpty() && policyMD.isValidPolicy())
 	{
-		peer.addToMG(policy);
+		peer.addToMG(policyMD);
 		peer.writeBuffer += RESP[(short)Response::SUCCESS];
 		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
@@ -480,18 +480,7 @@ void CmdInterpreter::_search(Peer& peer)
 			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	}
 	else
-	{
-		auto policy = tryExtractPolicy(peer.cmdElement);
-		if (peer.cmdElement.isEmpty() && policy.isValidPolicy())
-		{
-			Directory::searchEntry(policy, peer.writeBuffer);
-			if (peer.writeBuffer.size() == 0)
-				peer.writeBuffer += RESP[(short)Response::NO_EXIST];
-			peer.writeBuffer += '\x1e';				//!< Record separator
-		}
-		else
-			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
-	}
+		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 }
 
 void CmdInterpreter::_charge(Peer& peer)
