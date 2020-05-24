@@ -4,10 +4,10 @@
 #include <boost/asio.hpp>
 #include "mutable_data.H"
 #include "spaddress.h"
-#include <queue>
 #include "common.hpp"
 
 using namespace boost;
+
 class Entry;
 typedef std::pair<Response, Entry*> ResponsePair;
 typedef std::pair<Response, short> ResponseTTL;
@@ -21,77 +21,94 @@ typedef std::pair<Response, short> ResponseTTL;
  ********************************************************************************************/
 class Entry
 {
-/*******************************************************************************************
-* @brief Return the time passed after the last charge
-*
-* @return						Time in minutes, passed after last charge.
-********************************************************************************************/
-    unsigned short _tmAfterLastChrg() const;
-
-	static std::queue<Entry*> entryRecycler;			//!< Entry's deleted from directory.
-	static std::mutex recycleLock;						//!< Lock this mutex before using recycler.
+	/*******************************************************************************************
+	* @brief Return the time passed after the last charge
+	*
+	* @return						Time in minutes, passed after last charge.
+	********************************************************************************************/
+	unsigned int _tmAfterLastChrg() const;
+	/*******************************************************************************************
+	* @brief Charge the entry (Increment TTL)
+	*
+	* @return						SUCCESS or NO_EXIST
+	*
+	* @details
+	* Update lastChargeT to the current univerasl time.
+	* Do telescopic increment to the TTL
+	* [Not thread safe]
+	********************************************************************************************/
+	Response _charge();
+	/*******************************************************************************************
+	* @brief Update the time left
+	*
+	* @details
+	* [Not thread safe]
+	********************************************************************************************/
+	void _updateTimeLeft();
+	/*******************************************************************************************
+	* @brief Initialize base values
+	*
+	* @param[in] mutData			Mutable data (_policy)
+	* @param[in] maxPriv			Maximum privilege cmdSPA have on spAddr
+	*
+	* @details
+	* Initialize the values of _createdT, _lastChargT, _timeToLive, _timeLeft.
+	* Initialize default permission and description if not provided.
+	* [Not thread Safe]
+	********************************************************************************************/
+	void _initialize(const MutableData&, const Privilege&);
+	/*******************************************************************************************
+	* @brief Entry constructor
+	*
+	* @param[in] spAddr				Source Pair address of the entry
+	* @param[in] mutData			Mutable data
+	* @param[in] maxPriv			Maximum privilege cmdSPA have on spAddr
+	*
+	* @details
+	* Initialize the values of portNumber, uid, ipAddress
+	* If mutData doesn't have permission - default permission is generated.
+	********************************************************************************************/
+	Entry(const SPaddress&, const MutableData&, const Privilege);
 
 	SPaddress _spAddress;								//!< Source pair address of the entry.
-	Permission _permission;								//!< Level of privilage needed by the peer to execute commands.
-	unsigned int _timeToLive;							//!< Keep the time to live for this entry.
+	std::mutex _entryLock;								//!< Lock this mutex before modfying entry. 
+	unsigned int _timeToLive;							//!< TTL for this entry.
+	unsigned int _timeLeft;								//!< Number of minutes left for the entry.							
 
-	bool _iswithPeer = false;							//!< True if this entry is associated with a peer.
+	bool _iswithPeer;									//!< True if this entry is associated with a peer.
+	bool _isInDirectory;								//!< True if the entry is in directory.
 	posix_time::ptime _lastChargT;						//!< The time at which this entry was last charged.
 	posix_time::ptime _createdT;						//!< The time at which this entry was added to the directory.
+	Policy _policy;										//!< Policy with Description and permission
 
 	std::string _uid;									//!< Base 64 encoding of the source pair address.	
 	std::string _ipAddress;								//!< IPaddress associated with the entry.
 	std::string _portNumber;							//!< Port number associated with the entry.
-	std::string _description;							//!< Description associated with the entry.
-
-/*******************************************************************************************
-* @brief Delegate constructor
-*
-* @param[in] spAddr				Source Pair address of the entry
-*
-* @details
-* Initialize the values of portNumber, uid, ipAddress, created time and description
-********************************************************************************************/
-	Entry(const SPaddress&);
 
 public:
-/*******************************************************************************************
-* @brief recycle the Entry
-*
-* @param[in] entryPtr			Entry to be recycled
-********************************************************************************************/
-	static void recycleEntry(Entry*);
-/*******************************************************************************************
-* @brief Entry constructor
-*
-* @param[in] spAddr				Source Pair address of the entry
-* @param[in] mutData			Mutable data
-* @param[in] maxPriv			Maximum privilege cmdSPA have on spAddr
-*
-* @details
-* Initialize the values of description, permission and timeToLive.
-* If mutData doesn't have permission - default permission is generated.
-********************************************************************************************/
-	Entry(const SPaddress&, const MutableData&, const Privilege);
-/*******************************************************************************************
-* @brief Return true if the entry have expired
-*
-* @return						True if the entry have expired
-*
-* @details
-* [Not thread safe]
-********************************************************************************************/
-	bool expired() const;
-/*******************************************************************************************
-* @brief Get number of minutes after which the entry expires
-*
-* @return						Number of minutes to expiry
-*
-* @details
-* Use this methord only if the entry is in the directory.
-* [Not thread safe]
-********************************************************************************************/
-	short getTTL() const;
+	/*******************************************************************************************
+	* @brief Create an entry to be added to the directory
+	*
+	* @param[in] spAddr				Source Pair address of the entry.
+	* @param[in] mutData			Mutable data.
+	* @return						Pointer to the new Entry.
+	********************************************************************************************/
+	static ResponsePair makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
+	/*******************************************************************************************
+	* @brief Return true if the Entry have expired
+	*
+	* @return						True if the entry have expired.
+	*
+	* @details
+	* Update the timeLeft
+	********************************************************************************************/
+	bool expired();
+	/*******************************************************************************************
+	* @brief Get number of minutes after which the entry may expire
+	*
+	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
+	********************************************************************************************/
+	ResponseTTL tryGetTTL();
 	/*******************************************************************************************
 	* @brief Return the UID of the Entry
 	*
@@ -99,66 +116,71 @@ public:
 	* [Not thread safe]
 	********************************************************************************************/
 	const std::string& uid() const;
-
-
-/*******************************************************************************************
-* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
-*
-* @param[out] strBuffer			String buffer to which the data will be written.
-********************************************************************************************/
+	/*******************************************************************************************
+	* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
+	*
+	* @param[out] strBuffer			String buffer to which the data will be written.
+	********************************************************************************************/
 	void printExpand(std::string&);
-/*******************************************************************************************
-* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber
-*
-* @param[out] strBuffer			String buffer to which the data will be written.
-********************************************************************************************/
+	/*******************************************************************************************
+	* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber
+	*
+	* @param[out] strBuffer			String buffer to which the data will be written.
+	********************************************************************************************/
 	void printBrief(std::string&) const;
-
-
-
-/*******************************************************************************************
-* @brief Charge the entry (Increment TTL)
-*
-* @return						The time remaining for that entry.
-*
-* @details
-* Update lastChargeT to the current univerasl time.
-* Do telescopic increment to the TTL
-* [Not thread safe]
-********************************************************************************************/
-	short charge();
-/*******************************************************************************************
-* @brief Return true if the Entry's policy is compatible with policy
-*
-* @param[in] policy				The Policy to check compatibility with.
-* @return						True if have a compatible policy.
-********************************************************************************************/
-	bool haveSamePolicy(const Policy&);
-/*******************************************************************************************
-* @brief Check if the commanding spAddr have the proper authority to charge/remove
-*
-* @param[in] spAddr				The source pair address of the commanding peer.
-* @return						True if the peer have the authority to charge/remove.
-*
-* @details
-* Take the maximum privilege between the commanding and targer spAddr and check if have privilege.
-* [Not thread safe]
-********************************************************************************************/
-	bool canChargeWith(const SPaddress&) const;
-	bool canRemoveWith(const SPaddress&) const;
-/*******************************************************************************************
-* @brief Check and update Entry's mutable data with new data
-*
-* @param[in] spAddr				The source pair address of the commanding peer.
-* @param[in] data				Mutable data (with or without permission).
-* @return						False if no privilege.
-*
-* @details
-* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
-* Update the permission if it's valid for the spAddr commanding entry.
-* Update the description if available.
-* [Not thread safe]
-********************************************************************************************/
-	bool tryUpdateEntry(const SPaddress&, const MutableData&);
+	/*******************************************************************************************
+	* @brief Return true if the Entry's policy is compatible with policyMD
+	*
+	* @param[in] policyMD			A MutableData with Policy validity.
+	* @return						True if have a compatible policy with the entry.
+	********************************************************************************************/
+	bool compatibleMD(const MutableData&);
+	/*******************************************************************************************
+	* @brief Check and charge Entry's timeToLive
+	*
+	* @param[in] spAddr				The source pair address of the commanding peer.
+	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
+	*
+	* @details
+	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+	* Charge the Entry if it have adequate permission.
+	********************************************************************************************/
+	ResponseTTL tryChargeWith(const SPaddress&);
+	/*******************************************************************************************
+	* @brief Shedule removal if the entry can be removed
+	*
+	* @param[in] spAddr				The source pair address of the commanding peer.
+	* @return						SUCESS or NO_EXIST or NO_PRIVILEGE
+	*
+	* @details
+	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to remove.
+	********************************************************************************************/
+	Response tryRemoveWith(const SPaddress&);
+	/*******************************************************************************************
+	* @brief Check and update Entry's mutable data with new data
+	*
+	* @param[in] spAddr				The source pair address of the commanding peer.
+	* @param[in] data				Mutable data (with or without permission).
+	* @return						SUCCESS or NO_EXIST or NO_PRIVILEGE
+	*
+	* @details
+	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+	* Update the permission if it's valid for the spAddr commanding entry.
+	* Update the description if available.
+	********************************************************************************************/
+	Response tryUpdateEntry(const SPaddress&, const MutableData&);
+	/*******************************************************************************************
+	* @brief Try Re-Initializing this entry as a new entry
+	*
+	* @param[in] cmdSPA				The source pair address of the commanding peer.
+	* @param[in] data				Mutable data (with or without permission).
+	* @return						SUCCESS or NO_PRIVILEGE
+	*
+	* @details
+	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+	* Update the permission if it's valid for the spAddr commanding entry.
+	* Update the description if available.
+	********************************************************************************************/
+	Response tryAddEntry(const SPaddress&, const MutableData&);
 };
 #endif

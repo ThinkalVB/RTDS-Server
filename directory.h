@@ -12,19 +12,15 @@ typedef std::map<SourcePairV6, Entry*> V6EntryMap;
 class Directory
 {
 	static V4EntryMap entryMapV4;				//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
+	static std::mutex v4InsRemMapLock;			//!< Lock this mutex before insertion or removal
 	static V6EntryMap entryMapV6;				//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
-
-	static std::mutex v4MapAccess;				//!< Lock this mutex before searching and insertion into V4map
-	static std::mutex v6MapAccess;				//!< Lock this mutex before searching and insertion into V6map
+	static std::mutex v6InsRemMapLock;			//!< Lock this mutex before insertion or removal
 
 	static ResponsePair _searchEntry(const SourcePairV4&);
 	static ResponsePair _searchEntry(const SourcePairV6&);
-	static void _searchV4Entry(const Policy&, std::string&);
-	static void _searchV6Entry(const Policy&, std::string&);
 
-
-	static ResponsePair _createV4Entry(const SPaddress&, const MutableData&, const Privilege);
-	static ResponsePair _createV6Entry(const SPaddress&, const MutableData&, const Privilege);
+	static ResponsePair _createV4Entry(const SPaddress&, const SPaddress&, const MutableData&);
+	static ResponsePair _createV6Entry(const SPaddress&, const SPaddress&, const MutableData&);
 
 	static ResponsePair _removeEntry(const SourcePairV4&, const SPaddress&);
 	static ResponsePair _removeEntry(const SourcePairV6&, const SPaddress&);
@@ -45,7 +41,6 @@ public:
 	static ResponseTTL ttlEntry(const SPaddress&);
 	static ResponseTTL chargeEntry(const SPaddress&, const SPaddress&);
 	static ResponsePair searchEntry(const SPaddress&);
-	static void searchEntry(const Policy&, std::string&);
 
 /*******************************************************************************************
 * @brief Get the total number of entries in the Directory

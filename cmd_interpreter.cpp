@@ -464,20 +464,15 @@ void CmdInterpreter::_add(Peer& peer)
 
 void CmdInterpreter::_search(Peer& peer)
 {
-	if (peer.cmdElement.size() == 1 || peer.cmdElement.size() == 0)
+	auto targetSPA = peer.spAddress;
+	tryExtractSPA(peer.cmdElement, targetSPA);
+	if (peer.cmdElement.size() == 0)
 	{
-		auto targetSPA = peer.spAddress;
-		tryExtractSPA(peer.cmdElement, targetSPA);
-		if (peer.cmdElement.size() == 0)
-		{
-			auto responsePair = Directory::searchEntry(peer.spAddress);
-			if (responsePair.first == Response::SUCCESS)
-				responsePair.second->printExpand(peer.writeBuffer);
-			else
-				peer.writeBuffer += RESP[(short)responsePair.first];
-		}
+		auto responsePair = Directory::searchEntry(peer.spAddress);
+		if (responsePair.first == Response::SUCCESS)
+			responsePair.second->printExpand(peer.writeBuffer);
 		else
-			peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+			peer.writeBuffer += RESP[(short)responsePair.first];
 	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
