@@ -6,71 +6,152 @@ std::mutex Directory::v4InsRemMapLock;
 V6EntryMap Directory::entryMapV6;
 std::mutex Directory::v6InsRemMapLock;
 
-
 ResponsePair Directory::_searchEntry(const SourcePairV4& targetSPA)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	if (entry->expired())
+		return std::make_pair(Response::NO_EXIST, entry);
+	else
+		return std::make_pair(Response::SUCCESS, entry);
 }
 
 ResponsePair Directory::_searchEntry(const SourcePairV6& targetSPA)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
-}
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
 
+	auto entry = entryItr->second;
+	if (entry->expired())
+		return std::make_pair(Response::NO_EXIST, entry);
+	else
+		return std::make_pair(Response::SUCCESS, entry);
+}
 
 ResponsePair Directory::_createV4Entry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	std::lock_guard<std::mutex> lock(v4InsRemMapLock);
+	auto entryItr = entryMapV4.find(targetSPA.spAddressV4());
+	if (entryItr == entryMapV4.end())
+	{
+		auto responsePair = Entry::makeEntry(targetSPA, cmdSPA, mutData);
+		if (responsePair.first == Response::SUCCESS)
+		{
+			auto newEntry = responsePair.second;
+			entryMapV4.insert(std::pair<SourcePairV4, Entry*>(targetSPA.spAddressV4(), newEntry));
+		}
+		return responsePair;
+	}
+
+	auto entry = entryItr->second;
+	return std::make_pair(entry->tryAddEntry(cmdSPA, mutData), entry);
 }
 
 ResponsePair Directory::_createV6Entry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
-}
+	std::lock_guard<std::mutex> lock(v6InsRemMapLock);
+	auto entryItr = entryMapV6.find(targetSPA.spAddressV6());
+	if (entryItr == entryMapV6.end())
+	{
+		auto responsePair = Entry::makeEntry(targetSPA, cmdSPA, mutData);
+		if (responsePair.first == Response::SUCCESS)
+		{
+			auto newEntry = responsePair.second;
+			entryMapV6.insert(std::pair<SourcePairV6, Entry*>(targetSPA.spAddressV6(), newEntry));
+		}
+		return responsePair;
+	}
 
+	auto entry = entryItr->second;
+	return std::make_pair(entry->tryAddEntry(cmdSPA, mutData), entry);
+}
 
 
 ResponsePair Directory::_removeEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	return  std::make_pair(entry->tryRemoveWith(cmdSPA), entry);
 }
 
 ResponsePair Directory::_removeEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	return  std::make_pair(entry->tryRemoveWith(cmdSPA), entry);
 }
 
 
 ResponsePair Directory::_updateEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	return std::make_pair(entry->tryUpdateEntry(cmdSPA, mutData), entry);
 }
 
 ResponsePair Directory::_updateEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
 {
-	return std::make_pair(Response::SUCCESS, nullptr);
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, nullptr);
+
+	auto entry = entryItr->second;
+	return std::make_pair(entry->tryUpdateEntry(cmdSPA, mutData), entry);
 }
 
 
 ResponseTTL Directory::_ttlEntry(const SourcePairV4& targetSPA)
 {
-	return std::make_pair(Response::SUCCESS, 0);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	return entry->tryGetTTL();
 }
 
 ResponseTTL Directory::_ttlEntry(const SourcePairV6& targetSPA)
 {
-	return std::make_pair(Response::SUCCESS, 0);
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	return entry->tryGetTTL();
 }
 
 
 ResponseTTL Directory::_chargeEntry(const SourcePairV4& targetSPA, const SPaddress& cmdSPA)
 {
-	return std::make_pair(Response::SUCCESS, 0);
+	auto entryItr = entryMapV4.find(targetSPA);
+	if (entryItr == entryMapV4.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	return entry->tryChargeWith(cmdSPA);
 }
 
 ResponseTTL Directory::_chargeEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA)
 {
-	return std::make_pair(Response::SUCCESS, 0);
+	auto entryItr = entryMapV6.find(targetSPA);
+	if (entryItr == entryMapV6.end())
+		return std::make_pair(Response::NO_EXIST, 0);
+
+	auto entry = entryItr->second;
+	return entry->tryChargeWith(cmdSPA);
 }
 
 
