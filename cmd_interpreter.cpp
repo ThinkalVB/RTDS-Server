@@ -390,8 +390,8 @@ void CmdInterpreter::_remove(Peer& peer)
 		auto response = Directory::removeEntry(targetSPA, peer.spAddress);
 		if (response == Response::SUCCESS)
 		{
-			//auto notification = Notification::makeRemoveNote(responsePair.second);
-			//peer.sendNoteToMG(notification);
+			auto notification = Notification::makeRemoveNote(targetSPA);
+			peer.sendNoteToMG(notification, response.policy());
 		}
 
 		response.printResponse(peer.writeBuffer);
@@ -412,8 +412,8 @@ void CmdInterpreter::_update(Peer& peer)
 		auto response = Directory::updateEntry(targetSPA, peer.spAddress, mutData);
 		if (response == Response::SUCCESS)
 		{
-			//auto notification = Notification::makeUpdateNote(responsePair.second);
-			//peer.sendNoteToMG(notification);
+			auto notification = Notification::makeAddNote(targetSPA);
+			peer.sendNoteToMG(notification, response.policy());
 		}
 		response.printResponse(peer.writeBuffer);
 	}
@@ -433,8 +433,8 @@ void CmdInterpreter::_add(Peer& peer)
 		auto response = Directory::createEntry(targetSPA, peer.spAddress, mutData);
 		if (response == Response::SUCCESS)
 		{
-			//auto notification = Notification::makeAddNote(responsePair.second);
-			//peer.sendNoteToMG(notification);
+			auto notification = Notification::makeAddNote(targetSPA);
+			peer.sendNoteToMG(notification, response.policy());
 		}
 		response.printResponse(peer.writeBuffer);
 	}

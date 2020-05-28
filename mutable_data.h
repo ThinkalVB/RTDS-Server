@@ -43,11 +43,12 @@ public:
 	const std::string& description() const;
 	void setPermission(const Permission&);
 	void setDescription(const std::string_view&);
-	void printPolicy(std::string& writeBuffer);
-	void operator = (const MutableData&);
+	void printPolicy(std::string& writeBuffer) const;
+	void operator=(const MutableData&);
+	bool operator==(const Policy&);
 };
 
-struct ResponseData
+class ResponseData
 {
 	Response _response;
 	Policy _policy;
@@ -57,10 +58,11 @@ public:
 	ResponseData(const Response, const unsigned int ttl);
 	ResponseData(const Response);
 
-	bool operator==(const Response);
-	void printPolicy(std::string&);
-	void printResponse(std::string&);
-	void printTTL(std::string&);
+	bool operator==(const Response) const;
+	void printPolicy(std::string&) const;
+	void printResponse(std::string&) const;
+	void printTTL(std::string&) const;
+	const Policy& policy() const;
 };
 #endif
 

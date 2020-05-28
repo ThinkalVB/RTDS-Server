@@ -5,7 +5,7 @@
 #include <string>
 #include <list>
 #include <mutex>
-#include "entry.h"
+#include "spaddress.h"
 #include "common.hpp"
 
 struct Note
@@ -34,26 +34,18 @@ class Notification
 
 public:
 /*******************************************************************************************
-* @brief Make update Nottification
+* @brief Make remove Notification
 *
-* @param[in] entry				Entry for which the notification is to be created.
-* @param[in] mutData			Mutable data containing the changes in the entry.
+* @param[in] targetAddr			SPAddress of the entry being added.
 * @return						Return the notification.
 ********************************************************************************************/
-	static const Note& makeUpdateNote(const Entry*);
+	static const Note& makeAddNote(const SPaddress& targetAddr);
 /*******************************************************************************************
-* @brief Make remove Nottification
+* @brief Make remove Notification
 *
-* @param[in] entry				Entry for which the notification is to be created.
+* @param[in] targetAddr			SPAddress of the entry being removed.
 * @return						Return the notification.
 ********************************************************************************************/
-	static const Note& makeAddNote(const Entry*);
-/*******************************************************************************************
-* @brief Make remove Nottification
-*
-* @param[in] spa				SPAddress of the entry being removed.
-* @return						Return the notification.
-********************************************************************************************/
-	static const Note& makeRemoveNote(const Entry*);
+	static const Note& makeRemoveNote(const SPaddress& targetAddr);
 };
 #endif

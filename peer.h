@@ -5,6 +5,7 @@
 #include "cmd_element.h"
 #include "notification.h"
 #include "spaddress.h"
+#include "mutable_data.h"
 
 using namespace boost;
 
@@ -134,7 +135,7 @@ void addToMG(const MutableData&);
 * @details
 * Send the noteString to all the peers in the mirroring group
 ********************************************************************************************/
-	void sendNoteToMG(const Note&);
+	void sendNoteToMG(const Note&, const Policy&);
 };
 
 #endif

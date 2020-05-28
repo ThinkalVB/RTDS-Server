@@ -1,6 +1,5 @@
 #include "notification.h"
 #include "log.h"
-#include "cmd_interpreter.h"
 
 int Notification::_notificationCount;
 std::list<Note> Notification::_notificationList;
@@ -16,26 +15,18 @@ const Note& Notification::_newNote(const std::string& noteStr)
 	return _notificationList.emplace_back(noteStr, _notificationCount);
 }
 
-const Note& Notification::makeUpdateNote(const Entry* entry)
+const Note& Notification::makeAddNote(const SPaddress& targetAddr)
 {
-	std::string noteStr = "[$] ";
-	//entry->printBrief(noteStr);
+	std::string noteStr = "[+] ";
+	noteStr += targetAddr.briefInfo();
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
 
-const Note& Notification::makeAddNote(const Entry* entry)
+const Note& Notification::makeRemoveNote(const SPaddress& targetAddr)
 {
 	std::string noteStr = "[+] ";
-	//entry->printBrief(noteStr);
-	noteStr += '\x1e';				//!< Record separator
-	return _newNote(noteStr);
-}
-
-const Note& Notification::makeRemoveNote(const Entry* entry)
-{
-	std::string noteStr = "[+] ";
-	//entry->printBrief(noteStr);
+	noteStr += targetAddr.briefInfo();
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
