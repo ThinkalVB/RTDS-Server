@@ -5,44 +5,41 @@
 #include "common.hpp"
 #include "entry.h"
 
-typedef std::pair<Response, Entry*> ResponsePair;
-typedef std::pair<Response, short> ResponseTTL;
-
 typedef std::map<SourcePairV4, Entry*> V4EntryMap;
 typedef std::map<SourcePairV6, Entry*> V6EntryMap;
 
 class Directory
 {
 	static V4EntryMap entryMapV4;				//!< STL map mapping V4 SourcePair address to the EntryV4 pointer
-	static std::mutex v4InsRemMapLock;			//!< Lock this mutex before insertion or removal
+	static std::mutex v4InsLock;				//!< Lock this mutex before insertion
 	static V6EntryMap entryMapV6;				//!< STL map mapping V6 SourcePair address to the EntryV6 pointer
-	static std::mutex v6InsRemMapLock;			//!< Lock this mutex before insertion or removal
+	static std::mutex v6InsLock;				//!< Lock this mutex before insertion
 
-	static ResponsePair _searchEntry(const SourcePairV4&);
-	static ResponsePair _searchEntry(const SourcePairV6&);
+	static const ResponseData _searchEntry(const SourcePairV4&);
+	static const ResponseData _searchEntry(const SourcePairV6&);
 
-	static ResponsePair _createV4Entry(const SPaddress&, const SPaddress&, const MutableData&);
-	static ResponsePair _createV6Entry(const SPaddress&, const SPaddress&, const MutableData&);
+	static const ResponseData _createV4Entry(const SPaddress&, const SPaddress&, const MutableData&);
+	static const ResponseData _createV6Entry(const SPaddress&, const SPaddress&, const MutableData&);
 
-	static ResponsePair _removeEntry(const SourcePairV4&, const SPaddress&);
-	static ResponsePair _removeEntry(const SourcePairV6&, const SPaddress&);
+	static const ResponseData _removeEntry(const SourcePairV4&, const SPaddress&);
+	static const ResponseData _removeEntry(const SourcePairV6&, const SPaddress&);
 
-	static ResponsePair _updateEntry(const SourcePairV4&, const SPaddress&, const MutableData&);
-	static ResponsePair _updateEntry(const SourcePairV6&, const SPaddress&, const MutableData&);
+	static const ResponseData _updateEntry(const SourcePairV4&, const SPaddress&, const MutableData&);
+	static const ResponseData _updateEntry(const SourcePairV6&, const SPaddress&, const MutableData&);
 
-	static ResponseTTL _ttlEntry(const SourcePairV4&);
-	static ResponseTTL _ttlEntry(const SourcePairV6&);
+	static const ResponseData _ttlEntry(const SourcePairV4&);
+	static const ResponseData _ttlEntry(const SourcePairV6&);
 
-	static ResponseTTL _chargeEntry(const SourcePairV4&, const SPaddress&);
-	static ResponseTTL _chargeEntry(const SourcePairV6&, const SPaddress&);
+	static const ResponseData _chargeEntry(const SourcePairV4&, const SPaddress&);
+	static const ResponseData _chargeEntry(const SourcePairV6&, const SPaddress&);
 
 public:
-	static ResponsePair createEntry(const SPaddress&, const SPaddress&, const MutableData&);
-	static ResponsePair removeEntry(const SPaddress&, const SPaddress&);
-	static ResponsePair updateEntry(const SPaddress&, const SPaddress&, const MutableData&);
-	static ResponseTTL ttlEntry(const SPaddress&);
-	static ResponseTTL chargeEntry(const SPaddress&, const SPaddress&);
-	static ResponsePair searchEntry(const SPaddress&);
+	static const ResponseData createEntry(const SPaddress&, const SPaddress&, const MutableData&);
+	static const ResponseData removeEntry(const SPaddress&, const SPaddress&);
+	static const ResponseData updateEntry(const SPaddress&, const SPaddress&, const MutableData&);
+	static const ResponseData ttlEntry(const SPaddress&);
+	static const ResponseData chargeEntry(const SPaddress&, const SPaddress&);
+	static const ResponseData searchEntry(const SPaddress&);
 
 /*******************************************************************************************
 * @brief Get the total number of entries in the Directory

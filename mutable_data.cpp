@@ -127,6 +127,26 @@ ResponseData::ResponseData(const Response response)
 	_response = response;
 }
 
+bool ResponseData::operator==(const Response response)
+{
+	return (_response == response);
+}
+
+void ResponseData::printPolicy(std::string& writeBuffer)
+{
+	_policy.printPolicy(writeBuffer);
+}
+
+void ResponseData::printResponse(std::string& writeBuffer)
+{
+	writeBuffer += CmdInterpreter::RESP[(short)_response];
+}
+
+void ResponseData::printTTL(std::string& writeBuffer)
+{
+	writeBuffer += std::to_string(_ttl);
+}
+
 ResponseData::ResponseData(const Response response, const unsigned int ttl)
 {
 	_response = response;

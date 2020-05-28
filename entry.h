@@ -7,6 +7,8 @@
 #include "common.hpp"
 
 using namespace boost;
+class Entry;
+typedef std::pair<ResponseData, Entry*> AdvResponse;
 
 /*******************************************************************************************
  * @brief Class for every entry into the directory.
@@ -26,16 +28,14 @@ class Entry
 	/*******************************************************************************************
 	* @brief Charge the entry (Increment TTL)
 	*
-	* @return						SUCCESS or NO_EXIST
-	*
 	* @details
 	* Update lastChargeT to the current univerasl time.
 	* Do telescopic increment to the TTL
 	* [Not thread safe]
 	********************************************************************************************/
-	Response _charge();
+	void _charge();
 	/*******************************************************************************************
-	* @brief Update the time left
+	* @brief Update the time left ( check for expiry )
 	*
 	* @details
 	* [Not thread safe]
@@ -89,22 +89,19 @@ public:
 	* @param[in] mutData			Mutable data.
 	* @return						Pointer to the new Entry.
 	********************************************************************************************/
-	static const ResponseData makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
-	/*******************************************************************************************
-	* @brief Return true if the Entry have expired
-	*
-	* @return						True if the entry have expired.
-	*
-	* @details
-	* Update the timeLeft
-	********************************************************************************************/
-	const bool expired();
+	static const AdvResponse makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
 	/*******************************************************************************************
 	* @brief Get number of minutes after which the entry may expire
 	*
 	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
 	********************************************************************************************/
 	const ResponseData getTTL();
+/*******************************************************************************************
+* @brief Get the current policy of the entry
+*
+* @return						Entry policy.
+********************************************************************************************/
+	const ResponseData getPolicy();
 	/*******************************************************************************************
 	* @brief Return true if the Entry's policy is compatible with policyMD
 	*

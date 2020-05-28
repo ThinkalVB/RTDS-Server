@@ -369,11 +369,11 @@ void CmdInterpreter::_ttl(Peer& peer)
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto responseTTL = Directory::ttlEntry(targetSPA);
-		if (responseTTL.first == Response::SUCCESS)
-			peer.writeBuffer += std::to_string(responseTTL.second);
+		auto response = Directory::ttlEntry(targetSPA);
+		if (response == Response::SUCCESS)
+			response.printTTL(peer.writeBuffer);
 		else
-			peer.writeBuffer += RESP[(short)responseTTL.first];
+			response.printResponse(peer.writeBuffer);
 		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }
@@ -387,15 +387,14 @@ void CmdInterpreter::_remove(Peer& peer)
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto responsePair = Directory::removeEntry(targetSPA, peer.spAddress);
-		if (responsePair.first == Response::SUCCESS)
+		auto response = Directory::removeEntry(targetSPA, peer.spAddress);
+		if (response == Response::SUCCESS)
 		{
-			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			auto notification = Notification::makeRemoveNote(responsePair.second);
-			peer.sendNoteToMG(notification);
+			//auto notification = Notification::makeRemoveNote(responsePair.second);
+			//peer.sendNoteToMG(notification);
 		}
-		else
-			peer.writeBuffer += RESP[(short)responsePair.first];
+
+		response.printResponse(peer.writeBuffer);
 		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }
@@ -410,15 +409,13 @@ void CmdInterpreter::_update(Peer& peer)
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto responsePair = Directory::updateEntry(targetSPA, peer.spAddress, mutData);
-		if (responsePair.first == Response::SUCCESS)
+		auto response = Directory::updateEntry(targetSPA, peer.spAddress, mutData);
+		if (response == Response::SUCCESS)
 		{
-			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			auto notification = Notification::makeUpdateNote(responsePair.second);
-			peer.sendNoteToMG(notification);
+			//auto notification = Notification::makeUpdateNote(responsePair.second);
+			//peer.sendNoteToMG(notification);
 		}
-		else
-			peer.writeBuffer += RESP[(short)responsePair.first];
+		response.printResponse(peer.writeBuffer);
 	}
 	peer.writeBuffer += '\x1e';				//!< Record separator
 }
@@ -433,20 +430,13 @@ void CmdInterpreter::_add(Peer& peer)
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto responsePair = Directory::createEntry(targetSPA, peer.spAddress, mutData);
-		if (responsePair.first == Response::SUCCESS)
+		auto response = Directory::createEntry(targetSPA, peer.spAddress, mutData);
+		if (response == Response::SUCCESS)
 		{
-			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-
-			auto notification = Notification::makeAddNote(responsePair.second);
-			peer.sendNoteToMG(notification);
+			//auto notification = Notification::makeAddNote(responsePair.second);
+			//peer.sendNoteToMG(notification);
 		}
-		else if (responsePair.first == Response::REDUDANT_DATA)
-		{
-			peer.writeBuffer += RESP[(short)Response::REDUDANT_DATA] + " ";
-		}
-		else
-			peer.writeBuffer += RESP[(short)responsePair.first];
+		response.printResponse(peer.writeBuffer);
 	}
 	peer.writeBuffer += '\x1e';				//!< Record separator
 }
@@ -457,11 +447,11 @@ void CmdInterpreter::_search(Peer& peer)
 	tryExtractSPA(peer.cmdElement, targetSPA);
 	if (peer.cmdElement.size() == 0)
 	{
-		auto responsePair = Directory::searchEntry(peer.spAddress);
-		if (responsePair.first == Response::SUCCESS) {}
-			//responsePair.second->printExpand(peer.writeBuffer);
+		auto response = Directory::searchEntry(peer.spAddress);
+		if (response == Response::SUCCESS)
+			response.printPolicy(peer.writeBuffer);
 		else
-			peer.writeBuffer += RESP[(short)responsePair.first];
+			response.printResponse(peer.writeBuffer);
 	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
@@ -476,11 +466,11 @@ void CmdInterpreter::_charge(Peer& peer)
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		auto responseTTL = Directory::chargeEntry(targetSPA, peer.spAddress);
-		if (responseTTL.first == Response::SUCCESS)
-			peer.writeBuffer += std::to_string(responseTTL.second);
+		auto response = Directory::chargeEntry(targetSPA, peer.spAddress);
+		if (response == Response::SUCCESS)
+			response.printTTL(peer.writeBuffer);
 		else
-			peer.writeBuffer += RESP[(short)responseTTL.first];
+			response.printResponse(peer.writeBuffer);
 		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }

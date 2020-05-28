@@ -56,6 +56,11 @@ public:
 	ResponseData(const Response, const Policy&);
 	ResponseData(const Response, const unsigned int ttl);
 	ResponseData(const Response);
+
+	bool operator==(const Response);
+	void printPolicy(std::string&);
+	void printResponse(std::string&);
+	void printTTL(std::string&);
 };
 #endif
 
