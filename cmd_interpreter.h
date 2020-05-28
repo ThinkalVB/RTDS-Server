@@ -199,8 +199,8 @@ public:
 * @param[out] sourcePair		SourcePair address if available.
 *
 * @details
-* Generate a source pair if a valid UID or ipAddress and port number is available.
-* If UID / (IP and port number) is not given, then spAddress remains unchanged.
+* Generate a source pair if a valid ipAddress and port number is available.
+* If IP and port number is not given, then spAddress remains unchanged.
 ********************************************************************************************/
 	static void tryExtractSPA(CommandElement&, SPaddress&);
 

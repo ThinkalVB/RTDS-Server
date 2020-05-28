@@ -279,15 +279,6 @@ const MutableData CmdInterpreter::tryExtractPolicyMD(CommandElement& cmdElement)
 
 void CmdInterpreter::tryExtractSPA(CommandElement& cmdElement, SPaddress& spAddress)
 {
-	if (cmdElement.size() >= 1)
-	{
-		if (makeSourcePair(cmdElement.peek(), spAddress))
-		{
-			cmdElement.pop_front(1);
-			return;
-		}
-	}
-
 	if (cmdElement.size() >= 2)
 	{
 		if (makeSourcePair(cmdElement.peek(), cmdElement.peek_next(), spAddress))
@@ -306,7 +297,7 @@ void CmdInterpreter::processCommand(Peer& peer)
 		s_ping(peer);
 	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement.size() == 0)
 		s_count(peer);
-	else if (command == COMM[(short)Command::MIRROR] && peer.cmdElement.size() == 0)
+	else if (command == COMM[(short)Command::MIRROR])
 		_mirror(peer);
 	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement.size() == 0)
 		s_leave(peer);
@@ -351,7 +342,7 @@ void CmdInterpreter::s_count(Peer& peer)
 void CmdInterpreter::s_leave(Peer& peer)
 {
 	peer.removeFromMG();
-	peer.writeBuffer += peer.spAddress.briefInfo();
+	peer.writeBuffer += RESP[(short)Response::SUCCESS];
 	peer.writeBuffer += '\x1e';			//!< Record separator
 }
 
@@ -363,10 +354,10 @@ void CmdInterpreter::_mirror(Peer& peer)
 	{
 		peer.addToMG(policyMD);
 		peer.writeBuffer += RESP[(short)Response::SUCCESS];
-		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_ttl(Peer& peer)
@@ -446,7 +437,6 @@ void CmdInterpreter::_add(Peer& peer)
 		if (responsePair.first == Response::SUCCESS)
 		{
 			peer.writeBuffer += RESP[(short)Response::SUCCESS] + " ";
-			peer.writeBuffer += responsePair.second->uid();
 
 			auto notification = Notification::makeAddNote(responsePair.second);
 			peer.sendNoteToMG(notification);
@@ -454,7 +444,6 @@ void CmdInterpreter::_add(Peer& peer)
 		else if (responsePair.first == Response::REDUDANT_DATA)
 		{
 			peer.writeBuffer += RESP[(short)Response::REDUDANT_DATA] + " ";
-			peer.writeBuffer += responsePair.second->uid();
 		}
 		else
 			peer.writeBuffer += RESP[(short)responsePair.first];
@@ -469,8 +458,8 @@ void CmdInterpreter::_search(Peer& peer)
 	if (peer.cmdElement.size() == 0)
 	{
 		auto responsePair = Directory::searchEntry(peer.spAddress);
-		if (responsePair.first == Response::SUCCESS)
-			responsePair.second->printExpand(peer.writeBuffer);
+		if (responsePair.first == Response::SUCCESS) {}
+			//responsePair.second->printExpand(peer.writeBuffer);
 		else
 			peer.writeBuffer += RESP[(short)responsePair.first];
 	}

@@ -8,10 +8,6 @@
 
 using namespace boost;
 
-class Entry;
-typedef std::pair<Response, Entry*> ResponsePair;
-typedef std::pair<Response, short> ResponseTTL;
-
 /*******************************************************************************************
  * @brief Class for every entry into the directory.
  *
@@ -76,7 +72,7 @@ class Entry
 	unsigned int _timeLeft;								//!< Number of minutes left for the entry.							
 
 	bool _iswithPeer;									//!< True if this entry is associated with a peer.
-	bool _isInDirectory;								//!< True if the entry is in directory.
+	bool _expired;										//!< True if the entry have expired.
 	posix_time::ptime _lastChargT;						//!< The time at which this entry was last charged.
 	posix_time::ptime _createdT;						//!< The time at which this entry was added to the directory.
 	Policy _policy;										//!< Policy with Description and permission
@@ -93,7 +89,7 @@ public:
 	* @param[in] mutData			Mutable data.
 	* @return						Pointer to the new Entry.
 	********************************************************************************************/
-	static ResponsePair makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
+	static const ResponseData makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
 	/*******************************************************************************************
 	* @brief Return true if the Entry have expired
 	*
@@ -102,39 +98,20 @@ public:
 	* @details
 	* Update the timeLeft
 	********************************************************************************************/
-	bool expired();
+	const bool expired();
 	/*******************************************************************************************
 	* @brief Get number of minutes after which the entry may expire
 	*
 	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
 	********************************************************************************************/
-	ResponseTTL tryGetTTL();
-	/*******************************************************************************************
-	* @brief Return the UID of the Entry
-	*
-	* @return						UID of Entry
-	* [Not thread safe]
-	********************************************************************************************/
-	const std::string& uid() const;
-	/*******************************************************************************************
-	* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber, permission, description
-	*
-	* @param[out] strBuffer			String buffer to which the data will be written.
-	********************************************************************************************/
-	void printExpand(std::string&);
-	/*******************************************************************************************
-	* @brief Print the Expanded info - IPversion, UID, IPaddress, PortNumber
-	*
-	* @param[out] strBuffer			String buffer to which the data will be written.
-	********************************************************************************************/
-	void printBrief(std::string&) const;
+	const ResponseData getTTL();
 	/*******************************************************************************************
 	* @brief Return true if the Entry's policy is compatible with policyMD
 	*
 	* @param[in] policyMD			A MutableData with Policy validity.
 	* @return						True if have a compatible policy with the entry.
 	********************************************************************************************/
-	bool compatibleMD(const MutableData&);
+	bool isCompatibleWith(const MutableData&);
 	/*******************************************************************************************
 	* @brief Check and charge Entry's timeToLive
 	*
@@ -145,7 +122,7 @@ public:
 	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
 	* Charge the Entry if it have adequate permission.
 	********************************************************************************************/
-	ResponseTTL tryChargeWith(const SPaddress&);
+	const ResponseData chargeWith(const SPaddress&);
 	/*******************************************************************************************
 	* @brief Shedule removal if the entry can be removed
 	*
@@ -155,7 +132,7 @@ public:
 	* @details
 	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to remove.
 	********************************************************************************************/
-	Response tryRemoveWith(const SPaddress&);
+	const ResponseData removeWith(const SPaddress&);
 	/*******************************************************************************************
 	* @brief Check and update Entry's mutable data with new data
 	*
@@ -168,7 +145,7 @@ public:
 	* Update the permission if it's valid for the spAddr commanding entry.
 	* Update the description if available.
 	********************************************************************************************/
-	Response tryUpdateEntry(const SPaddress&, const MutableData&);
+	const ResponseData updateWith(const SPaddress&, const MutableData&);
 	/*******************************************************************************************
 	* @brief Try Re-Initializing this entry as a new entry
 	*
@@ -181,6 +158,6 @@ public:
 	* Update the permission if it's valid for the spAddr commanding entry.
 	* Update the description if available.
 	********************************************************************************************/
-	Response tryAddEntry(const SPaddress&, const MutableData&);
+	const ResponseData reAddWith(const SPaddress&, const MutableData&);
 };
 #endif

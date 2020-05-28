@@ -19,7 +19,7 @@ const Note& Notification::_newNote(const std::string& noteStr)
 const Note& Notification::makeUpdateNote(const Entry* entry)
 {
 	std::string noteStr = "[$] ";
-	entry->printBrief(noteStr);
+	//entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
@@ -27,7 +27,7 @@ const Note& Notification::makeUpdateNote(const Entry* entry)
 const Note& Notification::makeAddNote(const Entry* entry)
 {
 	std::string noteStr = "[+] ";
-	entry->printBrief(noteStr);
+	//entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }
@@ -35,7 +35,7 @@ const Note& Notification::makeAddNote(const Entry* entry)
 const Note& Notification::makeRemoveNote(const Entry* entry)
 {
 	std::string noteStr = "[+] ";
-	entry->printBrief(noteStr);
+	//entry->printBrief(noteStr);
 	noteStr += '\x1e';				//!< Record separator
 	return _newNote(noteStr);
 }

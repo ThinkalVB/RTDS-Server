@@ -9,7 +9,6 @@ protected:
 	Permission _permission;
 
 public:
-	void setPermission(const Permission&);
 	const Permission& permission() const;
 	bool canRemoveWith(const Privilege&) const;
 	bool canUpdateWith(const Privilege&) const;
@@ -28,6 +27,7 @@ public:
 	bool haveDescription() const;
 	bool isValidPolicy() const;
 
+	void setPermission(const Permission&);
 	const std::string_view& description() const;
 	void setDescription(const std::string_view&);
 };
@@ -41,8 +41,21 @@ public:
 	Policy(const Permission& perm, const std::string_view& desc);
 
 	const std::string& description() const;
+	void setPermission(const Permission&);
 	void setDescription(const std::string_view&);
+	void printPolicy(std::string& writeBuffer);
 	void operator = (const MutableData&);
+};
+
+struct ResponseData
+{
+	Response _response;
+	Policy _policy;
+	unsigned int _ttl;
+public:
+	ResponseData(const Response, const Policy&);
+	ResponseData(const Response, const unsigned int ttl);
+	ResponseData(const Response);
 };
 #endif
 

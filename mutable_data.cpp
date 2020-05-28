@@ -1,9 +1,5 @@
 #include "mutable_data.h"
-
-void _perm_data::setPermission(const Permission& perm)
-{
-	_permission = perm;
-}
+#include "cmd_interpreter.h"
 
 const Permission& _perm_data::permission() const
 {
@@ -58,6 +54,12 @@ bool MutableData::isValidPolicy() const
 		return false;
 }
 
+void MutableData::setPermission(const Permission& perm)
+{
+	_havePermission = true;
+	_permission = perm;
+}
+
 const std::string_view& MutableData::description() const
 {
 	return _description;
@@ -89,9 +91,20 @@ const std::string& Policy::description() const
 	return _description;
 }
 
+void Policy::setPermission(const Permission& perm)
+{
+	_permission = perm;
+}
+
 void Policy::setDescription(const std::string_view& desc)
 {
 	_description = desc;
+}
+
+void Policy::printPolicy(std::string& writeBuffer)
+{
+	writeBuffer += CmdInterpreter::toPermission(_permission);
+	writeBuffer += " " + _description;
 }
 
 void Policy::operator=(const MutableData& mutData)
@@ -100,4 +113,22 @@ void Policy::operator=(const MutableData& mutData)
 		_description = mutData.description();
 	if (mutData.havePermission())
 		_permission = mutData.permission();
+}
+
+
+ResponseData::ResponseData(Response response, const Policy& policy)
+{
+	_response = response;
+	_policy = policy;
+}
+
+ResponseData::ResponseData(const Response response)
+{
+	_response = response;
+}
+
+ResponseData::ResponseData(const Response response, const unsigned int ttl)
+{
+	_response = response;
+	_ttl = ttl;
 }

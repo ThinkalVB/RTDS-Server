@@ -1,20 +1,16 @@
-[2020-May-19 13:23:38.629230]  RTDS starting
-[2020-May-19 13:23:38.631226]  New IO Thread added
-[2020-May-19 13:23:38.633225]  New IO Thread added
-[2020-May-19 13:23:38.636210]  New IO Thread added
-[2020-May-19 13:23:38.637208]  New IO Thread added
-[2020-May-19 13:23:38.638205]  New IO Thread added
-[2020-May-19 13:23:38.638205]  TCP server initiating
-[2020-May-19 13:23:38.639203]  TCP Accepting starting
-[2020-May-19 13:23:38.639203]  TCP server started
-[2020-May-19 13:23:44.018781]  Incoming TCP connection 127.0.0.1 54523
-[2020-May-19 13:23:45.111680]  Incoming TCP connection 127.0.0.1 54524
-[2020-May-19 13:24:00.133988]  Incoming TCP connection 127.0.0.1 54526
-[2020-May-19 13:25:01.611416]  [+] v4 fwAAAQMV 127.0.0.1 789 ppp [hello world]
-[2020-May-19 13:25:30.283789]  [+] v4 fwAAAQMU 127.0.0.1 788 ppp [hello world]
-[2020-May-19 13:25:57.152225]  TCP Socket _processData() failed 127.0.0.1 54526 End of file
-[2020-May-19 13:25:57.152225]  TCP Socket closing 127.0.0.1 54526
-[2020-May-19 13:25:58.356080]  TCP Socket _processData() failed 127.0.0.1 54524 End of file
-[2020-May-19 13:25:58.356080]  TCP Socket closing 127.0.0.1 54524
-[2020-May-19 13:25:58.957027]  TCP Socket _processData() failed 127.0.0.1 54523 End of file
-[2020-May-19 13:25:58.957027]  TCP Socket closing 127.0.0.1 54523
+[2020-May-25 21:11:30.598674]  RTDS starting
+[2020-May-25 21:11:30.599672]  New IO Thread added
+[2020-May-25 21:11:30.600670]  New IO Thread added
+[2020-May-25 21:11:30.602664]  New IO Thread added
+[2020-May-25 21:11:30.613635]  New IO Thread added
+[2020-May-25 21:11:30.614632]  New IO Thread added
+[2020-May-25 21:11:30.614632]  TCP server initiating
+[2020-May-25 21:11:30.614632]  TCP Accepting starting
+[2020-May-25 21:11:30.614632]  TCP server started
+[2020-May-25 21:11:33.851906]  Incoming TCP connection 127.0.0.1 52171
+[2020-May-25 21:11:36.910872]  Incoming TCP connection 127.0.0.1 52172
+[2020-May-25 21:12:07.456627]  [+] v4 127.0.0.1 52171 
+[2020-May-25 21:13:06.002286]  TCP Socket _processData() failed 127.0.0.1 52171 End of file
+[2020-May-25 21:13:06.002286]  TCP Socket closing 127.0.0.1 52171
+[2020-May-25 21:13:07.004735]  TCP Socket _processData() failed 127.0.0.1 52172 End of file
+[2020-May-25 21:13:07.004735]  TCP Socket closing 127.0.0.1 52172

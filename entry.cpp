@@ -10,7 +10,7 @@ unsigned int Entry::_tmAfterLastChrg() const
 
 Response Entry::_charge()
 {
-	if (_isInDirectory)
+	if (!_expired)
 	{
 		auto timePassed = _tmAfterLastChrg();
 		_lastChargT = posix_time::second_clock::universal_time();
@@ -30,7 +30,7 @@ void Entry::_updateTimeLeft()
 	auto timePassed = _tmAfterLastChrg();
 	if (timePassed > _timeToLive)
 	{
-		_isInDirectory = false;
+		_expired = true;
 		_timeLeft = 0;
 	}
 	else
@@ -53,7 +53,7 @@ void Entry::_initialize(const MutableData& mutData, const Privilege& maxPriv)
 	_lastChargT = _createdT;
 	_timeToLive = CmdInterpreter::toInitialTTL(maxPriv);
 	_timeLeft = _timeToLive;
-	_isInDirectory = true;
+	_expired = false;
 }
 
 Entry::Entry(const SPaddress& spAddr, const MutableData& mutData, const Privilege maxPriv) : _spAddress(spAddr)
@@ -62,73 +62,46 @@ Entry::Entry(const SPaddress& spAddr, const MutableData& mutData, const Privileg
 	_portNumber = _spAddress.portNumber();
 	_ipAddress = _spAddress.ipAddress();
 
-	_isInDirectory = false;
+	_initialize(mutData, maxPriv);
 	_iswithPeer = false;
 }
 
 
-ResponsePair Entry::makeEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
+const ResponseData Entry::makeEntry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
 {
 	auto maxPriv = targetSPA.maxPrivilege(cmdSPA);
 	if (mutData.havePermission())
 		if (!CmdInterpreter::isValid(mutData.permission(), maxPriv))
-			return std::make_pair(Response::NO_PRIVILAGE, nullptr);
+			return ResponseData(Response::NO_PRIVILAGE);
 
 	auto entry = new Entry(targetSPA, mutData, maxPriv);
-	entry->_initialize(mutData, maxPriv);
-	return std::make_pair(Response::SUCCESS, entry);
+	return ResponseData(Response::SUCCESS, entry->_policy);
 }
 
-bool Entry::expired()
+const bool Entry::expired()
 {
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
-	if (_isInDirectory)
-		return false;
-	else
-		return true;
+	return _expired;
 }
 
-ResponseTTL Entry::tryGetTTL()
+const ResponseData Entry::getTTL()
 {
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
-	if (_isInDirectory)
-		return std::make_pair(Response::SUCCESS, _timeLeft);
+	if (_expired)
+		return ResponseData(Response::NO_EXIST);
 	else
-		return std::make_pair(Response::NO_EXIST, _timeLeft);
+		return ResponseData(Response::SUCCESS, _timeLeft);
 }
 
-const std::string& Entry::uid() const
-{
-	return _uid;
-}
-
-void Entry::printExpand(std::string& writeBuffer)
-{
-	printBrief(writeBuffer);
-
-	std::lock_guard<std::mutex> lock(_entryLock);
-	writeBuffer += CmdInterpreter::toPermission(_policy.permission());
-	writeBuffer += " " + _policy.description();
-}
-
-void Entry::printBrief(std::string& writeBuffer) const
-{
-	if (_spAddress.version() == Version::V4)
-		writeBuffer += STR_V4;
-	else
-		writeBuffer += STR_V6;
-	writeBuffer += " " + _uid + " " + _ipAddress + " " + _portNumber + " ";
-}
-
-bool Entry::compatibleMD(const MutableData& policyMD)
+bool Entry::isCompatibleWith(const MutableData& policyMD)
 {
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
-	if (_isInDirectory)
+	if (!_expired)
 	{
 		if (policyMD.description() == _policy.description() &&
 			policyMD.permission() == _policy.permission())
@@ -140,45 +113,45 @@ bool Entry::compatibleMD(const MutableData& policyMD)
 		return false;
 }
 
-ResponseTTL Entry::tryChargeWith(const SPaddress& spAddr)
+const ResponseData Entry::chargeWith(const SPaddress& spAddr)
 {
 	auto maxPriv = _spAddress.maxPrivilege(spAddr);
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
 	if (_policy.canChargeWith(maxPriv))
-		return std::make_pair(_charge(), _timeLeft);
+		return ResponseData(_charge(), _timeLeft);
 	else
-		return std::make_pair(Response::NO_PRIVILAGE, _timeLeft);
+		return ResponseData(Response::NO_PRIVILAGE, _timeLeft);
 }
 
-Response Entry::tryRemoveWith(const SPaddress& spAddr)
+const ResponseData Entry::removeWith(const SPaddress& spAddr)
 {
 	auto maxPriv = _spAddress.maxPrivilege(spAddr);
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
-	if (_isInDirectory)
+	if (!_expired)
 	{
 		if (_policy.canRemoveWith(maxPriv))
 		{
-			_isInDirectory = false;
-			return Response::SUCCESS;
+			_expired = true;
+			return ResponseData(Response::SUCCESS, _policy);
 		}
 		else
-			return Response::NO_PRIVILAGE;
+			return ResponseData(Response::NO_PRIVILAGE);
 	}
 	else
-		return Response::NO_EXIST;
+		return ResponseData(Response::NO_EXIST);
 }
 
-Response Entry::tryUpdateEntry(const SPaddress& spAddr, const MutableData& data)
+const ResponseData Entry::updateWith(const SPaddress& spAddr, const MutableData& data)
 {
 	auto maxPriv = _spAddress.maxPrivilege(spAddr);
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
-	if (_isInDirectory)
+	if (!_expired)
 	{
 		if (_policy.canUpdateWith(maxPriv))
 		{
@@ -187,33 +160,33 @@ Response Entry::tryUpdateEntry(const SPaddress& spAddr, const MutableData& data)
 				if (CmdInterpreter::isValid(data.permission(), maxPriv))
 					_policy.setPermission(data.permission());
 				else
-					return Response::NO_PRIVILAGE;
+					return ResponseData(Response::NO_PRIVILAGE);
 			}
 
 			if (data.haveDescription())
 				_policy.setDescription(data.description());
-			return Response::SUCCESS;
+			return ResponseData(Response::SUCCESS, _policy);
 		}
 		else
-			return Response::NO_PRIVILAGE;
+			return ResponseData(Response::NO_PRIVILAGE);
 	}
 	else
-		return Response::NO_EXIST;
+		return ResponseData(Response::NO_EXIST);
 }
 
-Response Entry::tryAddEntry(const SPaddress& cmdSPA, const MutableData& mutData)
+const ResponseData Entry::reAddWith(const SPaddress& cmdSPA, const MutableData& mutData)
 {
 	auto maxPriv = _spAddress.maxPrivilege(cmdSPA);
 	std::lock_guard<std::mutex> lock(_entryLock);
 	_updateTimeLeft();
 
-	if (_isInDirectory)
-		return Response::REDUDANT_DATA;
+	if (!_expired)
+		return ResponseData(Response::REDUDANT_DATA);
 
 	if (mutData.havePermission())
 		if (!CmdInterpreter::isValid(mutData.permission(), maxPriv))
-			return Response::NO_PRIVILAGE;
+			return ResponseData(Response::NO_PRIVILAGE);
 
 	_initialize(mutData, maxPriv);
-	return Response::SUCCESS;
+	return ResponseData(Response::SUCCESS, _policy);
 }
