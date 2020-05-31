@@ -117,7 +117,7 @@ void Policy::operator=(const MutableData& mutData)
 
 bool Policy::operator==(const Policy& policy)
 {
-	if (policy._permission == _permission &&
+	if (CmdInterpreter::isComparable(policy._permission, _permission) &&
 		policy._description == _description)
 		return true;
 	else

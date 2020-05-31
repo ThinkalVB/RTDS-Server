@@ -102,59 +102,63 @@ public:
 * @return						Entry policy.
 ********************************************************************************************/
 	const ResponseData getPolicy();
-	/*******************************************************************************************
-	* @brief Return true if the Entry's policy is compatible with policyMD
-	*
-	* @param[in] policyMD			A MutableData with Policy validity.
-	* @return						True if have a compatible policy with the entry.
-	********************************************************************************************/
-	bool isCompatibleWith(const MutableData&);
-	/*******************************************************************************************
-	* @brief Check and charge Entry's timeToLive
-	*
-	* @param[in] spAddr				The source pair address of the commanding peer.
-	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
-	*
-	* @details
-	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
-	* Charge the Entry if it have adequate permission.
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Print brief info if _policy is compatible with policyMD
+*
+* @param[out] writeBuffer		Buffer to which brief info will be written.
+* @param[in] policyMD			A MutableData with a valid Policy.
+* @return						True if the Info is printed.
+*
+* @details
+* Print the Version, IP address and port number of the entry.
+********************************************************************************************/
+	bool printIfComparable(std::string&, const MutableData&);
+/*******************************************************************************************
+* @brief Check and charge Entry's timeToLive
+*
+* @param[in] spAddr				The source pair address of the commanding peer.
+* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
+*
+* @details
+* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+* Charge the Entry if it have adequate permission.
+********************************************************************************************/
 	const ResponseData chargeWith(const SPaddress&);
-	/*******************************************************************************************
-	* @brief Shedule removal if the entry can be removed
-	*
-	* @param[in] spAddr				The source pair address of the commanding peer.
-	* @return						SUCESS or NO_EXIST or NO_PRIVILEGE
-	*
-	* @details
-	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to remove.
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Shedule removal if the entry can be removed
+*
+* @param[in] spAddr				The source pair address of the commanding peer.
+* @return						SUCESS or NO_EXIST or NO_PRIVILEGE
+*
+* @details
+* Take the maximum privilege between the commanding and target spAddr and check if have privilege to remove.
+********************************************************************************************/
 	const ResponseData removeWith(const SPaddress&);
-	/*******************************************************************************************
-	* @brief Check and update Entry's mutable data with new data
-	*
-	* @param[in] spAddr				The source pair address of the commanding peer.
-	* @param[in] data				Mutable data (with or without permission).
-	* @return						SUCCESS or NO_EXIST or NO_PRIVILEGE
-	*
-	* @details
-	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
-	* Update the permission if it's valid for the spAddr commanding entry.
-	* Update the description if available.
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Check and update Entry's mutable data with new data
+*
+* @param[in] spAddr				The source pair address of the commanding peer.
+* @param[in] data				Mutable data (with or without permission).
+* @return						SUCCESS or NO_EXIST or NO_PRIVILEGE
+*
+* @details
+* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+* Update the permission if it's valid for the spAddr commanding entry.
+* Update the description if available.
+********************************************************************************************/
 	const ResponseData updateWith(const SPaddress&, const MutableData&);
-	/*******************************************************************************************
-	* @brief Try Re-Initializing this entry as a new entry
-	*
-	* @param[in] cmdSPA				The source pair address of the commanding peer.
-	* @param[in] data				Mutable data (with or without permission).
-	* @return						SUCCESS or NO_PRIVILEGE
-	*
-	* @details
-	* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
-	* Update the permission if it's valid for the spAddr commanding entry.
-	* Update the description if available.
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Try Re-Initializing this entry as a new entry
+*
+* @param[in] cmdSPA				The source pair address of the commanding peer.
+* @param[in] data				Mutable data (with or without permission).
+* @return						SUCCESS or NO_PRIVILEGE
+*
+* @details
+* Take the maximum privilege between the commanding and target spAddr and check if have privilege to change.
+* Update the permission if it's valid for the spAddr commanding entry.
+* Update the description if available.
+********************************************************************************************/
 	const ResponseData reAddWith(const SPaddress&, const MutableData&);
 };
 #endif

@@ -2,6 +2,7 @@
 #define MUTABLE_DATA_H
 
 #include "common.hpp"
+#include <string_view>
 
 class _perm_data
 {

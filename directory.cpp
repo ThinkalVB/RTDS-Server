@@ -1,9 +1,11 @@
 #include "directory.h"
+#include "cmd_interpreter.h"
 
 V4EntryMap Directory::entryMapV4;
 std::mutex Directory::v4InsLock;
 V6EntryMap Directory::entryMapV6;
 std::mutex Directory::v6InsLock;
+std::atomic<std::size_t> Directory::_entryCount = 0;
 
 const ResponseData Directory::_searchEntry(const SourcePairV4& targetSPA)
 {
@@ -35,14 +37,20 @@ const ResponseData Directory::_createV4Entry(const SPaddress& targetSPA, const S
 		auto responsePair = Entry::makeEntry(targetSPA, cmdSPA, mutData);
 		if (responsePair.first == Response::SUCCESS)
 		{
+			_entryCount++;
 			auto newEntry = responsePair.second;
 			entryMapV4.insert(std::pair<SourcePairV4, Entry*>(targetSPA.spAddressV4(), newEntry));
 		}
 		return responsePair.first;
 	}
-
-	auto entry = entryItr->second;
-	return entry->reAddWith(cmdSPA, mutData);
+	else
+	{
+		auto entry = entryItr->second;
+		auto response = entry->reAddWith(cmdSPA, mutData);
+		if (response == Response::SUCCESS)
+			_entryCount++;
+		return response;
+	}
 }
 
 const ResponseData Directory::_createV6Entry(const SPaddress& targetSPA, const SPaddress& cmdSPA, const MutableData& mutData)
@@ -54,14 +62,20 @@ const ResponseData Directory::_createV6Entry(const SPaddress& targetSPA, const S
 		auto responsePair = Entry::makeEntry(targetSPA, cmdSPA, mutData);
 		if (responsePair.first == Response::SUCCESS)
 		{
+			_entryCount++;
 			auto newEntry = responsePair.second;
 			entryMapV6.insert(std::pair<SourcePairV6, Entry*>(targetSPA.spAddressV6(), newEntry));
 		}
 		return responsePair.first;
 	}
-
-	auto entry = entryItr->second;
-	return entry->reAddWith(cmdSPA, mutData);
+	else
+	{
+		auto entry = entryItr->second;
+		auto response = entry->reAddWith(cmdSPA, mutData);
+		if (response == Response::SUCCESS)
+			_entryCount++;
+		return response;
+	}
 }
 
 
@@ -72,7 +86,10 @@ const ResponseData Directory::_removeEntry(const SourcePairV4& targetSPA, const 
 		return ResponseData(Response::NO_EXIST);
 
 	auto entry = entryItr->second;
-	return  entry->removeWith(cmdSPA);
+	auto response =  entry->removeWith(cmdSPA);
+	if (response == Response::SUCCESS)
+		_entryCount--;
+	return response;
 }
 
 const ResponseData Directory::_removeEntry(const SourcePairV6& targetSPA, const SPaddress& cmdSPA)
@@ -82,7 +99,10 @@ const ResponseData Directory::_removeEntry(const SourcePairV6& targetSPA, const 
 		return ResponseData(Response::NO_EXIST);
 
 	auto entry = entryItr->second;
-	return  entry->removeWith(cmdSPA);
+	auto response = entry->removeWith(cmdSPA);
+	if (response == Response::SUCCESS)
+		_entryCount--;
+	return response;
 }
 
 
@@ -197,10 +217,34 @@ const ResponseData Directory::searchEntry(const SPaddress& targetSPA)
 		return _searchEntry(targetSPA.spAddressV6());
 }
 
+void Directory::printEntryWith(std::string& writeBuffer, const MutableData& policyMD)
+{
+	auto printedEntryCount = 0;
+	auto entryItrV4 = entryMapV4.begin();
+	while (entryItrV4 != entryMapV4.end())
+	{
+		auto entry = entryItrV4->second;
+		if (entry->printIfComparable(writeBuffer, policyMD))
+			printedEntryCount++;
+		entryItrV4++;
+	}
+
+	auto entryItrV6 = entryMapV6.begin();
+	while (entryItrV6 != entryMapV6.end())
+	{
+		auto entry = entryItrV6->second;
+		if (entry->printIfComparable(writeBuffer, policyMD))
+			printedEntryCount++;
+		entryItrV6++;
+	}
+
+	if (printedEntryCount == 0)
+		writeBuffer += CmdInterpreter::RESP[(short)Response::NO_EXIST];
+}
 
 std::size_t Directory::entryCount()
 {
-	return (entryMapV4.size() + entryMapV6.size());
+	return _entryCount;
 }
 
 void Directory::clearDirectory()

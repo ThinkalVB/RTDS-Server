@@ -97,6 +97,28 @@ const ResponseData Entry::getPolicy()
 		return ResponseData(Response::SUCCESS, _policy);
 }
 
+bool Entry::printIfComparable(std::string& writeBuffer, const MutableData& policyMD)
+{
+	std::lock_guard<std::mutex> lock(_entryLock);
+	_updateTimeLeft();
+
+	if (!_expired)
+	{
+		if (policyMD.description() == _policy.description() &&
+			CmdInterpreter::isComparable(policyMD.permission(), _policy.permission()))
+		{
+			if (_spAddress.version() == Version::V4)
+				writeBuffer += STR_V4;
+			else
+				writeBuffer += STR_V6;
+			writeBuffer += " " + _ipAddress + " " + _portNumber;
+			writeBuffer += '\x1f';		//!< Unit separator
+			return true;
+		}
+	}
+	return false;
+}
+
 const ResponseData Entry::chargeWith(const SPaddress& spAddr)
 {
 	auto maxPriv = _spAddress.maxPrivilege(spAddr);
@@ -179,21 +201,4 @@ const ResponseData Entry::reAddWith(const SPaddress& cmdSPA, const MutableData& 
 
 	_initialize(mutData, maxPriv);
 	return ResponseData(Response::SUCCESS, _policy);
-}
-
-bool Entry::isCompatibleWith(const MutableData& policyMD)
-{
-	std::lock_guard<std::mutex> lock(_entryLock);
-	_updateTimeLeft();
-
-	if (!_expired)
-	{
-		if (policyMD.description() == _policy.description() &&
-			policyMD.permission() == _policy.permission())
-			return true;
-		else
-			return false;
-	}
-	else
-		return false;
 }

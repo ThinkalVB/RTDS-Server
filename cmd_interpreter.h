@@ -133,6 +133,14 @@ public:
 * @return						True if permission is valid.
 ********************************************************************************************/
 	static bool isValid(const Permission&, const Privilege);
+/*******************************************************************************************
+* @brief Return true if the Permissions are comparable
+*
+* @param[in] perm1				Permission.
+* @param[in] perm1				Permission.
+* @return						True if permissions are comparable.
+********************************************************************************************/
+	static bool isComparable(const Permission&, const Permission&);
 
 /*******************************************************************************************
 * @brief Extract all command elements from the command line.

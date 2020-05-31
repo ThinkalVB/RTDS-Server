@@ -108,18 +108,18 @@ public:
 * @details
 * Gives total number of open sockets listening to a remote system.
 ********************************************************************************************/
-static short getPeerCount();
+	static short getPeerCount();
 /*******************************************************************************************
 * @brief Shut down the socket and delete the peer object.
 ********************************************************************************************/
-void terminatePeer();
+	void terminatePeer();
 /*******************************************************************************************
 * @brief Add this peer to mirroring group
 *
 * @details
 * Set the flag isMirroring to true and add to the mirroring group list.
 ********************************************************************************************/
-void addToMG(const MutableData&);
+	void addToMG(const MutableData&);
 /*******************************************************************************************
 * @brief Remove this peer to mirroring group
 *

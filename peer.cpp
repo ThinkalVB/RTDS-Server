@@ -122,7 +122,7 @@ void Peer::sendNoteToMG(const Note& note, const Policy& policy)
 	std::lock_guard<std::mutex> lock(_mgAccessLock);
 	for (auto peerItr = _mirrorGroup.begin(); peerItr != _mirrorGroup.end(); ++peerItr)
 	{
-		if ((*peerItr)->_peerIsActive && _mirrorPolicy == policy && (*peerItr) != this)
+		if ((*peerItr)->_peerIsActive && (*peerItr)->_mirrorPolicy == policy && (*peerItr) != this)
 		(*peerItr)->_peerSocket->async_send(asio::buffer(note.noteString.data(), note.noteString.size()),
 			bind(&Peer::_sendNotification, this, asio::placeholders::error, asio::placeholders::bytes_transferred));
 	}

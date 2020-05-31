@@ -155,6 +155,16 @@ bool CmdInterpreter::isValid(const Permission& perm, const Privilege maxPriv)
 		return false;
 }
 
+bool CmdInterpreter::isComparable(const Permission& perm1, const Permission& perm2)
+{
+	if ((perm1.charge == perm2.charge || perm1.charge == Privilege::ALL_ENTRY || perm1.charge == Privilege::ALL_ENTRY) &&
+		(perm1.change == perm2.change || perm1.change == Privilege::ALL_ENTRY || perm1.change == Privilege::ALL_ENTRY) &&
+		(perm1.remove == perm2.remove || perm1.remove == Privilege::ALL_ENTRY || perm1.remove == Privilege::ALL_ENTRY))
+		return true;
+	else
+		return false;
+}
+
 
 bool CmdInterpreter::makeCmdElement(ReceiveBuffer& dataBuffer, CommandElement& cmdElement, const std::size_t size)
 {
@@ -447,14 +457,21 @@ void CmdInterpreter::_search(Peer& peer)
 	tryExtractSPA(peer.cmdElement, targetSPA);
 	if (peer.cmdElement.size() == 0)
 	{
-		auto response = Directory::searchEntry(peer.spAddress);
+		auto response = Directory::searchEntry(targetSPA);
 		if (response == Response::SUCCESS)
 			response.printPolicy(peer.writeBuffer);
 		else
 			response.printResponse(peer.writeBuffer);
 	}
+	else if (peer.cmdElement.size() == 2)
+	{
+		auto policyMD = tryExtractPolicyMD(peer.cmdElement);
+		if (policyMD.isValidPolicy())
+			Directory::printEntryWith(peer.writeBuffer, policyMD);
+	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
+	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_charge(Peer& peer)

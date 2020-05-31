@@ -148,15 +148,5 @@ struct Permission
 	Privilege charge;
 	Privilege change;
 	Privilege remove;
-
-	bool operator ==(const Permission& perm) const
-	{
-		if ((charge == perm.charge || perm.charge == Privilege::ALL_ENTRY) && 
-			(change == perm.change || perm.change == Privilege::ALL_ENTRY) && 
-			(remove == perm.remove || perm.remove == Privilege::ALL_ENTRY))
-			return true;
-		else
-			return false;
-	}
 };
 #endif
