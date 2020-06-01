@@ -71,7 +71,6 @@ class Entry
 	unsigned int _timeToLive;							//!< TTL for this entry.
 	unsigned int _timeLeft;								//!< Number of minutes left for the entry.							
 
-	bool _iswithPeer;									//!< True if this entry is associated with a peer.
 	bool _expired;										//!< True if the entry have expired.
 	posix_time::ptime _lastChargT;						//!< The time at which this entry was last charged.
 	posix_time::ptime _createdT;						//!< The time at which this entry was added to the directory.
@@ -82,19 +81,19 @@ class Entry
 	std::string _portNumber;							//!< Port number associated with the entry.
 
 public:
-	/*******************************************************************************************
-	* @brief Create an entry to be added to the directory
-	*
-	* @param[in] spAddr				Source Pair address of the entry.
-	* @param[in] mutData			Mutable data.
-	* @return						Pointer to the new Entry.
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Create an entry to be added to the directory
+*
+* @param[in] spAddr				Source Pair address of the entry.
+* @param[in] mutData			Mutable data.
+* @return						Pointer to the new Entry.
+********************************************************************************************/
 	static const AdvResponse makeEntry(const SPaddress&, const SPaddress&, const MutableData&);
-	/*******************************************************************************************
-	* @brief Get number of minutes after which the entry may expire
-	*
-	* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
-	********************************************************************************************/
+/*******************************************************************************************
+* @brief Get number of minutes after which the entry may expire
+*
+* @return						Time left and ( SUCESS or NO_EXIST or NO_PRIVILEGE )
+********************************************************************************************/
 	const ResponseData getTTL();
 /*******************************************************************************************
 * @brief Get the current policy of the entry

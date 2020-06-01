@@ -58,9 +58,7 @@ Entry::Entry(const SPaddress& spAddr, const MutableData& mutData, const Privileg
 	_uid = _spAddress.toUID();
 	_portNumber = _spAddress.portNumber();
 	_ipAddress = _spAddress.ipAddress();
-
 	_initialize(mutData, maxPriv);
-	_iswithPeer = false;
 }
 
 
@@ -72,7 +70,7 @@ const AdvResponse Entry::makeEntry(const SPaddress& targetSPA, const SPaddress& 
 			return std::make_pair(ResponseData(Response::NO_PRIVILAGE), nullptr);
 
 	auto entry = new Entry(targetSPA, mutData, maxPriv);
-	return std::make_pair(ResponseData(Response::SUCCESS, entry->_policy), entry);
+	return std::make_pair(ResponseData(Response::SUCCESS, entry->_policy, entry->_timeToLive), entry);
 }
 
 const ResponseData Entry::getTTL()
@@ -200,5 +198,5 @@ const ResponseData Entry::reAddWith(const SPaddress& cmdSPA, const MutableData& 
 			return ResponseData(Response::NO_PRIVILAGE);
 
 	_initialize(mutData, maxPriv);
-	return ResponseData(Response::SUCCESS, _policy);
+	return ResponseData(Response::SUCCESS, _policy, _timeToLive);
 }

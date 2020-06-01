@@ -23,7 +23,6 @@ const std::string CmdInterpreter::COMM[] =
 	"charge",
 	"update",
 	"remove",
-	"count",
 	"mirror",
 	"leave",
 	"exit"
@@ -157,9 +156,9 @@ bool CmdInterpreter::isValid(const Permission& perm, const Privilege maxPriv)
 
 bool CmdInterpreter::isComparable(const Permission& perm1, const Permission& perm2)
 {
-	if ((perm1.charge == perm2.charge || perm1.charge == Privilege::ALL_ENTRY || perm1.charge == Privilege::ALL_ENTRY) &&
-		(perm1.change == perm2.change || perm1.change == Privilege::ALL_ENTRY || perm1.change == Privilege::ALL_ENTRY) &&
-		(perm1.remove == perm2.remove || perm1.remove == Privilege::ALL_ENTRY || perm1.remove == Privilege::ALL_ENTRY))
+	if ((perm1.charge == perm2.charge || perm1.charge == Privilege::ALL_ENTRY || perm2.charge == Privilege::ALL_ENTRY) &&
+		(perm1.change == perm2.change || perm1.change == Privilege::ALL_ENTRY || perm2.change == Privilege::ALL_ENTRY) &&
+		(perm1.remove == perm2.remove || perm1.remove == Privilege::ALL_ENTRY || perm2.remove == Privilege::ALL_ENTRY))
 		return true;
 	else
 		return false;
@@ -304,13 +303,11 @@ void CmdInterpreter::processCommand(Peer& peer)
 {
 	auto command = peer.cmdElement.pop_front();
 	if (command == COMM[(short)Command::PING] && peer.cmdElement.size() == 0)
-		s_ping(peer);
-	else if (command == COMM[(short)Command::COUNT] && peer.cmdElement.size() == 0)
-		s_count(peer);
+		_ping(peer);
 	else if (command == COMM[(short)Command::MIRROR])
 		_mirror(peer);
 	else if (command == COMM[(short)Command::LEAVE] && peer.cmdElement.size() == 0)
-		s_leave(peer);
+		_exit(peer);
 	else if (command == COMM[(short)Command::ADD])
 		_add(peer);
 	else if (command == COMM[(short)Command::SEARCH])
@@ -329,31 +326,21 @@ void CmdInterpreter::processCommand(Peer& peer)
 		return;
 	}
 	else
-	{
 		peer.writeBuffer = CmdInterpreter::RESP[(short)Response::BAD_COMMAND];
-		peer.writeBuffer += '\x1e';
-	}
+	peer.writeBuffer += '\x1e';				//!< Record separator
 	peer.sendPeerData();
 }
 
 /* Commands without any arguments...................*/
-void CmdInterpreter::s_ping(Peer& peer)
+void CmdInterpreter::_ping(Peer& peer)
 {
 	peer.writeBuffer += peer.spAddress.briefInfo();
-	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
-void CmdInterpreter::s_count(Peer& peer)
-{
-	peer.writeBuffer += std::to_string(Directory::entryCount());
-	peer.writeBuffer += '\x1e';					//!< Record separator
-}
-
-void CmdInterpreter::s_leave(Peer& peer)
+void CmdInterpreter::_exit(Peer& peer)
 {
 	peer.removeFromMG();
 	peer.writeBuffer += RESP[(short)Response::SUCCESS];
-	peer.writeBuffer += '\x1e';			//!< Record separator
 }
 
 /* Commands with arguments..........................*/
@@ -367,7 +354,6 @@ void CmdInterpreter::_mirror(Peer& peer)
 	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
-	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_ttl(Peer& peer)
@@ -384,7 +370,6 @@ void CmdInterpreter::_ttl(Peer& peer)
 			response.printTTL(peer.writeBuffer);
 		else
 			response.printResponse(peer.writeBuffer);
-		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }
 
@@ -403,9 +388,7 @@ void CmdInterpreter::_remove(Peer& peer)
 			auto notification = Notification::makeRemoveNote(targetSPA);
 			peer.sendNoteToMG(notification, response.policy());
 		}
-
 		response.printResponse(peer.writeBuffer);
-		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }
 
@@ -427,7 +410,6 @@ void CmdInterpreter::_update(Peer& peer)
 		}
 		response.printResponse(peer.writeBuffer);
 	}
-	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_add(Peer& peer)
@@ -441,14 +423,14 @@ void CmdInterpreter::_add(Peer& peer)
 	else
 	{
 		auto response = Directory::createEntry(targetSPA, peer.spAddress, mutData);
+		response.printResponse(peer.writeBuffer);
 		if (response == Response::SUCCESS)
 		{
 			auto notification = Notification::makeAddNote(targetSPA);
 			peer.sendNoteToMG(notification, response.policy());
+			response.printTTL(peer.writeBuffer += " ");
 		}
-		response.printResponse(peer.writeBuffer);
 	}
-	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_search(Peer& peer)
@@ -471,7 +453,6 @@ void CmdInterpreter::_search(Peer& peer)
 	}
 	else
 		peer.writeBuffer += RESP[(short)Response::BAD_PARAM];
-	peer.writeBuffer += '\x1e';				//!< Record separator
 }
 
 void CmdInterpreter::_charge(Peer& peer)
@@ -488,6 +469,5 @@ void CmdInterpreter::_charge(Peer& peer)
 			response.printTTL(peer.writeBuffer);
 		else
 			response.printResponse(peer.writeBuffer);
-		peer.writeBuffer += '\x1e';				//!< Record separator
 	}
 }

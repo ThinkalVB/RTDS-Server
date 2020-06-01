@@ -9,9 +9,8 @@
 
 class CmdInterpreter
 {
-	static void s_ping(Peer&);
-	static void s_count(Peer&);
-	static void s_leave(Peer&);
+	static void _ping(Peer&);
+	static void _exit(Peer&);
 
 	static void _mirror(Peer&);
 	static void _add(Peer&);

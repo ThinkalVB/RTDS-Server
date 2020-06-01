@@ -55,8 +55,9 @@ class ResponseData
 	Policy _policy;
 	unsigned int _ttl;
 public:
+	ResponseData(const Response, const Policy&, const unsigned int);
 	ResponseData(const Response, const Policy&);
-	ResponseData(const Response, const unsigned int ttl);
+	ResponseData(const Response, const unsigned int);
 	ResponseData(const Response);
 
 	bool operator==(const Response) const;

@@ -127,10 +127,9 @@ enum class Command
 	CHARGE	= 4,
 	UPDATE	= 5,
 	REMOVE	= 6,
-	COUNT	= 7,
-	MIRROR	= 8,
-	LEAVE	= 9,
-	EXIT	= 10
+	MIRROR	= 7,
+	LEAVE	= 8,
+	EXIT	= 9
 };
 
 /*******************************************************************************************

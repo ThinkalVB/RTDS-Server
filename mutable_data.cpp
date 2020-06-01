@@ -125,6 +125,13 @@ bool Policy::operator==(const Policy& policy)
 }
 
 
+ResponseData::ResponseData(const Response response, const Policy& policy, const unsigned int ttl)
+{
+	_response = response;
+	_policy = policy;
+	_ttl = ttl;
+}
+
 ResponseData::ResponseData(Response response, const Policy& policy)
 {
 	_response = response;
