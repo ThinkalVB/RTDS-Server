@@ -15,6 +15,10 @@ class Message
 
 	TimePoint _createdTime;								// Message created time
 /*******************************************************************************************
+* @brief Delete all expired messages from the message queue
+********************************************************************************************/
+	static void _cleanMessageQ();
+/*******************************************************************************************
 * @brief Message constructor
 *
 * @param[in]		Message.
@@ -47,17 +51,13 @@ public:
 ********************************************************************************************/
 	static const Message* makeRemMsg(const SApair&);
 /*******************************************************************************************
-* @brief Make a new message
+* @brief Make a new broadcast message
 *
 * @param[in]		Source address pair.
 * @param[in]		Message
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
 	static const Message* makeBrdMsg(const SApair&, const std::string_view&);
-/*******************************************************************************************
-* @brief Delete all expired messages from the message queue
-********************************************************************************************/
-	static void cleanMessageQ();
 };
 
 #endif

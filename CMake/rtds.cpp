@@ -10,12 +10,13 @@ RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v4::any(), port
 #endif
 {
 	START_LOG
-	DEBUG_LOG(Log::log("............... RTDS Log ..............");)
+	DEBUG_LOG(Log::ALog("............... RTDS Log ..............");)
+	DEBUG_LOG(Log::ALog("RTDS Port : ", portNumber);)
 }
 
 bool RTDS::startTCPserver(const int threadCount)
 {
-	DEBUG_LOG(Log::log("TCP server initiating");)
+	DEBUG_LOG(Log::ALog("TCP server initiating");)
 	_tcpServerRunning = false;
 	_activeThreadCount = 0;
 	addThread(threadCount);
@@ -27,7 +28,7 @@ bool RTDS::startTCPserver(const int threadCount)
 		LOG(Log::log("Failed to open TCP acceptor", ec);)
 		return false;
 	}
-	DEBUG_LOG(Log::log("TCP acceptor open");)
+	DEBUG_LOG(Log::ALog("TCP acceptor open");)
 
 	_tcpAcceptor.bind(_tcpEp, ec);
 	if (ec)
@@ -36,7 +37,7 @@ bool RTDS::startTCPserver(const int threadCount)
 		LOG(Log::log("Failed to bind TCP acceptor", ec);)
 		return false;
 	}
-	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
+	DEBUG_LOG(Log::ALog("TCP acceptor binded to endpoint");)
 
 	_tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
 	if (ec)
@@ -45,11 +46,11 @@ bool RTDS::startTCPserver(const int threadCount)
 		LOG(Log::log("TCP acceptor cannot listen to port", ec);)
 		return false;
 	}
-	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
+	DEBUG_LOG(Log::ALog("TCP acceptor listening to port");)
 	startAccepting();
 	_tcpServerRunning = true;
 
-	DEBUG_LOG(Log::log("TCP server started");)
+	DEBUG_LOG(Log::ALog("TCP server started");)
 	return true;
 }
 
@@ -60,6 +61,7 @@ bool RTDS::addThread(const int threadCount)
 		try {
 			std::thread ioThread(&RTDS::_ioThreadJob, this);
 			ioThread.detach();
+			DEBUG_LOG(Log::ALog("New thread added to ioContext");)
 		}
 		catch (std::runtime_error& ec)
 		{
@@ -72,19 +74,20 @@ bool RTDS::addThread(const int threadCount)
 
 void RTDS::addThisThread()
 {
+	DEBUG_LOG(Log::ALog("Calling thread added to ioContext");)
 	_ioThreadJob();
 }
 
 void RTDS::startAccepting()
 {
-	DEBUG_LOG(Log::log("TCP Accepting starting");)
+	DEBUG_LOG(Log::ALog("TCP Accepting starting");)
 	_keepAccepting = true;
 	_peerAcceptRoutine();
 }
 
 void RTDS::stopAccepting()
 {
-	DEBUG_LOG(Log::log("TCP Accepting stopped");)
+	DEBUG_LOG(Log::ALog("TCP Accepting stopped");)
 	_keepAccepting = false;
 	_tcpAcceptor.cancel();
 }
@@ -93,9 +96,9 @@ void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
 	_ioContext.reset();
-	DEBUG_LOG(Log::log("TCP server stopped");)
+	DEBUG_LOG(Log::ALog("TCP server stopped");)
 
-		_keepAccepting = false;
+	_keepAccepting = false;
 	_tcpServerRunning = false;
 }
 
@@ -108,6 +111,7 @@ void RTDS::_ioThreadJob()
 		LOG(Log::log("ioContext.run() failed", ec);)
 
 	_activeThreadCount--;
+	DEBUG_LOG(Log::ALog("ioContext thread exiting");)
 	return;
 }
 
@@ -140,7 +144,7 @@ void RTDS::_peerAcceptRoutine()
 					new Peer(peerSocket);
 				}
 				catch (std::bad_alloc) {
-					LOG(Log::log("Peer memmory bad allocation");)
+					LOG(Log::ALog("Peer memmory bad allocation");)
 					peerSocket->close();
 					delete peerSocket;
 				}
@@ -156,7 +160,7 @@ void RTDS::_stopIoContext()
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	} while (!_ioContext.stopped() && _activeThreadCount == 0);
-	DEBUG_LOG(Log::log("IO Context stopped");)
+	DEBUG_LOG(Log::ALog("IO Context stopped");)
 }
 
 void RTDS::_stopTCPacceptor()
@@ -169,6 +173,7 @@ void RTDS::_stopTCPacceptor()
 	_tcpAcceptor.close(ec);
 	if (ec)
 		LOG(Log::log("TCP acceptor cannot close", ec);)
+	DEBUG_LOG(Log::ALog("TCP acceptor stopped");)
 }
 
 RTDS::~RTDS()
@@ -176,6 +181,7 @@ RTDS::~RTDS()
 	if (_tcpServerRunning)
 		stopTCPserver();
 	_stopIoContext();
-	DEBUG_LOG(Log::log("RTDS Exiting");)
+
+	DEBUG_LOG(Log::ALog("RTDS Exiting [Logging stopped]");)
 	STOP_LOG
 }

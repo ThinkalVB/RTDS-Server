@@ -63,8 +63,7 @@ private:
 * @param[in]			Peer.
 *
 * @details
-* Write Bad parameter message to the peer buffer on bad parameter.
-* Write version, ip address and port number to the buffer for valid command. 
+* Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
 	static void _cmd_ping(Peer&);
 	static void _cmd_change(Peer&);

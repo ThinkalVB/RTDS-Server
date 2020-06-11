@@ -4,7 +4,7 @@
 #include <mutex>
 #include <string.h>
 #include <asio.hpp>
-#include <atomic>
+#include <iostream>
 
 #define START_LOG Log::startLog();
 #define STOP_LOG Log::stopLog();
@@ -50,7 +50,8 @@ public:
 *
 * @param[in]        Message
 ********************************************************************************************/
-    static void log(const std::string);
+    template<typename T, typename... Args>
+    static void ALog(T, Args...);
 /*******************************************************************************************
 * @brief Print details about the socket error
 *
@@ -79,11 +80,6 @@ private:
     static std::mutex _consoleWriteLock;        // Mutex for thread safety
 
 /*******************************************************************************************
-* @brief Print the system time
-* [Not Thread Safe]
-********************************************************************************************/
-    static void _printTimeStamp();
-/*******************************************************************************************
 * @brief Print details about the socket (Ipaddress and Port number)
 *
 * @param[in]        Pointer to the socket
@@ -91,5 +87,18 @@ private:
 ********************************************************************************************/
     static void _printSocketInfo(const asio::ip::tcp::socket*);
 };
+
+template<typename T, typename... Args>
+inline void Log::ALog(T message, Args... messages)
+{
+    std::lock_guard<std::mutex> lock(_consoleWriteLock);
+    if (_needLog)
+    {
+        std::cout << "RTDS: ";
+        std::cout << message;
+        (std::cout << ... << std::forward<Args>(messages));
+        std::cout << std::endl;
+    }
+}
 
 #endif

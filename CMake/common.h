@@ -34,6 +34,8 @@ typedef std::array<char, RTDS_BUFF_SIZE + 1> ReceiveBuffer;
 * bad_command		Bad command.
 * bad_param			Bad parameter provided with the command.
 * wait_retry		Wait and try again after sometime.
+* is_listening		Peer is already listening to a BG.
+* not_listening		Peer is not listening to any BG.
 ********************************************************************************************/
 enum class Response
 {
@@ -49,6 +51,7 @@ enum class Response
 * @brief Enum class for Command
 *
 * @details
+* broadcast			Broadcast a message to the BG.
 * ping				Ping with the RTDS server.
 * listen			Listen to the activities in a Broadcast Group.
 * change			Change the Broadcast Group.

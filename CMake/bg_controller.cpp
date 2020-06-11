@@ -54,6 +54,7 @@ BGroup* BGcontroller::addToBG(Peer* peer, const std::string& bgID)
 			bGroup = new BGroup_Unrestricted(bgID);
 			bGroup->addPeer(peer);
 			_BGmap.insert(std::pair(bgID, bGroup));
+			DEBUG_LOG(Log::ALog(bgID, " BG added");)
 			return (BGroup*)bGroup;
 		}
 		catch (...) {
@@ -84,10 +85,13 @@ void BGcontroller::removeFromBG(Peer* peer, const std::string& bgID)
 		auto bGroup = bGroupItr->second;
 		bGroup->removePeer(peer);
 		if (bGroup->isEmpty())
+		{
 			_BGmap.erase(bGroupItr);
+			DEBUG_LOG(Log::ALog(bgID, " BG deleted");)
+		}
 	}
 	else
-		LOG(Log::log("Peer must be in map, but not found");)
+		LOG(Log::ALog("Peer must be in map, but not found");)
 }
 
 
