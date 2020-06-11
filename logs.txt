@@ -1,13 +1,0 @@
-[2020-Jun-01 13:14:16.880068]  RTDS starting
-[2020-Jun-01 13:14:16.881067]  New IO Thread added
-[2020-Jun-01 13:14:16.883062]  New IO Thread added
-[2020-Jun-01 13:14:16.883062]  New IO Thread added
-[2020-Jun-01 13:14:16.886054]  New IO Thread added
-[2020-Jun-01 13:14:16.887050]  New IO Thread added
-[2020-Jun-01 13:14:16.887050]  TCP server initiating
-[2020-Jun-01 13:14:16.887050]  TCP Accepting starting
-[2020-Jun-01 13:14:16.888047]  TCP server started
-[2020-Jun-01 13:14:23.849112]  Incoming TCP connection 127.0.0.1 60574
-[2020-Jun-01 13:14:25.364692]  [+] v4 127.0.0.1 60574
-[2020-Jun-01 13:14:28.973480]  TCP Socket _processData() failed 127.0.0.1 60574 End of file
-[2020-Jun-01 13:14:28.973480]  TCP Socket closing 127.0.0.1 60574

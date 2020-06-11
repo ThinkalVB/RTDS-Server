@@ -1,0 +1,143 @@
+#include "cmd_processor.h"
+
+const std::string CmdProcessor::RESP[] =
+{
+	"success",
+	"bad_command",
+	"bad_param",
+	"wait_retry",
+	"is_listening",
+	"not_listening"
+};
+
+const std::string CmdProcessor::COMM[] =
+{
+	"broadcast",
+	"ping",
+	"listen",
+	"change",
+	"leave",
+	"exit"
+};
+
+void CmdProcessor::processCommand(Peer& peer)
+{
+	auto command = extractElement(peer.commandStr);
+	if (command == COMM[(short)Command::PING])
+		_cmd_ping(peer);
+	else if (command == COMM[(short)Command::LISTEN])
+		_cmd_listen(peer);
+	else if (command == COMM[(short)Command::LEAVE])
+		_cmd_leave(peer);
+	else if (command == COMM[(short)Command::BROADCAST])
+		_cmd_broadcast(peer);
+	else if (command == COMM[(short)Command::EXIT])
+		_cmd_exit(peer);
+	else if (command == COMM[(short)Command::CHANGE])
+		_cmd_change(peer);
+	else
+		peer.respondWith(Response::BAD_COMMAND);
+}
+
+bool CmdProcessor::isBGID(const std::string_view& bgid)
+{
+	if (bgid.size() != 0 && isPrintable(bgid) && bgid.size() <= MAX_BGID_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdProcessor::isTag(const std::string_view& tag)
+{
+	if (tag.size() != 0 && isPrintable(tag) && tag.size() <= MAX_TAG_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdProcessor::isBmessage(const std::string_view& bMessage)
+{
+	if (bMessage.size() != 0 && isPrintable(bMessage) && bMessage.size() <= MAX_BROADCAST_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdProcessor::isPrintable(const std::string_view& strElement)
+{
+	for (auto invChar : strElement)
+	{
+		if (!(invChar > 32 && invChar != 127))
+			return false;
+	}
+	return true;
+}
+
+const std::string_view CmdProcessor::extractElement(std::string_view& command)
+{
+	auto endIndex = command.find_first_of(' ');
+	if (endIndex == std::string::npos)
+	{
+		auto element = command;
+		command.remove_prefix(command.size());
+		return element;
+	}
+	else
+	{
+		auto element = command.substr(0, endIndex);
+		if (command.size() == endIndex + 1)
+			command.remove_prefix(endIndex);
+		else
+			command.remove_prefix(endIndex + 1);
+		return element;
+	}
+}
+
+void CmdProcessor::_cmd_ping(Peer& peer)
+{
+	if (peer.commandStr.empty())
+		peer.printPingInfo();
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::_cmd_change(Peer& peer)
+{
+	auto bgTag = extractElement(peer.commandStr);
+	if (isTag(bgTag) && peer.commandStr.empty())
+		peer.changeTagTo(bgTag);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::_cmd_broadcast(Peer& peer)
+{
+	auto message = extractElement(peer.commandStr);
+	if (isBmessage(message) && peer.commandStr.empty())
+		peer.broadcast(message);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::_cmd_exit(Peer& peer)
+{
+	if (peer.commandStr.empty())
+		peer.disconnect();
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::_cmd_listen(Peer& peer)
+{
+	auto bgTag = extractElement(peer.commandStr);
+	auto bgID = extractElement(peer.commandStr);
+	if (isTag(bgTag) && isBGID(bgID) && peer.commandStr.empty())
+		peer.listenTo(bgID, bgTag);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::_cmd_leave(Peer& peer)
+{
+	if (peer.commandStr.empty())
+		peer.leaveBG();
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}

@@ -1,38 +1,37 @@
-#ifndef RTDS_H
+﻿#ifndef RTDS_H
 #define RTDS_H
 
-#include <boost/asio.hpp>
-#include "common.hpp"
+#include <asio.hpp>
+#include "common.h"
 
-using namespace boost;
 
 class RTDS
 {
-	asio::io_context _ioContext;				//!< ioContext controls all the async functions related to ASIO
-	asio::io_context::work _worker;				//!< Worker object to prevent ioContext.run() from exiting when without async jobs
-	asio::ip::tcp::endpoint _tcpEp;				//!< TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
-	asio::ip::tcp::acceptor _tcpAcceptor;		//!< TCP acceptor socket that accept incoming tcp connections
+	asio::io_context _ioContext;				// ioContext controls all the async functions related to ASIO
+	asio::io_context::work _worker;				// Worker object to prevent ioContext.run() from exiting when without async jobs
+	asio::ip::tcp::endpoint _tcpEp;				// TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
+	asio::ip::tcp::acceptor _tcpAcceptor;		// TCP acceptor socket that accept incoming tcp connections
 
-	short _activeThreadCount = 0;				//!< Keep account of number of threads running ioContex.run()
-	std::atomic<bool> _tcpServerRunning;		//!< Track if the TCP server is running
-	std::atomic<bool> _keepAccepting;			//!< Only accept new connections if True
+	short _activeThreadCount = 0;				// Keep account of number of threads running ioContex.run()
+	std::atomic<bool> _tcpServerRunning;		// Track if the TCP server is running
+	std::atomic<bool> _keepAccepting;			// Only accept new connections if True
 
- /*******************************************************************************************
+/*******************************************************************************************
  * @brief Contain activities to be done by a thread (async operation)
  *
  * @details
- * Run ioContext.run() function. 
+ * Run ioContext.run() function.
  * This function call will block all the threads untill the RTDS class object is distroyed.
  ********************************************************************************************/
 	void _ioThreadJob();
- /*******************************************************************************************
- * @brief Function that defines how the new incoming TCP connections are to accepted
- *
- * @details
- * Make a socket X and try to accept the connection.
- * If successfully connected, then make a dynamic Peer object using X(keepalive).
- * If couldn't connect, then delete the socket X object and look for new connections.
- ********************************************************************************************/
+/*******************************************************************************************
+* @brief Function that defines how the new incoming TCP connections are to accepted
+*
+* @details
+* Make a socket X and try to accept the connection.
+* If successfully connected, then make a dynamic Peer object using X(keepalive).
+* If couldn't connect, then delete the socket X object and look for new connections.
+********************************************************************************************/
 	void _peerAcceptRoutine();
 /*******************************************************************************************
 * @brief Stop ioContext. All threads blocked by ioContext.run() will exit
@@ -51,7 +50,7 @@ public:
 /*******************************************************************************************
 * @brief Create the server object with it's own ioContext and worker class object
 *
-* @param[in] portNumber			The default port is 389
+* @param[in]		The default port is 389
 *
 * @details
 * All the STL containers associated with this class are static in nature.
@@ -62,18 +61,19 @@ public:
 /*******************************************************************************************
 * @brief Start the TCP server
 *
-* @return						True if the TCP server started sucessfully
+* @param[in]		Number of threads with which RTDS starts.
+* @return			True if the TCP server started sucessfully
 *
 * @details
 * Open acceptor socket with the tcpEp.protocol(). Bind it to the tcp endpoint.
 * Signal the OS to start listening for incomming connection requests. Start accepting.
 ********************************************************************************************/
-	bool startTCPserver();
+	bool startTCPserver(const int threadCount = 1);
 /*******************************************************************************************
 * @brief Add X number of threads to run ioContex.run()
 *
-* @param[in] threadCount		Add X more threads to execute RTDS asyn tasks.
-* @return						True if the threads are spwaned.
+* @param[in]		Add X more threads to execute RTDS asyn tasks.
+* @return			True if the threads are spwaned.
 *
 * @details
 * Spawn child threads to run _ioThreadJob() and detach it from main thread.
@@ -101,15 +101,6 @@ public:
 * Stop TCP acceptor, reset the ioContext [ threads won't exit ][ all pending jobs discarded]
 ********************************************************************************************/
 	void stopTCPserver();
-/*******************************************************************************************
-* @brief Get the total number of peers
-*
-* @return						Total number of peers
-*
-* @details
-* Gives total number of open sockets listening to a remote system.
-********************************************************************************************/
-	short getPeerCount();
 /*******************************************************************************************
 * @brief Stop the tcp server and ioContext
 *
