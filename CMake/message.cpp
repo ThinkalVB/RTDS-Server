@@ -8,7 +8,7 @@ std::mutex Message::_QremLock;
 
 Message::Message(const std::string& messageStr)
 {
-	DEBUG_LOG(Log::log(messageStr);)
+	LOG(Log::log(messageStr);)
 	_createdTime = std::chrono::system_clock::now();
 	messageBuf = messageStr;
 }
@@ -32,7 +32,6 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 		message = new Message(addMssg);
 		std::lock_guard<std::mutex> lock(_QinsLock);
 		_messageQ.push(message);
-		_cleanMessageQ();
 		return message;
 	}
 	catch (...)	{
@@ -54,7 +53,6 @@ const Message* Message::makeRemMsg(const SApair& saPair)
 		message = new Message(remMssg);
 		std::lock_guard<std::mutex> lock(_QinsLock);
 		_messageQ.push(message);
-		_cleanMessageQ();
 		return message;
 	}
 	catch (...) {
@@ -76,7 +74,6 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 		message = new Message(brdMssg);
 		std::lock_guard<std::mutex> lock(_QinsLock);
 		_messageQ.push(message);
-		_cleanMessageQ();
 		return message;
 	}
 	catch (...) {
@@ -88,21 +85,18 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	}
 }
 
-void Message::_cleanMessageQ()
+void Message::cleanMessageQ()
 {
-	if (_QremLock.try_lock())
+	std::lock_guard<std::mutex> lock(_QremLock);
+	while (_messageQ.size() > MAX_MSG_CACHE_SIZE)
 	{
-		while (_messageQ.size() > MAX_MSG_CACHE_SIZE)
+		auto message = _messageQ.front();
+		if (message->haveExpired())
 		{
-			auto message = _messageQ.front();
-			if (message->haveExpired())
-			{
-				_messageQ.pop();
-				delete message;
-			}
-			else
-				break;
+			_messageQ.pop();
+			delete message;
 		}
-		_QremLock.unlock();
+		else
+			break;
 	}
 }

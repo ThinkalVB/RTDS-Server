@@ -23,11 +23,6 @@ class Message
 * Initialize the values of createdTime amd message
 ********************************************************************************************/
 	Message(const std::string&);
-	Message() {}
-/*******************************************************************************************
-* @brief Delete all expired messages from the message queue
-********************************************************************************************/
-	static void _cleanMessageQ();
 public:
 
 	std::string messageBuf;								// Message string buffer
@@ -52,13 +47,17 @@ public:
 ********************************************************************************************/
 	static const Message* makeRemMsg(const SApair&);
 /*******************************************************************************************
-* @brief Make a new broadcast message
+* @brief Make a new message
 *
 * @param[in]		Source address pair.
 * @param[in]		Message
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
 	static const Message* makeBrdMsg(const SApair&, const std::string_view&);
+/*******************************************************************************************
+* @brief Delete all expired messages from the message queue
+********************************************************************************************/
+	static void cleanMessageQ();
 };
 
 #endif

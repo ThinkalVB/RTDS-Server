@@ -4,6 +4,7 @@
 #include <asio.hpp>
 #include "common.h"
 
+
 class RTDS
 {
 	asio::io_context _ioContext;				// ioContext controls all the async functions related to ASIO
@@ -24,7 +25,7 @@ class RTDS
  ********************************************************************************************/
 	void _ioThreadJob();
 /*******************************************************************************************
-* @brief Function that defines how the new incoming TCP connections are to be accepted
+* @brief Function that defines how the new incoming TCP connections are to accepted
 *
 * @details
 * Make a socket X and try to accept the connection.
@@ -54,7 +55,7 @@ public:
 * @details
 * All the STL containers associated with this class are static in nature.
 * Add #define RTDS_DUAL_STACK in RTDS.h to compile the RTDS in IPv6 dual stack mode.
-* Start the logging system.
+* Start the logging system and put logs to "logs.txt" - you can change it here.
 ********************************************************************************************/
 	RTDS(unsigned short = RTDS_PORT);
 /*******************************************************************************************

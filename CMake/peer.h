@@ -48,7 +48,7 @@ class Peer
 * @details
 * Append receved data with '\0' to make it string
 * Pass the command to the command interpreter to process the command.
-* Send back Response for the received command.
+* Send back Response::BAD_COMMAND if an unknown command is received.
 * If ec state a error in connection, this peer object will be deleted.
 ********************************************************************************************/
 	void _processData(const asio::error_code&, std::size_t);
@@ -81,7 +81,7 @@ class Peer
 * @brief Close and delete peerSocket
 *
 * @details
-* Leave the BG if in listening mode.
+* Set the flag isWithPeer to false so that Directory may delete this entry.
 ********************************************************************************************/
 	~Peer();
 
@@ -94,7 +94,7 @@ public:
 * @param[in]			Pointer to the newly accepted socket
 *
 * @details
-* Reserve buffer size and get the peer endpoint.
+* Reserver buffer size and get the peer endpoint.
 * Create a SourceAddressPair with the pointer to the socket. 
 ********************************************************************************************/
 	Peer(asio::ip::tcp::socket*);
