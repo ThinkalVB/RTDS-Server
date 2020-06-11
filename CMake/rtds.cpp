@@ -1,7 +1,9 @@
-﻿#include "rtds.h"
+﻿#include <thread>
+#include "rtds.h"
 #include "peer.h"
-#include <thread>
 #include "log.h"
+//#include "message.h"
+
 
 #ifdef RTDS_DUAL_STACK
 RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v6::any(), portNumber), _tcpAcceptor(_ioContext), _worker(_ioContext)
@@ -46,6 +48,7 @@ bool RTDS::startTCPserver(const int threadCount)
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
+
 	startAccepting();
 	_tcpServerRunning = true;
 
