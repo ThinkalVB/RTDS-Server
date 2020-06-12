@@ -14,7 +14,7 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr) : _saPair(socketPtr)
 	_bgPtr = nullptr;
 	_isInBG = false;
 
-	DEBUG_LOG(Log::ALog(_saPair.toString()," Peer Connected");)
+	DEBUG_LOG(Log::log(_saPair.toString()," Peer Connected");)
 	_peerCount++;
 	_peerReceiveData();
 }
@@ -32,7 +32,7 @@ void Peer::sendMessage(const std::string& bgTag, const Message* message)
 
 void Peer::disconnect()
 {
-	DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer Disconnecting");)
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer Disconnecting");)
 	_peerIsActive = false;
 }
 
@@ -55,7 +55,7 @@ void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 				_bgPtr->broadcast(this, _bgTag, message);
 
 			_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::ALog(_saPair.toString(), " Listening to Tag: ", _bgTag, " BG: ", _bgID);)
+			DEBUG_LOG(Log::log(_saPair.toString(), " Listening to Tag: ", _bgTag, " BG: ", _bgID);)
 		}
 		else
 			_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
@@ -66,7 +66,7 @@ void Peer::leaveBG()
 {
 	if (_isInBG)
 	{
-		DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer leavig BG ", _bgID);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer leavig BG ", _bgID);)
 		BGcontroller::removeFromBG(this, _bgID);
 		auto message = Message::makeRemMsg(_saPair);
 		if (message != nullptr)
@@ -87,7 +87,7 @@ void Peer::changeTagTo(const std::string_view& bgTag)
 		std::lock_guard<std::mutex> lock(_resLock);
 		_bgTag = bgTag;
 		_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer Changing tag to ", _bgTag);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer Changing tag to ", _bgTag);)
 	}
 	else
 		_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::NOT_LISTENING];
@@ -95,13 +95,13 @@ void Peer::changeTagTo(const std::string_view& bgTag)
 
 void Peer::printPingInfo()
 {
-	DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer pinging");)
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer pinging");)
 	_writeBuffer += "[R] " + _saPair.toString();
 }
 
 void Peer::respondWith(Response response)
 {
-	DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)response]);)
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)response]);)
 	_writeBuffer += "[R] " + CmdProcessor::RESP[(short)response];
 }
 
@@ -114,7 +114,7 @@ void Peer::broadcast(const std::string_view& messageStr)
 			_bgPtr->broadcast(this, _bgTag, message);
 
 		_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer broadcasting: ", messageStr);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer broadcasting: ", messageStr);)
 	}
 	else
 		_writeBuffer += "[R] " + CmdProcessor::RESP[(short)Response::NOT_LISTENING];
@@ -126,17 +126,17 @@ Peer::~Peer()
 	asio::error_code ec;
 	_peerSocket->close(ec);
 	if (ec)
-		LOG(Log::log("TCP Socket cannot close", _peerSocket, ec);)
+		LOG(Log::log(_saPair.toString(), " socket cannot close - ", ec.message());)
 
 	_peerCount--;
 	delete _peerSocket;
-	DEBUG_LOG(Log::ALog("Peer Disconnected: " + _saPair.toString());)
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer disconnected");)
 }
 
 
 void Peer::_terminatePeer()
 {
-	DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer terminating");)
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer terminating");)
 	_peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
 	delete this;
 }
@@ -145,7 +145,7 @@ void Peer::_sendFuncFeedbk(const asio::error_code& ec, std::size_t size)
 {
 	if (ec)
 	{
-		LOG(Log::log("TCP Socket _sendData() failed", _peerSocket, ec);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer socket _sendData() failed", ec.message());)
 		_terminatePeer();
 	}
 	else
@@ -159,7 +159,7 @@ void Peer::_sendMssgFuncFeedbk(const asio::error_code& ec, std::size_t size)
 {
 	if (ec)
 	{
-		LOG(Log::log("TCP Socket _sendMessage() failed", _peerSocket, ec);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer socket _sendMessage() failed", ec.message());)
 		_peerIsActive = false;
 	}
 }
@@ -185,14 +185,14 @@ void Peer::_processData(const asio::error_code& ec, std::size_t size)
 {
 	if (ec)
 	{
-		LOG(Log::log("TCP Socket _processData() failed", _peerSocket, ec);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer socket _processData() failed", ec.message());)
 		_terminatePeer();
 	}
 	else
 	{
 		_dataBuffer[size] = '\0';
 		commandStr = (char*)_dataBuffer.data();
-		DEBUG_LOG(Log::ALog(_saPair.toString(), " Peer received: ",commandStr);)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer received: ",commandStr);)
 		CmdProcessor::processCommand(*this);
 
 		if (_peerIsActive)

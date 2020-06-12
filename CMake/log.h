@@ -39,57 +39,20 @@ public:
 ********************************************************************************************/
     static bool isLogging();
 /*******************************************************************************************
-* @brief Print OS runtime_error code details
-*
-* @param[in]         Message
-* @param[in]         Runtime error
-********************************************************************************************/
-    static void log(const std::string, const std::runtime_error);
-/*******************************************************************************************
 * @brief Print the message
 *
 * @param[in]        Message
 ********************************************************************************************/
     template<typename T, typename... Args>
-    static void ALog(T, Args...);
-/*******************************************************************************************
-* @brief Print details about the socket error
-*
-* @param[in]        Message
-* @param[in]        Pointer to the socket
-* @param[in]        Asio socket error
-********************************************************************************************/
-    static void log(const std::string, const asio::ip::tcp::socket*, const asio::error_code);
-/*******************************************************************************************
-* @brief Print asio error code details
-*
-* @param[in]        Message from RTDS
-* @param[in]        Runtime error
-********************************************************************************************/
-    static void log(const std::string, const asio::error_code);
-/*******************************************************************************************
-* @brief Print details about the socket
-*
-* @param[in]        Message
-* @param[in]        Pointer to the socket
-********************************************************************************************/
-    static void log(const std::string, const asio::ip::tcp::socket*);
+    static void log(T, Args...);
 
 private:
     static std::atomic_bool _needLog;           // True if needs logs
     static std::mutex _consoleWriteLock;        // Mutex for thread safety
-
-/*******************************************************************************************
-* @brief Print details about the socket (Ipaddress and Port number)
-*
-* @param[in]        Pointer to the socket
-* [Not Thread Safe]
-********************************************************************************************/
-    static void _printSocketInfo(const asio::ip::tcp::socket*);
 };
 
 template<typename T, typename... Args>
-inline void Log::ALog(T message, Args... messages)
+inline void Log::log(T message, Args... messages)
 {
     std::lock_guard<std::mutex> lock(_consoleWriteLock);
     if (_needLog)

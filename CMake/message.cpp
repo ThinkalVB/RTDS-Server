@@ -8,7 +8,7 @@ std::mutex Message::_QremLock;
 
 Message::Message(const std::string& messageStr)
 {
-	DEBUG_LOG(Log::ALog("New message created: ", messageStr);)
+	DEBUG_LOG(Log::log("New message created: ", messageStr);)
 	_createdTime = std::chrono::system_clock::now();
 	messageBuf = messageStr;
 }
@@ -39,7 +39,7 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 		if (message != nullptr)
 			delete message;
 		else
-			LOG(Log::ALog("Failed to create message: ", addMssg);)
+			LOG(Log::log("Failed to create message: ", addMssg);)
 		return nullptr;
 	}
 }
@@ -59,7 +59,7 @@ const Message* Message::makeRemMsg(const SApair& saPair)
 		if (message != nullptr)
 			delete message;
 		else
-			LOG(Log::ALog("Failed to create message: ", remMssg);)
+			LOG(Log::log("Failed to create message: ", remMssg);)
 		return nullptr;
 	}
 }
@@ -81,7 +81,7 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 		if (message != nullptr)
 			delete message;
 		else
-			LOG(Log::ALog("Failed to create message: ", brdMssg);)
+			LOG(Log::log("Failed to create message: ", brdMssg);)
 		return nullptr;
 	}
 }
