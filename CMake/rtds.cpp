@@ -108,7 +108,7 @@ void RTDS::_ioThreadJob()
 	_activeThreadCount++;
 	_ioContext.run(ec);
 	if (ec)
-		LOG(Log::log("ioContext.run() failed - ", ec.message());)
+	{	LOG(Log::log("ioContext.run() failed - ", ec.message());)		}
 
 	_activeThreadCount--;
 	DEBUG_LOG(Log::log("ioContext thread exiting");)
@@ -133,11 +133,11 @@ void RTDS::_peerAcceptRoutine()
 				asio::socket_base::enable_connection_aborted connAbortSignal(true);
 				peerSocket->set_option(keepAlive, ec);
 				if (ec)
-					DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)
+				{	DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)			}
 
 				peerSocket->set_option(connAbortSignal, ec);
 				if (ec)
-					DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)
+				{	DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)		}
 
 				try {
 					new Peer(peerSocket);
@@ -167,11 +167,11 @@ void RTDS::_stopTCPacceptor()
 	asio::error_code ec;
 	_tcpAcceptor.cancel(ec);
 	if (ec)
-		LOG(Log::log("TCP acceptor cannot cancel operations - ", ec.message());)
+	{	LOG(Log::log("TCP acceptor cannot cancel operations - ", ec.message());)	}
 
 	_tcpAcceptor.close(ec);
 	if (ec)
-		LOG(Log::log("TCP acceptor cannot close - ", ec.message());)
+	{	LOG(Log::log("TCP acceptor cannot close - ", ec.message());)				}
 	DEBUG_LOG(Log::log("TCP acceptor stopped");)
 }
 

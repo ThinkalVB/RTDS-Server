@@ -10,7 +10,7 @@
 #define STR_V4 "v4"						// Version V4 in string
 #define STR_V6 "v6"						// Version V6 in string
 
-#define RTDS_BUFF_SIZE 300				// Maximum size of the readBuffer
+#define RTDS_BUFF_SIZE 330				// Maximum size of the readBuffer
 #define MAX_BGID_SIZE 128				// Maximum size of BGID
 #define MAX_BROADCAST_SIZE 256			// Maximum size of B data
 #define MAX_TAG_SIZE 32					// Maximum size of Tag

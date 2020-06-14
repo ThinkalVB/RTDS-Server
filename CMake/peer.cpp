@@ -29,7 +29,7 @@ Peer::~Peer()
 	asio::error_code ec;
 	_peerSocket->close(ec);
 	if (ec)
-		LOG(Log::log(_saPair.toString(), " socket cannot close - ", ec.message());)
+	{	LOG(Log::log(_saPair.toString(), " socket cannot close - ", ec.message());)		}
 	delete _peerSocket;
 	DEBUG_LOG(Log::log(_saPair.toString(), " Peer Disconnected");)
 }

@@ -101,5 +101,5 @@ void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 		}
 	}
 	else
-		LOG(Log::log("Peer must be in map, but not found");)
+	{	LOG(Log::log("Peer must be in map, but not found");)		}
 }
