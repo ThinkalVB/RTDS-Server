@@ -47,13 +47,14 @@ public:
 * @brief Broadcast a message to all peers in the peer list
 *
 * @param[in]			Message broadcasting peer
-* @param[in]			Broadcast Group Tag
 * @param[in]			Message
+* @param[in]			Broadcast Group Tag
 *
 * @details
 * The message won't be send to the messaging peer
 ********************************************************************************************/
-	void broadcast(Peer*, const std::string&, const Message*);
+	void broadcast(Peer*, const Message*, const std::string_view&);
+	void broadcast(Peer*, const Message*);
 };
 
 class BGcontroller
@@ -71,14 +72,14 @@ public:
 * @details
 * Return null pointer if the operation fails
 ********************************************************************************************/
-	static BGroup* addToBG(Peer*, const std::string&);
+	static BGroup* addToBG(Peer*, const BGID&);
 /*******************************************************************************************
 * @brief Remove a peer from the broadcast group
 *
 * @param[in]			Peer
 * @param[in]			Broadcast Group ID
 ********************************************************************************************/
-	static void removeFromBG(Peer*, const std::string&);
+	static void removeFromBG(Peer*, const BGID&);
 };
 
 #endif

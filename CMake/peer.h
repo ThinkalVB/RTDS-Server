@@ -15,11 +15,10 @@ class Peer
 	asio::ip::tcp::socket* _peerSocket;		// Socket handling the data from peer system
 	const SApair _saPair;					// Source address pair of this peer
 	std::string _writeBuffer;				// Buffer from which the response will be send
+	
 	BGroup* _bgPtr;							// Pointer to broadcast group
-
-	std::mutex _resLock;					// Peer resource lock
-	std::string _bgID;						// Broadcast group ID
-	std::string _bgTag;						// Broadcast group Tag
+	BGID _bgID;								// Broadcast group ID
+	BGT _bgTag;								// Broadcast group Tag
 
 	bool _peerIsActive;						// True if the peer socket is operational
 	bool _isInBG;							// True if this peer is in Broadcast Group
@@ -75,20 +74,16 @@ class Peer
 ********************************************************************************************/
 	void _sendMssgFuncFeedbk(const asio::error_code&, std::size_t);
 /*******************************************************************************************
-* @brief Shut down the socket and delete the peer object.
-********************************************************************************************/
-	void _terminatePeer();
-/*******************************************************************************************
 * @brief Close and delete peerSocket
 *
 * @details
 * Leave the BG if in listening mode.
+* Decrement peer count. Shutdown and delete peer socket.
 ********************************************************************************************/
 	~Peer();
 
 public:
 	std::string_view commandStr;			// A string view of the received command
-
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
 *
@@ -102,15 +97,17 @@ public:
 /*******************************************************************************************
 * @brief Shedule a send for message to the peer system
 *
-* @param[in]			Message Tag
 * @param[in]			Message to be send
+* @param[in]			Message Tag
 *
 * @details
 * Only send the message if the tags are compatible.
 * The callback function _sendMFeedback() will be invoked after the data is send.
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
-	void sendMessage(const std::string&, const Message* message);
+	void sendMessage(const Message*, const std::string_view&);
+	void sendMessage(const Message*);
+
 /*******************************************************************************************
 * @brief Disconnect the peer and delete the object
 ********************************************************************************************/
@@ -131,12 +128,6 @@ public:
 ********************************************************************************************/
 	void leaveBG();
 /*******************************************************************************************
-* @brief Change the Broadcast group tag 
-*
-* @param[in]			New Tag value
-********************************************************************************************/
-	void changeTagTo(const std::string_view&);
-/*******************************************************************************************
 * @brief Print the source address pair info to the write buffer
 *
 * @details
@@ -150,11 +141,13 @@ public:
 ********************************************************************************************/
 	void respondWith(const Response);
 /*******************************************************************************************
-* @brief Broadcast a message to the group 
+* @brief Broadcast a message to the group
 *
 * @param[in]			Message
+* @param[in]			Broadcast Group Tag
 ********************************************************************************************/
 	void broadcast(const std::string_view&);
+	void broadcast(const std::string_view&, const std::string_view&);
 };
 
 #endif

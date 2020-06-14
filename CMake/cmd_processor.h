@@ -66,7 +66,6 @@ private:
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
 	static void _cmd_ping(Peer&);
-	static void _cmd_change(Peer&);
 	static void _cmd_broadcast(Peer&);
 	static void _cmd_exit(Peer&);
 	static void _cmd_listen(Peer&);

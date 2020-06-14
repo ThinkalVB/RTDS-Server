@@ -29,13 +29,23 @@ bool BGroup_Unrestricted::isEmpty() const
 }
 
 
-void BGroup::broadcast(Peer* mPeer,const std::string& bgTag, const Message* message)
+void BGroup::broadcast(Peer* mPeer, const Message* message, const std::string_view& bgTag)
 {
 	std::lock_guard<std::mutex> lock(_peerListLock);
 	for (auto peer : _peerList)
 	{
 		if (peer != mPeer)
-			peer->sendMessage(bgTag, message);
+			peer->sendMessage(message, bgTag);
+	}
+}
+
+void BGroup::broadcast(Peer* mPeer, const Message* message)
+{
+	std::lock_guard<std::mutex> lock(_peerListLock);
+	for (auto peer : _peerList)
+	{
+		if (peer != mPeer)
+			peer->sendMessage(message);
 	}
 }
 
@@ -43,7 +53,7 @@ void BGroup::broadcast(Peer* mPeer,const std::string& bgTag, const Message* mess
 std::map<std::string, BGroup_Unrestricted*> BGcontroller::_BGmap;
 std::mutex BGcontroller::_bgLock;
 
-BGroup* BGcontroller::addToBG(Peer* peer, const std::string& bgID)
+BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 {
 	std::lock_guard<std::mutex> lock(_bgLock);
 	auto bGroupItr = _BGmap.find(bgID);
@@ -76,7 +86,7 @@ BGroup* BGcontroller::addToBG(Peer* peer, const std::string& bgID)
 	}
 }
 
-void BGcontroller::removeFromBG(Peer* peer, const std::string& bgID)
+void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 {
 	std::lock_guard<std::mutex> lock(_bgLock);
 	auto bGroupItr = _BGmap.find(bgID);
@@ -93,5 +103,3 @@ void BGcontroller::removeFromBG(Peer* peer, const std::string& bgID)
 	else
 		LOG(Log::log("Peer must be in map, but not found");)
 }
-
-

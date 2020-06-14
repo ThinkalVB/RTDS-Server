@@ -24,9 +24,9 @@ bool Message::haveExpired() const
 		return false;
 }
 
-const Message* Message::makeAddMsg(const SApair& saPair)
+const Message* Message::makeAddMsg(const SApair& saPair, const std::string& bgTag)
 {
-	auto addMssg = "[+] " + saPair.toString();
+	auto addMssg = "[C] " + saPair.toString() + " " + bgTag;
 	Message* message = nullptr;
 	try {
 		message = new Message(addMssg);
@@ -44,9 +44,9 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 	}
 }
 
-const Message* Message::makeRemMsg(const SApair& saPair)
+const Message* Message::makeRemMsg(const SApair& saPair, const std::string& bgTag)
 {
-	auto remMssg = "[-] " + saPair.toString();
+	auto remMssg = "[D] " + saPair.toString() + " " + bgTag;
 	Message* message = nullptr;
 	try {
 		message = new Message(remMssg);

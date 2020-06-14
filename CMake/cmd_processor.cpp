@@ -6,8 +6,8 @@ const std::string CmdProcessor::RESP[] =
 	"bad_command",
 	"bad_param",
 	"wait_retry",
-	"is_listening",
-	"not_listening"
+	"is_in_bg",
+	"not_in_bg"
 };
 
 const std::string CmdProcessor::COMM[] =
@@ -15,7 +15,6 @@ const std::string CmdProcessor::COMM[] =
 	"broadcast",
 	"ping",
 	"listen",
-	"change",
 	"leave",
 	"exit"
 };
@@ -33,8 +32,6 @@ void CmdProcessor::processCommand(Peer& peer)
 		_cmd_broadcast(peer);
 	else if (command == COMM[(short)Command::EXIT])
 		_cmd_exit(peer);
-	else if (command == COMM[(short)Command::CHANGE])
-		_cmd_change(peer);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
@@ -90,6 +87,7 @@ const std::string_view CmdProcessor::extractElement(std::string_view& command)
 	}
 }
 
+
 void CmdProcessor::_cmd_ping(Peer& peer)
 {
 	if (peer.commandStr.empty())
@@ -98,20 +96,19 @@ void CmdProcessor::_cmd_ping(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::_cmd_change(Peer& peer)
-{
-	auto bgTag = extractElement(peer.commandStr);
-	if (isTag(bgTag) && peer.commandStr.empty())
-		peer.changeTagTo(bgTag);
-	else
-		peer.respondWith(Response::BAD_PARAM);
-}
-
 void CmdProcessor::_cmd_broadcast(Peer& peer)
 {
 	auto message = extractElement(peer.commandStr);
-	if (isBmessage(message) && peer.commandStr.empty())
-		peer.broadcast(message);
+	auto bgTag = extractElement(peer.commandStr);
+	if (isBmessage(message) && peer.commandStr.empty() )
+	{
+		if (bgTag.empty())
+			peer.broadcast(message);
+		else if (isTag(bgTag))
+			peer.broadcast(message, bgTag);
+		else
+			peer.respondWith(Response::BAD_PARAM);
+	}
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
@@ -126,8 +123,8 @@ void CmdProcessor::_cmd_exit(Peer& peer)
 
 void CmdProcessor::_cmd_listen(Peer& peer)
 {
-	auto bgTag = extractElement(peer.commandStr);
 	auto bgID = extractElement(peer.commandStr);
+	auto bgTag = extractElement(peer.commandStr);
 	if (isTag(bgTag) && isBGID(bgID) && peer.commandStr.empty())
 		peer.listenTo(bgID, bgTag);
 	else

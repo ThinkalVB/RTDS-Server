@@ -40,16 +40,17 @@ public:
 * @brief Make new peer addition message
 *
 * @param[in]		Source address pair.
+* @param[in]		Broadcast Group Tag.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	static const Message* makeAddMsg(const SApair&);
+	static const Message* makeAddMsg(const SApair&, const std::string&);
 /*******************************************************************************************
 * @brief Make new peer removal message
 *
 * @param[in]		Source address pair.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	static const Message* makeRemMsg(const SApair&);
+	static const Message* makeRemMsg(const SApair&, const std::string&);
 /*******************************************************************************************
 * @brief Make a new broadcast message
 *
