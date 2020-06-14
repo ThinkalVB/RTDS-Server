@@ -22,9 +22,7 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr) : _saPair(socketPtr)
 
 Peer::~Peer()
 {
-	DEBUG_LOG(Log::log(_saPair.toString(), " Peer terminating");)
-		if (_isInBG)
-			BGcontroller::removeFromBG(this, _bgID);
+	leaveBG();
 	_peerCount--;
 	_peerSocket->shutdown(asio::ip::tcp::socket::shutdown_both);
 
@@ -32,8 +30,8 @@ Peer::~Peer()
 	_peerSocket->close(ec);
 	if (ec)
 		LOG(Log::log(_saPair.toString(), " socket cannot close - ", ec.message());)
-		delete _peerSocket;
-	DEBUG_LOG(Log::log(_saPair.toString(), " Peer disconnected");)
+	delete _peerSocket;
+	DEBUG_LOG(Log::log(_saPair.toString(), " Peer Disconnected");)
 }
 
 
@@ -101,7 +99,7 @@ void Peer::_processData(const asio::error_code& ec, std::size_t size)
 {
 	if (ec)
 	{
-		DEBUG_LOG(Log::log(_saPair.toString(), " Peer socket _processData() failed", ec.message());)
+		DEBUG_LOG(Log::log(_saPair.toString(), " Peer socket _processData() failed ", ec.message());)
 		delete this;
 	}
 	else

@@ -95,6 +95,7 @@ void Message::_cleanMessageQ()
 			auto message = _messageQ.front();
 			if (message->haveExpired())
 			{
+				DEBUG_LOG(Log::log("Message deleted ", message->messageBuf);)
 				_messageQ.pop();
 				delete message;
 			}

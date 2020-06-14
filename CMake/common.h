@@ -10,18 +10,12 @@
 #define STR_V4 "v4"						// Version V4 in string
 #define STR_V6 "v6"						// Version V6 in string
 
-#define V4_SAP_SIZE 6					// 6 Bytes for V4
-#define V6_SAP_SIZE 18					// 18 Bytes for V6
-
-#define PORT_NUM_MAX_CHAR 5				// Maximum number of digits as port number
-#define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number
-
 #define RTDS_BUFF_SIZE 300				// Maximum size of the readBuffer
 #define MAX_BGID_SIZE 128				// Maximum size of BGID
 #define MAX_BROADCAST_SIZE 256			// Maximum size of B data
 #define MAX_TAG_SIZE 32					// Maximum size of Tag
-#define MAX_MSG_CACHE_SIZE 200			// Maximum number of messages to be cached
-#define MIN_MSG_KEEP_TIME 5				// Minimum number of minutes to keep the message
+#define MAX_MSG_CACHE_SIZE 128			// Maximum number of messages to be cached
+#define MIN_MSG_KEEP_TIME 1				// Minimum number of minutes to keep the message
 
 #include <array>
 typedef std::array<char, RTDS_BUFF_SIZE + 1> ReceiveBuffer;
