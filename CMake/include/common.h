@@ -4,7 +4,9 @@
 #define RTDS_DUAL_STACK					// Enable IPV6 support
 #define RTDS_PORT 389					// Default RTDS port number
 
+#ifndef NDEBUG
 #define PRINT_DEBUG_LOG					// Print debug logs
+#endif
 #define PRINT_LOG						// Print critical console logs
 
 #define STR_V4 "v4"						// Version V4 in string
