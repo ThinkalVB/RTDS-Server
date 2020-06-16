@@ -12,10 +12,13 @@ project ("RTDS" VERSION 1.0)
 find_package(Threads REQUIRED)
 find_package(asio CONFIG REQUIRED)
 
+include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/src)
+file(GLOB all_SRCS
+        "${PROJECT_SOURCE_DIR}/include/*.h" "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp" "${PROJECT_SOURCE_DIR}/src/*.c")
+
 # Add source to this project's executable.
-add_executable (rtds "common.h" "sapair.h" "sapair.cpp" "log.cpp" "log.h" "peer.h" "peer.cpp" 
-"rtds.cpp" "rtds.h" "main.cpp" "message.h" "message.cpp" "cmd_processor.h" "cmd_processor.cpp" 
-"bg_controller.h" "bg_controller.cpp")
+add_executable(rtds ${all_SRCS})
 
 target_link_libraries(rtds Threads::Threads)
 target_link_libraries(rtds asio asio::asio)
