@@ -1,11 +1,11 @@
 ﻿#ifndef COMMON_H
 #define COMMON_H
 
-//#define RTDS_DUAL_STACK
+#define RTDS_DUAL_STACK					// Enable IPV6 support
 #define RTDS_PORT 389					// Default RTDS port number
 
-#define PRINT_DEBUG_LOG
-#define PRINT_LOG
+#define PRINT_DEBUG_LOG					// Print debug logs
+#define PRINT_LOG						// Print critical console logs
 
 #define STR_V4 "v4"						// Version V4 in string
 #define STR_V6 "v6"						// Version V6 in string
