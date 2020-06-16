@@ -34,3 +34,4 @@
 # Exclude directories
 **/CMake/.vs/*
 **/CMake/out/*
+**/CMake/CMakeSettings.json
