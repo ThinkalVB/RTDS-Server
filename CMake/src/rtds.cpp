@@ -1,6 +1,7 @@
-﻿#include "rtds.h"
+﻿#include <thread>
+#include "rtds_settings.h"
+#include "rtds.h"
 #include "peer.h"
-#include <thread>
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
@@ -26,6 +27,7 @@ bool RTDS::startTCPserver(const int threadCount)
 	if (ec)
 	{
 		LOG(Log::log("Failed to open TCP acceptor - ", ec.message());)
+		REGISTER_SOCKET_ERR
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor open");)
@@ -35,6 +37,7 @@ bool RTDS::startTCPserver(const int threadCount)
 	{
 		_tcpAcceptor.close();
 		LOG(Log::log("Failed to bind TCP acceptor - ", ec.message());)
+		REGISTER_SOCKET_ERR
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
@@ -44,6 +47,7 @@ bool RTDS::startTCPserver(const int threadCount)
 	{
 		_tcpAcceptor.close();
 		LOG(Log::log("TCP acceptor cannot listen to port - ", ec.message());)
+		REGISTER_SOCKET_ERR
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
@@ -66,6 +70,7 @@ bool RTDS::addThread(const int threadCount)
 		catch (std::runtime_error& ec)
 		{
 			LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
+			REGISTER_IO_ERR
 			return false;
 		}
 	}
@@ -76,6 +81,11 @@ void RTDS::addThisThread()
 {
 	DEBUG_LOG(Log::log("Calling thread added to ioContext");)
 	_ioThreadJob();
+}
+
+int RTDS::threadCount()
+{
+	return _activeThreadCount;
 }
 
 void RTDS::startAccepting()
@@ -113,7 +123,10 @@ void RTDS::_ioThreadJob()
 	_activeThreadCount++;
 	_ioContext.run(ec);
 	if (ec)
-	{	LOG(Log::log("ioContext.run() failed - ", ec.message());)		}
+	{	
+		LOG(Log::log("ioContext.run() failed - ", ec.message());)
+		REGISTER_IO_ERR
+	}
 
 	_activeThreadCount--;
 	DEBUG_LOG(Log::log("ioContext thread exiting");)
@@ -138,17 +151,24 @@ void RTDS::_peerAcceptRoutine()
 				asio::socket_base::enable_connection_aborted connAbortSignal(true);
 				peerSocket->set_option(keepAlive, ec);
 				if (ec)
-				{	DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)			}
+				{	
+					DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)			
+					REGISTER_WARNING
+				}
 
 				peerSocket->set_option(connAbortSignal, ec);
 				if (ec)
-				{	DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)		}
+				{	
+					DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)		
+					REGISTER_WARNING
+				}
 
 				try {
 					new Peer(peerSocket);
 				}
 				catch (std::bad_alloc) {
 					LOG(Log::log("Peer memmory bad allocation");)
+					REGISTER_MEMMORY_ERR
 					peerSocket->close();
 					delete peerSocket;
 				}
@@ -172,11 +192,17 @@ void RTDS::_stopTCPacceptor()
 	asio::error_code ec;
 	_tcpAcceptor.cancel(ec);
 	if (ec)
-	{	LOG(Log::log("TCP acceptor cannot cancel operations - ", ec.message());)	}
+	{	
+		LOG(Log::log("TCP acceptor cannot cancel operations - ", ec.message());)	
+		REGISTER_SOCKET_ERR
+	}
 
 	_tcpAcceptor.close(ec);
 	if (ec)
-	{	LOG(Log::log("TCP acceptor cannot close - ", ec.message());)				}
+	{	
+		LOG(Log::log("TCP acceptor cannot close - ", ec.message());)	
+		REGISTER_SOCKET_ERR
+	}
 	DEBUG_LOG(Log::log("TCP acceptor stopped");)
 }
 

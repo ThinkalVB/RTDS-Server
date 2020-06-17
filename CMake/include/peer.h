@@ -94,6 +94,8 @@ public:
 * Create a SourceAddressPair with the pointer to the socket. 
 ********************************************************************************************/
 	Peer(asio::ip::tcp::socket*);
+
+	static int peerCount();
 /*******************************************************************************************
 * @brief Shedule a send for message to the peer system
 *

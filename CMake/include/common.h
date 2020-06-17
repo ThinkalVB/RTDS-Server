@@ -8,7 +8,8 @@
 #define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number
 
 #ifndef NDEBUG
-#define PRINT_DEBUG_LOG					// Print debug logs
+#define PRINT_DEBUG_LOG					// Print debug log to file
+#define OUTPUT_DEBUG_LOG				// Print debug log to screen
 #endif
 #define PRINT_LOG						// Print critical console logs
 

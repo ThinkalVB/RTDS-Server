@@ -4,7 +4,6 @@
 #include <asio.hpp>
 #include "common.h"
 
-
 class RTDS
 {
 	asio::io_context _ioContext;				// ioContext controls all the async functions related to ASIO
@@ -12,7 +11,7 @@ class RTDS
 	asio::ip::tcp::endpoint _tcpEp;				// TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
 	asio::ip::tcp::acceptor _tcpAcceptor;		// TCP acceptor socket that accept incoming tcp connections
 
-	short _activeThreadCount = 0;				// Keep account of number of threads running ioContex.run()
+	int _activeThreadCount = 0;					// Keep account of number of threads running ioContex.run()
 	std::atomic<bool> _tcpServerRunning;		// Track if the TCP server is running
 	std::atomic<bool> _keepAccepting;			// Only accept new connections if True
 
@@ -86,6 +85,12 @@ public:
 * The calling thread will be blocked untill this RTDS object is destroyed
 ********************************************************************************************/
 	void addThisThread();
+/*******************************************************************************************
+* @brief Return number of threads with which ioContex.run() is running
+*
+* @return			Thread Count
+********************************************************************************************/
+	int threadCount();
 /*******************************************************************************************
 * @brief Start accepting new connections
 ********************************************************************************************/

@@ -20,6 +20,11 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr) : _saPair(socketPtr)
 	_sendPeerBufferData();
 }
 
+int Peer::peerCount()
+{
+	return _peerCount;
+}
+
 Peer::~Peer()
 {
 	leaveBG();

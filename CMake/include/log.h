@@ -4,6 +4,7 @@
 #include <mutex>
 #include <fstream>
 #include <asio.hpp>
+#include <iostream>
 
 #define START_LOG Log::startLog();
 #define STOP_LOG Log::stopLog();
@@ -60,6 +61,12 @@ inline void Log::log(T message, Args... messages)
         _logFile << message;
         (_logFile << ... << std::forward<Args>(messages));
         _logFile << std::endl;
+
+        #ifdef PRINT_DEBUG_LOG
+        std::cerr << message;
+        (std::cerr << ... << std::forward<Args>(messages));
+        std::cerr << std::endl;
+        #endif
     }
 }
 

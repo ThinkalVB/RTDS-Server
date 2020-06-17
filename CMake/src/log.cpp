@@ -1,5 +1,5 @@
+#include "rtds_settings.h"
 #include "log.h"
-#include <iostream>
 
 std::atomic_bool Log::_canLog;
 std::mutex Log::_writeLock;
@@ -14,6 +14,7 @@ void Log::startLog()
 	catch (...)
 	{
 		std::cerr << "Logging failed";
+		REGISTER_IO_ERR
 		_canLog = false;
 	}
 	_canLog = true;

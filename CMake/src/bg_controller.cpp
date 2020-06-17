@@ -1,4 +1,5 @@
 #include "bg_controller.h"
+#include "rtds_settings.h"
 #include "log.h"
 
 BGroup_Unrestricted::BGroup_Unrestricted(const std::string& bgID)
@@ -64,12 +65,18 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 			bGroup = new BGroup_Unrestricted(bgID);
 			bGroup->addPeer(peer);
 			_BGmap.insert(std::pair(bgID, bGroup));
-			DEBUG_LOG(Log::log(bgID, " BG added");)
+			DEBUG_LOG(Log::log("Added BG: ", bgID);)
 			return (BGroup*)bGroup;
 		}
 		catch (...) {
 			if (bGroup != nullptr)
+			{
+				LOG(Log::log("Failed to add BG: ", bgID);)
 				delete bGroup;
+			}
+			else
+			{	LOG(Log::log("Failed to add peer to BG");)	}
+			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
 	}
@@ -81,6 +88,8 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 			return (BGroup*)bGroup;
 		}
 		catch (...) {
+			LOG(Log::log("Failed to add peer to BG");)
+			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
 	}
@@ -97,9 +106,12 @@ void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 		if (bGroup->isEmpty())
 		{
 			_BGmap.erase(bGroupItr);
-			DEBUG_LOG(Log::log(bgID, " BG deleted");)
+			DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
 		}
 	}
 	else
-	{	LOG(Log::log("Peer must be in map, but not found");)		}
+	{	
+		LOG(Log::log("Peer must be in map, but not found");)
+		REGISTER_CODE_ERROR
+	}
 }

@@ -1,4 +1,5 @@
 #include "message.h"
+#include "rtds_settings.h"
 #include "common.h"
 #include "log.h"
 
@@ -37,9 +38,13 @@ const Message* Message::makeAddMsg(const SApair& saPair, const std::string& bgTa
 	}
 	catch (...)	{
 		if (message != nullptr)
+		{
+			LOG(Log::log("Failed to add message to Q: ");)
 			delete message;
+		}
 		else
-			LOG(Log::log("Failed to create message: ", addMssg);)
+		{	LOG(Log::log("Failed to create message: ", addMssg);)	}
+		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 }
@@ -57,9 +62,13 @@ const Message* Message::makeRemMsg(const SApair& saPair, const std::string& bgTa
 	}
 	catch (...) {
 		if (message != nullptr)
+		{
+			LOG(Log::log("Failed to add message to Q: ");)
 			delete message;
+		}
 		else
-			LOG(Log::log("Failed to create message: ", remMssg);)
+		{	LOG(Log::log("Failed to create message: ", remMssg);)	}
+		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 }
@@ -79,9 +88,13 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	}
 	catch (...) {
 		if (message != nullptr)
+		{
+			LOG(Log::log("Failed to add message to Q: ");)
 			delete message;
+		}
 		else
-			LOG(Log::log("Failed to create message: ", brdMssg);)
+		{	LOG(Log::log("Failed to create message: ", brdMssg);)	}
+		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 }
