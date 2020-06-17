@@ -92,6 +92,11 @@ void RTDS::stopAccepting()
 	_tcpAcceptor.cancel();
 }
 
+bool RTDS::isAccepting()
+{
+	return _keepAccepting;
+}
+
 void RTDS::stopTCPserver()
 {
 	_stopTCPacceptor();
