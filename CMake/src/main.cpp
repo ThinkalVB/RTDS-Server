@@ -5,7 +5,7 @@
 unsigned short portNumber = RTDS_PORT;
 short threadCount = DEF_THREAD_COUNT;
 
-void _findPortNumber(std::string portNStr)
+void findPortNumber(std::string portNStr)
 {
 	if (!CmdProcessor::isPortNumber(portNStr, portNumber))
 	{
@@ -14,7 +14,7 @@ void _findPortNumber(std::string portNStr)
 	}
 }
 
-void _findThreadCount(std::string threadCStr)
+void findThreadCount(std::string threadCStr)
 {
 	if (!CmdProcessor::isThreadCount(threadCStr, threadCount))
 	{
@@ -26,12 +26,22 @@ void _findThreadCount(std::string threadCStr)
 void processArgs(std::string arg)
 {
 	if (arg.rfind("-p", 0) == 0)
-		_findPortNumber(arg.substr(2));
+		findPortNumber(arg.substr(2));
 	else if (arg.rfind("-t", 0) == 0)
-		_findThreadCount(arg.substr(2));
+		findThreadCount(arg.substr(2));
 	else
 	{
 		std::cerr << "Invalid argument";
+		exit(0);
+	}
+}
+
+void processCommand(RTDS& rtdsServer, std::string command)
+{
+	if (command == "exit")
+	{
+		rtdsServer.stopAccepting();
+		rtdsServer.stopTCPserver();
 		exit(0);
 	}
 }
@@ -46,5 +56,11 @@ int main(int argCount, const char* args[])
 
 	RTDS rtdsServer(portNumber);
 	rtdsServer.startTCPserver(threadCount);
-	rtdsServer.addThisThread();
+
+	while (true)
+	{
+		std::string command;
+		std::cin >> command;
+		processCommand(rtdsServer, command);
+	}
 }

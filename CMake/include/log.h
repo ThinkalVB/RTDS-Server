@@ -2,9 +2,8 @@
 #define LOG_H
 
 #include <mutex>
-#include <string.h>
+#include <fstream>
 #include <asio.hpp>
-#include <iostream>
 
 #define START_LOG Log::startLog();
 #define STOP_LOG Log::stopLog();
@@ -47,20 +46,20 @@ public:
     static void log(T, Args...);
 
 private:
-    static std::atomic_bool _needLog;           // True if needs logs
-    static std::mutex _consoleWriteLock;        // Mutex for thread safety
+    static std::atomic_bool _canLog;           // True if needs logs
+    static std::mutex _writeLock;               // Mutex for thread safety
+    static std::ofstream _logFile;              // Log file stream
 };
 
 template<typename T, typename... Args>
 inline void Log::log(T message, Args... messages)
 {
-    std::lock_guard<std::mutex> lock(_consoleWriteLock);
-    if (_needLog)
+    std::lock_guard<std::mutex> lock(_writeLock);
+    if (_canLog)
     {
-        std::cout << "RTDS: ";
-        std::cout << message;
-        (std::cout << ... << std::forward<Args>(messages));
-        std::cout << std::endl;
+        _logFile << message;
+        (_logFile << ... << std::forward<Args>(messages));
+        _logFile << std::endl;
     }
 }
 
