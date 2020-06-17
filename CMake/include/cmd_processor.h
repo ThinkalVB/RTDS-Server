@@ -45,6 +45,22 @@ struct CmdProcessor
 ********************************************************************************************/
 	static bool isPrintable(const std::string_view&);
 /*******************************************************************************************
+* @brief Check if the string is a port number
+*
+* @param[in]			Port number.
+* @param[out]			Port number value if true.
+* @return				True if port number.
+********************************************************************************************/
+	static bool isPortNumber(const std::string,unsigned short&);
+/*******************************************************************************************
+* @brief Check if the string is a thread count
+*
+* @param[in]			Thread count.
+* @param[out]			Thread count value if true.
+* @return				True if thread count.
+********************************************************************************************/
+	static bool isThreadCount(const std::string, short&);
+/*******************************************************************************************
 * @brief Extract the next element from the command string.
 *
 * @param[in]			Command string.

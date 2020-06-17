@@ -68,7 +68,7 @@ public:
 * Open acceptor socket with the tcpEp.protocol(). Bind it to the tcp endpoint.
 * Signal the OS to start listening for incomming connection requests. Start accepting.
 ********************************************************************************************/
-	bool startTCPserver(const int threadCount = 1);
+	bool startTCPserver(const int threadCount = DEF_THREAD_COUNT);
 /*******************************************************************************************
 * @brief Add X number of threads to run ioContex.run()
 *

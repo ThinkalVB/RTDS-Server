@@ -2,7 +2,10 @@
 #define COMMON_H
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support
+#define DEF_THREAD_COUNT 2				// Default RTDS Thread Count
+#define MAX_THREAD_COUNT 28				// Maximum Thread Count
 #define RTDS_PORT 389					// Default RTDS port number
+#define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number
 
 #ifndef NDEBUG
 #define PRINT_DEBUG_LOG					// Print debug logs

@@ -1,4 +1,5 @@
 #include "cmd_processor.h"
+#include <regex>
 
 const std::string CmdProcessor::RESP[] =
 {
@@ -65,6 +66,36 @@ bool CmdProcessor::isPrintable(const std::string_view& strElement)
 			return false;
 	}
 	return true;
+}
+
+bool CmdProcessor::isPortNumber(const std::string portNStr, unsigned short& portNum)
+{
+	std::regex rgx("[0-9]{1,5}");
+	if (std::regex_match(portNStr, rgx))
+	{
+		auto pNum = std::stoi(portNStr);
+		if (pNum <= MAX_PORT_NUM_VALUE)
+		{
+			portNum = pNum;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CmdProcessor::isThreadCount(const std::string threadCStr, short& threadCount)
+{
+	std::regex rgx("[0-9]{1,5}");
+	if (std::regex_match(threadCStr, rgx))
+	{
+		auto threadC = std::stoi(threadCStr);
+		if (threadC <= MAX_THREAD_COUNT)
+		{
+			threadCount = threadC;
+			return true;
+		}
+	}
+	return false;
 }
 
 const std::string_view CmdProcessor::extractElement(std::string_view& command)
