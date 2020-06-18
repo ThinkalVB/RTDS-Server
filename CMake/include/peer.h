@@ -9,19 +9,19 @@
 class BGroup;
 class Peer
 {		
-	static std::atomic_int _peerCount;		// Keep the total count of peers
+	static std::atomic_int m_peerCount;		// Keep the total count of peers
 
-	ReceiveBuffer _dataBuffer;				// Buffer to which the commands are received
-	asio::ip::tcp::socket* _peerSocket;		// Socket handling the data from peer system
-	const SApair _saPair;					// Source address pair of this peer
-	std::string _writeBuffer;				// Buffer from which the response will be send
+	ReceiveBuffer m_dataBuffer;				// Buffer to which the commands are received
+	asio::ip::tcp::socket* m_peerSocket;	// Socket handling the data from peer system
+	const SApair m_saPair;					// Source address pair of this peer
+	std::string m_writeBuffer;				// Buffer from which the response will be send
 	
-	BGroup* _bgPtr;							// Pointer to broadcast group
-	BGID _bgID;								// Broadcast group ID
-	BGT _bgTag;								// Broadcast group Tag
+	BGroup* m_bgPtr;						// Pointer to broadcast group
+	BGID m_bgID;							// Broadcast group ID
+	BGT m_bgTag;							// Broadcast group Tag
 
-	bool _peerIsActive;						// True if the peer socket is operational
-	bool _isInBG;							// True if this peer is in Broadcast Group
+	bool m_peerIsActive;					// True if the peer socket is operational
+	bool m_isInBG;							// True if this peer is in Broadcast Group
 
 /*******************************************************************************************
 * @brief Shedule a send for writeBuffer contents to the peer system
@@ -30,7 +30,7 @@ class Peer
 * The callback function _sendFeedback() will be invoked after the data is send.
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
-	void _sendPeerBufferData();
+	void m_sendPeerBufferData();
 /*******************************************************************************************
  * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
  *
@@ -38,7 +38,7 @@ class Peer
  * The callback function _processData() will be invoked when their is new data in buffer.
  * The callback function will be called even if thier is a error in tcp connection.
  ********************************************************************************************/
-	void _peerReceiveData();
+	void m_peerReceiveData();
 /*******************************************************************************************
 * @brief The callback function for getting (new data / socket error)
 *
@@ -51,7 +51,7 @@ class Peer
 * Send back Response for the received command.
 * If ec state a error in connection, this peer object will be deleted.
 ********************************************************************************************/
-	void _processData(const asio::error_code&, std::size_t);
+	void m_processData(const asio::error_code&, std::size_t);
 /*******************************************************************************************
 * @brief This callback function will be called after sending data in the write buffer
 *
@@ -62,7 +62,7 @@ class Peer
 * If ec state a error in connection, this object will be deleted.
 * If the connection is ok then, clear the write buffer and register for next receive.
 ********************************************************************************************/
-	void _sendFuncFeedbk(const asio::error_code&, std::size_t);
+	void m_sendFuncFeedbk(const asio::error_code&, std::size_t);
 /*******************************************************************************************
 * @brief This callback function will be called after sending message
 *
@@ -72,7 +72,7 @@ class Peer
 * @details
 * If ec state a error in connection, signal peer object to be deleted.
 ********************************************************************************************/
-	void _sendMssgFuncFeedbk(const asio::error_code&, std::size_t);
+	void m_sendMssgFuncFeedbk(const asio::error_code&, std::size_t);
 /*******************************************************************************************
 * @brief Close and delete peerSocket
 *
@@ -94,7 +94,11 @@ public:
 * Create a SourceAddressPair with the pointer to the socket. 
 ********************************************************************************************/
 	Peer(asio::ip::tcp::socket*);
-
+/*******************************************************************************************
+* @brief Return the number of peers
+*
+* @return				Return peer count
+********************************************************************************************/
 	static int peerCount();
 /*******************************************************************************************
 * @brief Shedule a send for message to the peer system

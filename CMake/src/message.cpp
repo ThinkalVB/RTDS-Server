@@ -3,21 +3,21 @@
 #include "common.h"
 #include "log.h"
 
-std::queue<Message*> Message::_messageQ;
-std::mutex Message::_QinsLock;
-std::mutex Message::_QremLock;
+std::queue<Message*> Message::m_messageQ;
+std::mutex Message::m_QinsLock;
+std::mutex Message::m_QremLock;
 
 Message::Message(const std::string& messageStr)
 {
 	DEBUG_LOG(Log::log("New message created: ", messageStr);)
-	_createdTime = std::chrono::system_clock::now();
+	m_createdTime = std::chrono::system_clock::now();
 	messageBuf = messageStr;
 }
 
 bool Message::haveExpired() const
 {
 	TimePoint timeNow = std::chrono::system_clock::now();
-	auto diffTime = std::chrono::duration_cast<std::chrono::minutes>(timeNow - _createdTime);
+	auto diffTime = std::chrono::duration_cast<std::chrono::minutes>(timeNow - m_createdTime);
 	auto timePassed = diffTime.count();
 	if (timePassed > MIN_MSG_KEEP_TIME)
 		return true;
@@ -31,9 +31,9 @@ const Message* Message::makeAddMsg(const SApair& saPair, const std::string& bgTa
 	Message* message = nullptr;
 	try {
 		message = new Message(addMssg);
-		std::lock_guard<std::mutex> lock(_QinsLock);
-		_messageQ.push(message);
-		_cleanMessageQ();
+		std::lock_guard<std::mutex> lock(m_QinsLock);
+		m_messageQ.push(message);
+		m_cleanMessageQ();
 		return message;
 	}
 	catch (...)	{
@@ -55,9 +55,9 @@ const Message* Message::makeRemMsg(const SApair& saPair, const std::string& bgTa
 	Message* message = nullptr;
 	try {
 		message = new Message(remMssg);
-		std::lock_guard<std::mutex> lock(_QinsLock);
-		_messageQ.push(message);
-		_cleanMessageQ();
+		std::lock_guard<std::mutex> lock(m_QinsLock);
+		m_messageQ.push(message);
+		m_cleanMessageQ();
 		return message;
 	}
 	catch (...) {
@@ -81,9 +81,9 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	Message* message = nullptr;
 	try {
 		message = new Message(brdMssg);
-		std::lock_guard<std::mutex> lock(_QinsLock);
-		_messageQ.push(message);
-		_cleanMessageQ();
+		std::lock_guard<std::mutex> lock(m_QinsLock);
+		m_messageQ.push(message);
+		m_cleanMessageQ();
 		return message;
 	}
 	catch (...) {
@@ -99,22 +99,22 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	}
 }
 
-void Message::_cleanMessageQ()
+void Message::m_cleanMessageQ()
 {
-	if (_QremLock.try_lock())
+	if (m_QremLock.try_lock())
 	{
-		while (_messageQ.size() > MAX_MSG_CACHE_SIZE)
+		while (m_messageQ.size() > MAX_MSG_CACHE_SIZE)
 		{
-			auto message = _messageQ.front();
+			auto message = m_messageQ.front();
 			if (message->haveExpired())
 			{
 				DEBUG_LOG(Log::log("Message deleted ", message->messageBuf);)
-				_messageQ.pop();
+				m_messageQ.pop();
 				delete message;
 			}
 			else
 				break;
 		}
-		_QremLock.unlock();
+		m_QremLock.unlock();
 	}
 }

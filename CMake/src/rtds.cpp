@@ -1,13 +1,13 @@
-﻿#include <thread>
+﻿#include "rtds.h"
+#include <thread>
 #include "rtds_settings.h"
-#include "rtds.h"
 #include "peer.h"
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v6::any(), portNumber), _tcpAcceptor(_ioContext), _worker(_ioContext)
+RTDS::RTDS(unsigned short portNumber) : m_tcpEp(asio::ip::address_v6::any(), portNumber), m_tcpAcceptor(m_ioContext), m_worker(m_ioContext)
 #else 
-RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v4::any(), portNumber), _tcpAcceptor(_ioContext), _worker(_ioContext)
+RTDS::RTDS(unsigned short portNumber) : m_tcpEp(asio::ip::address_v4::any(), portNumber), m_tcpAcceptor(m_ioContext), m_worker(m_ioContext)
 #endif
 {
 	START_LOG
@@ -18,12 +18,12 @@ RTDS::RTDS(unsigned short portNumber) : _tcpEp(asio::ip::address_v4::any(), port
 bool RTDS::startTCPserver(const int threadCount)
 {
 	DEBUG_LOG(Log::log("TCP server initiating");)
-	_tcpServerRunning = false;
-	_activeThreadCount = 0;
+	m_tcpServerRunning = false;
+	m_activeThreadCount = 0;
 	addThread(threadCount);
 
 	asio::error_code ec;
-	_tcpAcceptor.open(_tcpEp.protocol(), ec);
+	m_tcpAcceptor.open(m_tcpEp.protocol(), ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to open TCP acceptor - ", ec.message());)
@@ -32,27 +32,27 @@ bool RTDS::startTCPserver(const int threadCount)
 	}
 	DEBUG_LOG(Log::log("TCP acceptor open");)
 
-	_tcpAcceptor.bind(_tcpEp, ec);
+	m_tcpAcceptor.bind(m_tcpEp, ec);
 	if (ec)
 	{
-		_tcpAcceptor.close();
+		m_tcpAcceptor.close();
 		LOG(Log::log("Failed to bind TCP acceptor - ", ec.message());)
 		REGISTER_SOCKET_ERR
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
 
-	_tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
+	m_tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
 	if (ec)
 	{
-		_tcpAcceptor.close();
+		m_tcpAcceptor.close();
 		LOG(Log::log("TCP acceptor cannot listen to port - ", ec.message());)
 		REGISTER_SOCKET_ERR
 		return false;
 	}
 	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
 	startAccepting();
-	_tcpServerRunning = true;
+	m_tcpServerRunning = true;
 
 	DEBUG_LOG(Log::log("TCP server started");)
 	return true;
@@ -63,7 +63,7 @@ bool RTDS::addThread(const int threadCount)
 	for (int i = 0; i < threadCount; i++)
 	{
 		try {
-			std::thread ioThread(&RTDS::_ioThreadJob, this);
+			std::thread ioThread(&RTDS::m_ioThreadJob, this);
 			ioThread.detach();
 			DEBUG_LOG(Log::log("New thread added to ioContext");)
 		}
@@ -80,64 +80,78 @@ bool RTDS::addThread(const int threadCount)
 void RTDS::addThisThread()
 {
 	DEBUG_LOG(Log::log("Calling thread added to ioContext");)
-	_ioThreadJob();
-}
-
-int RTDS::threadCount()
-{
-	return _activeThreadCount;
+	m_ioThreadJob();
 }
 
 void RTDS::startAccepting()
 {
 	DEBUG_LOG(Log::log("TCP Accepting starting");)
-	_keepAccepting = true;
-	_peerAcceptRoutine();
+	m_keepAccepting = true;
+	m_peerAcceptRoutine();
 }
 
 void RTDS::stopAccepting()
 {
 	DEBUG_LOG(Log::log("TCP Accepting stopped");)
-	_keepAccepting = false;
-	_tcpAcceptor.cancel();
+	m_keepAccepting = false;
+	m_tcpAcceptor.cancel();
 }
 
 bool RTDS::isAccepting()
 {
-	return _keepAccepting;
+	return m_keepAccepting;
 }
 
 void RTDS::stopTCPserver()
 {
-	_stopTCPacceptor();
-	_ioContext.reset();
+	m_stopTCPacceptor();
+	m_ioContext.reset();
 	DEBUG_LOG(Log::log("TCP server stopped");)
 
-	_keepAccepting = false;
-	_tcpServerRunning = false;
+	m_keepAccepting = false;
+	m_tcpServerRunning = false;
 }
 
-void RTDS::_ioThreadJob()
+void RTDS::printStatus()
+{
+	std::cout << "Active Threads : " << m_activeThreadCount << "\t\t";
+	std::cout << "RTDS Port      : " << m_tcpEp.port() << std::endl;
+
+	if (m_keepAccepting)
+		std::cout << "Accepting      : OK " << "\t\t";
+	else
+		std::cout << "Accepting      : NO " << "\t\t";
+	std::cout << "Connections    : " << Peer::peerCount() << std::endl;
+
+	std::cout << "Warning        : " << WARNINGS << "\t\t";
+	std::cout << "Memmory Error  : " << MEMMORY_ERR << std::endl;
+
+	std::cout << "Socket Error   : " << SOCKET_ERR << "\t\t";
+	std::cout << "IO Error       : " << IO_ERR << std::endl;
+	std::cout << "Code Error     : " << CODE_ERR << std::endl;
+}
+
+void RTDS::m_ioThreadJob()
 {
 	asio::error_code ec;
-	_activeThreadCount++;
-	_ioContext.run(ec);
+	m_activeThreadCount++;
+	m_ioContext.run(ec);
 	if (ec)
 	{	
 		LOG(Log::log("ioContext.run() failed - ", ec.message());)
 		REGISTER_IO_ERR
 	}
 
-	_activeThreadCount--;
+	m_activeThreadCount--;
 	DEBUG_LOG(Log::log("ioContext thread exiting");)
 	return;
 }
 
-void RTDS::_peerAcceptRoutine()
+void RTDS::m_peerAcceptRoutine()
 {
-	auto peerSocket = new asio::ip::tcp::socket(_ioContext);
+	auto peerSocket = new asio::ip::tcp::socket(m_ioContext);
 
-	_tcpAcceptor.async_accept(*peerSocket,
+	m_tcpAcceptor.async_accept(*peerSocket,
 		[peerSocket, this](asio::error_code ec)
 		{
 			if (ec)
@@ -173,31 +187,31 @@ void RTDS::_peerAcceptRoutine()
 					delete peerSocket;
 				}
 			}
-			if (_keepAccepting)
-				_peerAcceptRoutine();
+			if (m_keepAccepting)
+				m_peerAcceptRoutine();
 		});
 }
 
-void RTDS::_stopIoContext()
+void RTDS::m_stopIoContext()
 {
-	_ioContext.stop();
+	m_ioContext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	} while (!_ioContext.stopped() && _activeThreadCount == 0);
+	} while (!m_ioContext.stopped() && m_activeThreadCount == 0);
 	DEBUG_LOG(Log::log("IO Context stopped");)
 }
 
-void RTDS::_stopTCPacceptor()
+void RTDS::m_stopTCPacceptor()
 {
 	asio::error_code ec;
-	_tcpAcceptor.cancel(ec);
+	m_tcpAcceptor.cancel(ec);
 	if (ec)
 	{	
 		LOG(Log::log("TCP acceptor cannot cancel operations - ", ec.message());)	
 		REGISTER_SOCKET_ERR
 	}
 
-	_tcpAcceptor.close(ec);
+	m_tcpAcceptor.close(ec);
 	if (ec)
 	{	
 		LOG(Log::log("TCP acceptor cannot close - ", ec.message());)	
@@ -208,9 +222,9 @@ void RTDS::_stopTCPacceptor()
 
 RTDS::~RTDS()
 {
-	if (_tcpServerRunning)
+	if (m_tcpServerRunning)
 		stopTCPserver();
-	_stopIoContext();
+	m_stopIoContext();
 
 	DEBUG_LOG(Log::log("RTDS Exiting [Logging stopped]");)
 	STOP_LOG

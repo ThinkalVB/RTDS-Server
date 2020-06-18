@@ -81,11 +81,11 @@ private:
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void _cmd_ping(Peer&);
-	static void _cmd_broadcast(Peer&);
-	static void _cmd_exit(Peer&);
-	static void _cmd_listen(Peer&);
-	static void _cmd_leave(Peer&);
+	static void m_cmd_ping(Peer&);
+	static void m_cmd_broadcast(Peer&);
+	static void m_cmd_exit(Peer&);
+	static void m_cmd_listen(Peer&);
+	static void m_cmd_leave(Peer&);
 };
 
 #endif

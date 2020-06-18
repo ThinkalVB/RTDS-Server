@@ -24,15 +24,15 @@ void CmdProcessor::processCommand(Peer& peer)
 {
 	auto command = extractElement(peer.commandStr);
 	if (command == COMM[(short)Command::PING])
-		_cmd_ping(peer);
+		m_cmd_ping(peer);
 	else if (command == COMM[(short)Command::LISTEN])
-		_cmd_listen(peer);
+		m_cmd_listen(peer);
 	else if (command == COMM[(short)Command::LEAVE])
-		_cmd_leave(peer);
+		m_cmd_leave(peer);
 	else if (command == COMM[(short)Command::BROADCAST])
-		_cmd_broadcast(peer);
+		m_cmd_broadcast(peer);
 	else if (command == COMM[(short)Command::EXIT])
-		_cmd_exit(peer);
+		m_cmd_exit(peer);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
@@ -119,7 +119,7 @@ const std::string_view CmdProcessor::extractElement(std::string_view& command)
 }
 
 
-void CmdProcessor::_cmd_ping(Peer& peer)
+void CmdProcessor::m_cmd_ping(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.printPingInfo();
@@ -127,7 +127,7 @@ void CmdProcessor::_cmd_ping(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::_cmd_broadcast(Peer& peer)
+void CmdProcessor::m_cmd_broadcast(Peer& peer)
 {
 	auto message = extractElement(peer.commandStr);
 	auto bgTag = extractElement(peer.commandStr);
@@ -144,7 +144,7 @@ void CmdProcessor::_cmd_broadcast(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::_cmd_exit(Peer& peer)
+void CmdProcessor::m_cmd_exit(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.disconnect();
@@ -152,7 +152,7 @@ void CmdProcessor::_cmd_exit(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::_cmd_listen(Peer& peer)
+void CmdProcessor::m_cmd_listen(Peer& peer)
 {
 	auto bgID = extractElement(peer.commandStr);
 	auto bgTag = extractElement(peer.commandStr);
@@ -162,7 +162,7 @@ void CmdProcessor::_cmd_listen(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::_cmd_leave(Peer& peer)
+void CmdProcessor::m_cmd_leave(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.leaveBG();

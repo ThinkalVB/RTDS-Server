@@ -1,35 +1,35 @@
-#include "rtds_settings.h"
 #include "log.h"
+#include "rtds_settings.h"
 
-std::atomic_bool Log::_canLog;
-std::mutex Log::_writeLock;
-std::ofstream Log::_logFile;
+std::atomic_bool Log::m_canLog;
+std::mutex Log::m_writeLock;
+std::ofstream Log::m_logFile;
 
 void Log::startLog()
 {
-	std::lock_guard<std::mutex> lock(_writeLock);
+	std::lock_guard<std::mutex> lock(m_writeLock);
 	try {
-		_logFile.open("log.txt", std::ios::out);
+		m_logFile.open("log.txt", std::ios::out);
 	}
 	catch (...)
 	{
 		std::cerr << "Logging failed";
 		REGISTER_IO_ERR
-		_canLog = false;
+		m_canLog = false;
 	}
-	_canLog = true;
+	m_canLog = true;
 }
 
 void Log::stopLog()
 {
-	if (_canLog)
+	if (m_canLog)
 	{
-		_canLog = false;
-		_logFile.close();
+		m_canLog = false;
+		m_logFile.close();
 	}
 }
 
 bool Log::isLogging()
 {
-	return _canLog;
+	return m_canLog;
 }

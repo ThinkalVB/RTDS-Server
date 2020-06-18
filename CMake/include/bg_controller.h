@@ -6,12 +6,12 @@
 #include "peer.h"
 #include "message.h"
 
-class BGroup_Unrestricted
+class BGroupUnrestricted
 {
 protected:
-	std::string _bgID;									// Broadcast Group ID
-	std::mutex _peerListLock;							// Peer list lock
-	std::vector<Peer*> _peerList;						// Peers in the Broadcast group
+	std::string m_bgID;									// Broadcast Group ID
+	std::mutex m_peerListLock;							// Peer list lock
+	std::vector<Peer*> m_peerList;						// Peers in the Broadcast group
 
 public:
 /*******************************************************************************************
@@ -31,7 +31,7 @@ public:
 *
 * @param[in]			Broadcast group ID
 ********************************************************************************************/
-	BGroup_Unrestricted(const std::string&);
+	BGroupUnrestricted(const std::string&);
 /*******************************************************************************************
 * @brief Check if the peer list is empty
 *
@@ -40,7 +40,7 @@ public:
 	bool isEmpty() const;
 };
 
-class BGroup : BGroup_Unrestricted
+class BGroup : BGroupUnrestricted
 {
 public:
 /*******************************************************************************************
@@ -59,8 +59,8 @@ public:
 
 class BGcontroller
 {
-	static std::map<std::string, BGroup_Unrestricted*> _BGmap;		// Broadcast Group Map
-	static std::mutex _bgLock;										// Lock this Mutex before insertion
+	static std::map<std::string, BGroupUnrestricted*> m_BGmap;		// Broadcast Group Map
+	static std::mutex m_bgLock;										// Lock this Mutex before insertion
 public:
 /*******************************************************************************************
 * @brief Add the peer to the broadcast group

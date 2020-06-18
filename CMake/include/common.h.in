@@ -1,10 +1,10 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define RTDS_VERSION 1.0.0
-#define RTDS_MAJOR 1
-#define RTDS_MINOR 0
-#define RTDS_PATCH 0
+#define RTDS_VERSION @RTDS_VERSION@
+#define RTDS_MAJOR @RTDS_MAJOR@
+#define RTDS_MINOR @RTDS_MINOR@
+#define RTDS_PATCH @RTDS_PATCH@
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support
 #define MAX_THREAD_COUNT 28				// Maximum Thread Count
