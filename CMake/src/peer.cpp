@@ -16,8 +16,7 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr) : m_saPair(socketPtr)
 
 	DEBUG_LOG(Log::log(m_saPair.toString()," Peer Connected");)
 	m_peerCount++;
-	m_writeBuffer += m_saPair.toString();
-	m_sendPeerBufferData();
+	m_peerReceiveData();
 }
 
 int Peer::peerCount()
@@ -111,8 +110,6 @@ void Peer::m_processData(const asio::error_code& ec, std::size_t size)
 	{
 		m_dataBuffer[size] = '\0';
 		commandStr = (char*)m_dataBuffer.data();
-
-		DEBUG_LOG(Log::log(m_saPair.toString(), " Peer received: ",commandStr);)
 		CmdProcessor::processCommand(*this);
 
 		if (m_peerIsActive)

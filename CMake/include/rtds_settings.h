@@ -15,6 +15,7 @@
 
 #define RTDS_PORT Settings::m_rtdsPortNo
 #define RTDS_START_THREAD Settings::m_rtdsThreadCount
+#define RESET_ERROR_COUNTER Error::m_reset_error_counts();
 
 #include <string>
 struct Error
@@ -24,6 +25,8 @@ struct Error
 	static int m_error_socket;
 	static int m_error_io;
 	static int m_error_code;
+
+	static void m_reset_error_counts();
 };
 
 class Settings

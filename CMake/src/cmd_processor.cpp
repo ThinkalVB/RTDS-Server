@@ -37,6 +37,20 @@ void CmdProcessor::processCommand(Peer& peer)
 		peer.respondWith(Response::BAD_COMMAND);
 }
 
+const const std::string CmdProcessor::processCommand(ReceiveBuffer& udpBuffer, const asio::ip::udp::endpoint udpEp)
+{
+	std::string_view commandStr;
+	commandStr = (char*)udpBuffer.data();
+	std::string response = "[R] ";
+
+	auto command = extractElement(commandStr);
+	if (command == COMM[(short)Command::PING])
+		response += toSAPInfo(udpEp);
+	else
+		response += CmdProcessor::RESP[(short)Response::BAD_COMMAND];
+	return response;
+}
+
 bool CmdProcessor::isBGID(const std::string_view& bgid)
 {
 	if (bgid.size() != 0 && isPrintable(bgid) && bgid.size() <= MAX_BGID_SIZE)
@@ -89,7 +103,7 @@ bool CmdProcessor::isThreadCount(const std::string threadCStr, short& threadCoun
 	if (std::regex_match(threadCStr, rgx))
 	{
 		auto threadC = std::stoi(threadCStr);
-		if (threadC <= MAX_THREAD_COUNT)
+		if (threadC <= MAX_THREAD_COUNT && threadC >= MIN_THREAD_COUNT)
 		{
 			threadCount = threadC;
 			return true;
@@ -116,6 +130,31 @@ const std::string_view CmdProcessor::extractElement(std::string_view& command)
 			command.remove_prefix(endIndex + 1);
 		return element;
 	}
+}
+
+std::string CmdProcessor::toSAPInfo(const asio::ip::udp::endpoint udpEp)
+{
+	std::string saPairStr;
+	auto m_ipAddr = udpEp.address();
+	auto m_portNumber = udpEp.port();
+
+	if (m_ipAddr.is_v4())
+	{
+		saPairStr += STR_V4;
+		auto _ipAddr4 = m_ipAddr.to_v4();
+		saPairStr += " " + _ipAddr4.to_string();
+	}
+	else
+	{
+		saPairStr += STR_V6;
+		auto _ipAddr6 = m_ipAddr.to_v6();
+		if (_ipAddr6.is_v4_mapped())
+			saPairStr += " " + _ipAddr6.to_v4().to_string();
+		else
+			saPairStr += " " + _ipAddr6.to_string();
+	}
+	saPairStr += " " + std::to_string(m_portNumber);
+	return saPairStr;
 }
 
 

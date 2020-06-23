@@ -8,8 +8,8 @@ int Error::m_error_socket = 0;
 int Error::m_error_io = 0;
 int Error::m_error_code = 0;
 
-unsigned short Settings::m_rtdsPortNo = 389;
-short Settings::m_rtdsThreadCount = 4;
+unsigned short Settings::m_rtdsPortNo = RDTS_DEF_PORT;
+short Settings::m_rtdsThreadCount = MIN_THREAD_COUNT;
 
 void Settings::m_findPortNumber(std::string portNStr)
 {
@@ -24,7 +24,7 @@ void Settings::m_findThreadCount(std::string threadCStr)
 {
 	if (!CmdProcessor::isThreadCount(threadCStr, m_rtdsThreadCount))
 	{
-		std::cerr << "Invalid Thread count as argument (Must be [1-28])";
+		std::cerr << "Invalid Thread count as argument (Must be [4-28])";
 		exit(0);
 	}
 }
@@ -40,4 +40,13 @@ void Settings::processArgument(std::string arg)
 		std::cerr << "Invalid argument";
 		exit(0);
 	}
+}
+
+void Error::m_reset_error_counts()
+{
+	m_warnings = 0;
+	m_error_memmory = 0;
+	m_error_socket = 0;
+	m_error_io = 0;
+	m_error_code = 0;
 }
