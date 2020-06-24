@@ -29,6 +29,7 @@
 #define MIN_MSG_KEEP_TIME 1				// Minimum number of minutes to keep the message
 
 #include <array>
+#include <string>
 typedef std::array<char, RTDS_BUFF_SIZE + 1> ReceiveBuffer;
 typedef std::string BGID;
 typedef std::string BGT;

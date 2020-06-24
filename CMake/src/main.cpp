@@ -44,6 +44,8 @@ void processCommand(RTDS& rtdsServer, std::string command)
 }
 
 
+
+#include "advanced_buffer.h"
 int main(int argCount, const char* args[])
 {
 	for (auto i = 1; i < argCount; i++)
@@ -62,4 +64,5 @@ int main(int argCount, const char* args[])
 		std::cin >> command;
 		processCommand(rtdsServer, command);
 	}
+	return 0;
 }
