@@ -1,7 +1,8 @@
 #ifndef PEER_H
 #define PEER_H
 
-#include <asio.hpp>
+#include <asio/ip/tcp.hpp>
+#include <atomic>
 #include "message.h"
 #include "sapair.h"
 #include "common.h"
@@ -15,8 +16,7 @@ class Peer
 	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	asio::ip::tcp::socket* mPeerSocket;		// Socket handling the data from peer system
 	const SApair mSApair;					// Source address pair of this peer
-	std::string mWriteBuffer;				// Buffer from which the response will be send
-	
+
 	BGroup* mBgPtr;							// Pointer to broadcast group
 	BGID mBgID;								// Broadcast group ID
 	BGT mBgTag;								// Broadcast group Tag
@@ -84,7 +84,6 @@ class Peer
 	~Peer();
 
 public:
-	std::string_view commandStr;			// A string view of the received command
 /*******************************************************************************************
 * @brief Create a Peer object with an accepted socketPtr*
 *
@@ -101,6 +100,12 @@ public:
 * @return				Return peer count
 ********************************************************************************************/
 	static int peerCount();
+/*******************************************************************************************
+* @brief Return the string view of the received command
+*
+* @return				Return peer count
+********************************************************************************************/
+	std::string_view getCommandString();
 /*******************************************************************************************
 * @brief Shedule a send for message to the peer system
 *

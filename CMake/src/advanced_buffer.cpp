@@ -8,7 +8,6 @@ void AdancedBuffer::operator=(const std::string& responseStr)
 
 void AdancedBuffer::cookString(const size_t noOfStrBytes)
 {
-	mBuffer[noOfStrBytes] = '\0';
 	mVirtualSize = noOfStrBytes;
 }
 
@@ -22,9 +21,8 @@ asio::mutable_buffer AdancedBuffer::getSendBuffer()
 	return asio::mutable_buffer(mBuffer.data(), mVirtualSize);
 }
 
-std::string_view AdancedBuffer::getStringView()
+std::string_view AdancedBuffer::getStringView() const
 {
-	std::string_view strView;
-	strView = (char*)mBuffer.data();
+	std::string_view strView((char*)mBuffer.data(), mVirtualSize);
 	return strView;
 }

@@ -1,7 +1,8 @@
 #ifndef SA_PAIR_H
 #define SA_PAIR_H
 
-#include <asio.hpp>
+#include <asio/ip/tcp.hpp>
+#include <mutex>
 #include <string>
 
 /*******************************************************************************************

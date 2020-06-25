@@ -2,6 +2,7 @@
 #define CMD_PROCESSOR_H
 
 #include "peer.h"
+#include <asio/ip/udp.hpp>
 
 struct CmdProcessor
 {
@@ -91,15 +92,16 @@ private:
 * @brief Respond to the ping request
 *
 * @param[in]			Peer.
+* @param[in]			Rest of the command string.
 *
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void mTCP_ping(Peer&);
-	static void mTCP_broadcast(Peer&);
-	static void mTCP_exit(Peer&);
-	static void mTCP_listen(Peer&);
-	static void mTCP_leave(Peer&);
+	static void mTCP_ping(Peer&, std::string_view&);
+	static void mTCP_broadcast(Peer&, std::string_view&);
+	static void mTCP_exit(Peer&, std::string_view&);
+	static void mTCP_listen(Peer&, std::string_view&);
+	static void mTCP_leave(Peer&, std::string_view&);
 };
 
 #endif

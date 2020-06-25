@@ -1,12 +1,12 @@
 #ifndef ADV_BUFFER_H
 #define ADV_BUFFER_H
-#include "common.h"
+#include <asio/buffer.hpp>
 #include <string>
-#include <asio.hpp>
+#include "common.h"
 
 class AdancedBuffer
 {
-	std::array<char, RTDS_BUFF_SIZE + 1> mBuffer;			// Actual data buffer
+	std::array<char, RTDS_BUFF_SIZE> mBuffer;				// Actual data buffer
 	std::size_t mVirtualSize;								// Virtual size of the buffer
 public:
 /*******************************************************************************************
@@ -44,7 +44,7 @@ public:
 * @details
 * Must cook before requesting a string_view.
 ********************************************************************************************/
-	std::string_view getStringView();
+	std::string_view getStringView() const;
 };
 
 #endif

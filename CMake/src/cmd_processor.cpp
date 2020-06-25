@@ -22,17 +22,18 @@ const std::string CmdProcessor::COMM[] =
 
 void CmdProcessor::processCommand(Peer& peer)
 {
-	auto command = extractElement(peer.commandStr);
+	auto commandStr = peer.getCommandString();
+	auto command = extractElement(commandStr);
 	if (command == COMM[(short)Command::PING])
-		mTCP_ping(peer);
+		mTCP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
-		mTCP_listen(peer);
+		mTCP_listen(peer, commandStr);
 	else if (command == COMM[(short)Command::LEAVE])
-		mTCP_leave(peer);
+		mTCP_leave(peer, commandStr);
 	else if (command == COMM[(short)Command::BROADCAST])
-		mTCP_broadcast(peer);
+		mTCP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
-		mTCP_exit(peer);
+		mTCP_exit(peer, commandStr);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
@@ -157,19 +158,19 @@ std::string CmdProcessor::toSAPInfo(const asio::ip::udp::endpoint udpEp)
 }
 
 
-void CmdProcessor::mTCP_ping(Peer& peer)
+void CmdProcessor::mTCP_ping(Peer& peer, std::string_view& commandStr)
 {
-	if (peer.commandStr.empty())
+	if (commandStr.empty())
 		peer.printPingInfo();
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mTCP_broadcast(Peer& peer)
+void CmdProcessor::mTCP_broadcast(Peer& peer, std::string_view& commandStr)
 {
-	auto message = extractElement(peer.commandStr);
-	auto bgTag = extractElement(peer.commandStr);
-	if (isBmessage(message) && peer.commandStr.empty() )
+	auto message = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
+	if (isBmessage(message) && commandStr.empty() )
 	{
 		if (bgTag.empty())
 			peer.broadcast(message);
@@ -182,27 +183,27 @@ void CmdProcessor::mTCP_broadcast(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mTCP_exit(Peer& peer)
+void CmdProcessor::mTCP_exit(Peer& peer, std::string_view& commandStr)
 {
-	if (peer.commandStr.empty())
+	if (commandStr.empty())
 		peer.disconnect();
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mTCP_listen(Peer& peer)
+void CmdProcessor::mTCP_listen(Peer& peer, std::string_view& commandStr)
 {
-	auto bgID = extractElement(peer.commandStr);
-	auto bgTag = extractElement(peer.commandStr);
-	if (isTag(bgTag) && isBGID(bgID) && peer.commandStr.empty())
+	auto bgID = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
+	if (isTag(bgTag) && isBGID(bgID) && commandStr.empty())
 		peer.listenTo(bgID, bgTag);
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mTCP_leave(Peer& peer)
+void CmdProcessor::mTCP_leave(Peer& peer, std::string_view& commandStr)
 {
-	if (peer.commandStr.empty())
+	if (commandStr.empty())
 		peer.leaveBG();
 	else
 		peer.respondWith(Response::BAD_PARAM);

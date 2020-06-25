@@ -1,4 +1,5 @@
 #include "peer.h"
+#include <functional>
 #include "cmd_processor.h"
 #include "bg_controller.h"
 #include "log.h"
@@ -8,8 +9,6 @@ std::atomic_int Peer::mPeerCount = 0;
 Peer::Peer(asio::ip::tcp::socket* socketPtr) : mSApair(socketPtr)
 {
 	mPeerSocket = socketPtr;
-	mWriteBuffer.reserve(RTDS_BUFF_SIZE);
-
 	mPeerIsActive = true;
 	mBgPtr = nullptr;
 	mIsInBG = false;
@@ -36,6 +35,11 @@ Peer::~Peer()
 	{	LOG(Log::log(mSApair.toString(), " socket cannot close - ", ec.message());)		}
 	delete mPeerSocket;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer Disconnected");)
+}
+
+std::string_view Peer::getCommandString()
+{
+	return mDataBuffer.getStringView();
 }
 
 
@@ -66,10 +70,7 @@ void Peer::mSendFuncFeedbk(const asio::error_code& ec, std::size_t size)
 		delete this;
 	}
 	else
-	{
-		mWriteBuffer.clear();
 		mPeerReceiveData();
-	}
 }
 
 void Peer::mSendMssgFuncFeedbk(const asio::error_code& ec, std::size_t size)
@@ -84,7 +85,7 @@ void Peer::mSendMssgFuncFeedbk(const asio::error_code& ec, std::size_t size)
 
 void Peer::mSendPeerBufferData()
 {
-	mPeerSocket->async_send(asio::buffer(mWriteBuffer.data(), mWriteBuffer.size()), std::bind(&Peer::mSendFuncFeedbk,
+	mPeerSocket->async_send(mDataBuffer.getSendBuffer(), std::bind(&Peer::mSendFuncFeedbk,
 		this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -109,7 +110,6 @@ void Peer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 	else
 	{
 		mDataBuffer.cookString(dataSize);
-		commandStr = mDataBuffer.getStringView();
 		CmdProcessor::processCommand(*this);
 
 		if (mPeerIsActive)
@@ -128,8 +128,9 @@ void Peer::disconnect()
 
 void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 {
+	std::string response;
 	if (mIsInBG)
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::IS_IN_BG];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::IS_IN_BG];
 	else
 	{
 		mBgID = bgID;
@@ -143,16 +144,18 @@ void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 
-			mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
 		}
 		else
-			mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
+	mDataBuffer = response;
 }
 
 void Peer::leaveBG()
 {
+	std::string response;
 	if (mIsInBG)
 	{
 		DEBUG_LOG(Log::log(mSApair.toString(), " Peer leavig BG ", mBgID);)
@@ -163,50 +166,59 @@ void Peer::leaveBG()
 
 		mIsInBG = false;
 		mBgPtr = nullptr;
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
 	}
 	else
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	mDataBuffer = response;
 }
 
 void Peer::printPingInfo()
 {
+	std::string response;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer pinging");)
-	mWriteBuffer += "[R] " + mSApair.toString();
+	response += "[R] " + mSApair.toString();
+	mDataBuffer = response;
 }
 
-void Peer::respondWith(Response response)
+void Peer::respondWith(Response resp)
 {
-	DEBUG_LOG(Log::log(mSApair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)response]);)
-	mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)response];
+	std::string response;
+	DEBUG_LOG(Log::log(mSApair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)resp]);)
+	response = "[R] " + CmdProcessor::RESP[(short)resp];
+	mDataBuffer = response;
 }
 
 void Peer::broadcast(const std::string_view& messageStr)
 {
+	std::string response;
 	if (mIsInBG)
 	{
 		auto message = Message::makeBrdMsg(mSApair, messageStr);
 		if (message != nullptr)
 			mBgPtr->broadcast(this, message);
 
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
 	}
 	else
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	mDataBuffer = response;
 }
 
 void Peer::broadcast(const std::string_view& messageStr, const std::string_view& bgTag)
 {
+	std::string response;
 	if (mIsInBG)
 	{
 		auto message = Message::makeBrdMsg(mSApair, messageStr);
 		if (message != nullptr)
 			mBgPtr->broadcast(this, message, bgTag);
 
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
 	}
 	else
-		mWriteBuffer += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	mDataBuffer = response;
 }

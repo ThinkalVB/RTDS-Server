@@ -25,7 +25,9 @@ struct Error
 	static int mError_socket;					// Number of Socket Errors
 	static int mError_io;						// Number of IO Error
 	static int mError_code;						// Number of Code Error
-
+/*******************************************************************************************
+* @brief Reset all the error counters to zero
+********************************************************************************************/
 	static void mResetErrorCounts();
 };
 

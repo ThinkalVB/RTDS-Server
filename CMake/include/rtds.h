@@ -1,8 +1,8 @@
 ﻿#ifndef RTDS_H
 #define RTDS_H
 
-#include <asio.hpp>
-#include "common.h"
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
 
 class RTDS
 {

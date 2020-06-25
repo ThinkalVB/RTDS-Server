@@ -3,7 +3,7 @@
 
 #include <mutex>
 #include <fstream>
-#include <asio.hpp>
+#include <atomic>
 #include <iostream>
 
 #define START_LOG Log::startLog();
