@@ -47,20 +47,20 @@ public:
     static void log(T, Args...);
 
 private:
-    static std::atomic_bool m_canLog;           // True if needs logs
-    static std::mutex m_writeLock;              // Mutex for thread safety
-    static std::ofstream m_logFile;             // Log file stream
+    static std::atomic_bool mCanLog;            // True if needs logs
+    static std::mutex mWriteLock;               // Mutex for thread safety
+    static std::ofstream mLogFile;              // Log file stream
 };
 
 template<typename T, typename... Args>
 inline void Log::log(T message, Args... messages)
 {
-    std::lock_guard<std::mutex> lock(m_writeLock);
-    if (m_canLog)
+    std::lock_guard<std::mutex> lock(mWriteLock);
+    if (mCanLog)
     {
-        m_logFile << message;
-        (m_logFile << ... << std::forward<Args>(messages));
-        m_logFile << std::endl;
+        mLogFile << message;
+        (mLogFile << ... << std::forward<Args>(messages));
+        mLogFile << std::endl;
 
         #ifdef PRINT_DEBUG_LOG
         std::cerr << message;

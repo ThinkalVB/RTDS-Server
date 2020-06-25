@@ -6,30 +6,30 @@
 
 class RTDS
 {
-	asio::io_context m_ioContext;				// ioContext controls all the async functions related to ASIO
-	asio::io_context::work m_worker;			// Worker object to prevent ioContext.run() from exiting when without async jobs
-	asio::ip::tcp::endpoint m_tcpEp;			// TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
-	asio::ip::tcp::acceptor m_tcpAcceptor;		// TCP acceptor socket that accept incoming tcp connections
+	asio::io_context mIOcontext;				// ioContext controls all the async functions related to ASIO
+	asio::io_context::work mWorker;				// Worker object to prevent ioContext.run() from exiting when without async jobs
+	asio::ip::tcp::endpoint mTCPep;				// TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
+	asio::ip::tcp::acceptor mTCPacceptor;		// TCP acceptor socket that accept incoming tcp connections
 
-	asio::ip::udp::endpoint m_udpEp;			// UDP endpoint that describe the IPaddr ,Port and Protocol for the socket
-	asio::ip::udp::socket m_udpSock;			// UDP socket that accept packets
+	asio::ip::udp::endpoint mUDPep;				// UDP endpoint that describe the IPaddr ,Port and Protocol for the socket
+	asio::ip::udp::socket mUDPsock;				// UDP socket that accept packets
 
-	int m_threadCount;							// Keep account of number of threads running ioContex.run()
-	std::atomic_bool m_serverRunning;			// True if the server is running
+	int mThreadCount;							// Keep account of number of threads running ioContex.run()
+	std::atomic_bool mServerRunning;			// True if the server is running
 
-	void m_configTCPserver();
-	void m_configUDPserver();
+	void mConfigTCPserver();
+	void mConfigUDPserver();
 	
-	void m_ioThreadJob();
-	void m_addthread(const int);
+	void mIOthreadJob();
+	void mAddthread(const int);
 
-	void m_tcpAcceptRoutine();
-	void m_udpListenRoutine();
+	void mTCPacceptRoutine();
+	void mUDPlistenRoutine();
 
 
-	void m_stopUDPserver();
-	void m_stopTCPserver();
-	void m_closeSockets();
+	void mStopUDPserver();
+	void mStopTCPserver();
+	void mCloseSockets();
 
 public:
 /*******************************************************************************************

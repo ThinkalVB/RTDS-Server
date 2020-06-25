@@ -9,9 +9,9 @@
 class BGroupUnrestricted
 {
 protected:
-	std::string m_bgID;									// Broadcast Group ID
-	std::mutex m_peerListLock;							// Peer list lock
-	std::vector<Peer*> m_peerList;						// Peers in the Broadcast group
+	std::string mBgID;									// Broadcast Group ID
+	std::mutex mPeerListLock;							// Peer list lock
+	std::vector<Peer*> mPeerList;						// Peers in the Broadcast group
 
 public:
 /*******************************************************************************************
@@ -59,8 +59,8 @@ public:
 
 class BGcontroller
 {
-	static std::map<std::string, BGroupUnrestricted*> m_BGmap;		// Broadcast Group Map
-	static std::mutex m_bgLock;										// Lock this Mutex before insertion
+	static std::map<std::string, BGroupUnrestricted*> mBGmap;		// Broadcast Group Map
+	static std::mutex mBgLock;										// Lock this Mutex before insertion
 public:
 /*******************************************************************************************
 * @brief Add the peer to the broadcast group

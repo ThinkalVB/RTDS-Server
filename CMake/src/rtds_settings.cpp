@@ -2,27 +2,27 @@
 #include "cmd_processor.h"
 #include <iostream>
 
-int Error::m_warnings = 0;
-int Error::m_error_memmory = 0;
-int Error::m_error_socket = 0;
-int Error::m_error_io = 0;
-int Error::m_error_code = 0;
+int Error::mWarnings = 0;
+int Error::mError_memmory = 0;
+int Error::mError_socket = 0;
+int Error::mError_io = 0;
+int Error::mError_code = 0;
 
-unsigned short Settings::m_rtdsPortNo = RDTS_DEF_PORT;
-short Settings::m_rtdsThreadCount = MIN_THREAD_COUNT;
+unsigned short Settings::mRtdsPortNo = RDTS_DEF_PORT;
+short Settings::mRtdsThreadCount = MIN_THREAD_COUNT;
 
-void Settings::m_findPortNumber(std::string portNStr)
+void Settings::mFindPortNumber(std::string portNStr)
 {
-	if (!CmdProcessor::isPortNumber(portNStr, m_rtdsPortNo))
+	if (!CmdProcessor::isPortNumber(portNStr, mRtdsPortNo))
 	{
 		std::cerr << "Invalid Port Number as argument";
 		exit(0);
 	}
 }
 
-void Settings::m_findThreadCount(std::string threadCStr)
+void Settings::mFindThreadCount(std::string threadCStr)
 {
-	if (!CmdProcessor::isThreadCount(threadCStr, m_rtdsThreadCount))
+	if (!CmdProcessor::isThreadCount(threadCStr, mRtdsThreadCount))
 	{
 		std::cerr << "Invalid Thread count as argument (Must be [4-28])";
 		exit(0);
@@ -32,9 +32,9 @@ void Settings::m_findThreadCount(std::string threadCStr)
 void Settings::processArgument(std::string arg)
 {
 	if (arg.rfind("-p", 0) == 0)
-		m_findPortNumber(arg.substr(2));
+		mFindPortNumber(arg.substr(2));
 	else if (arg.rfind("-t", 0) == 0)
-		m_findThreadCount(arg.substr(2));
+		mFindThreadCount(arg.substr(2));
 	else
 	{
 		std::cerr << "Invalid argument";
@@ -42,11 +42,11 @@ void Settings::processArgument(std::string arg)
 	}
 }
 
-void Error::m_reset_error_counts()
+void Error::mResetErrorCounts()
 {
-	m_warnings = 0;
-	m_error_memmory = 0;
-	m_error_socket = 0;
-	m_error_io = 0;
-	m_error_code = 0;
+	mWarnings = 0;
+	mError_memmory = 0;
+	mError_socket = 0;
+	mError_io = 0;
+	mError_code = 0;
 }

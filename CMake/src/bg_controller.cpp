@@ -4,26 +4,26 @@
 
 BGroupUnrestricted::BGroupUnrestricted(const std::string& bgID)
 {
-	m_bgID = bgID;
+	mBgID = bgID;
 }
 
 void BGroupUnrestricted::addPeer(Peer* peer)
 {
-	std::lock_guard<std::mutex> lock(m_peerListLock);
-	m_peerList.push_back(peer);
+	std::lock_guard<std::mutex> lock(mPeerListLock);
+	mPeerList.push_back(peer);
 }
 
 void BGroupUnrestricted::removePeer(Peer* peer)
 {
-	std::lock_guard<std::mutex> lock(m_peerListLock);
-	auto itr = std::find(m_peerList.begin(), m_peerList.end(), peer);
-	std::iter_swap(itr, m_peerList.end() - 1);
-	m_peerList.pop_back();
+	std::lock_guard<std::mutex> lock(mPeerListLock);
+	auto itr = std::find(mPeerList.begin(), mPeerList.end(), peer);
+	std::iter_swap(itr, mPeerList.end() - 1);
+	mPeerList.pop_back();
 }
 
 bool BGroupUnrestricted::isEmpty() const
 {
-	if (m_peerList.size() == 0)
+	if (mPeerList.size() == 0)
 		return true;
 	else
 		return false;
@@ -32,8 +32,8 @@ bool BGroupUnrestricted::isEmpty() const
 
 void BGroup::broadcast(Peer* mPeer, const Message* message, const std::string_view& bgTag)
 {
-	std::lock_guard<std::mutex> lock(m_peerListLock);
-	for (auto peer : m_peerList)
+	std::lock_guard<std::mutex> lock(mPeerListLock);
+	for (auto peer : mPeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message, bgTag);
@@ -42,8 +42,8 @@ void BGroup::broadcast(Peer* mPeer, const Message* message, const std::string_vi
 
 void BGroup::broadcast(Peer* mPeer, const Message* message)
 {
-	std::lock_guard<std::mutex> lock(m_peerListLock);
-	for (auto peer : m_peerList)
+	std::lock_guard<std::mutex> lock(mPeerListLock);
+	for (auto peer : mPeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message);
@@ -51,20 +51,20 @@ void BGroup::broadcast(Peer* mPeer, const Message* message)
 }
 
 
-std::map<std::string, BGroupUnrestricted*> BGcontroller::m_BGmap;
-std::mutex BGcontroller::m_bgLock;
+std::map<std::string, BGroupUnrestricted*> BGcontroller::mBGmap;
+std::mutex BGcontroller::mBgLock;
 
 BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 {
-	std::lock_guard<std::mutex> lock(m_bgLock);
-	auto bGroupItr = m_BGmap.find(bgID);
-	if (bGroupItr == m_BGmap.end())
+	std::lock_guard<std::mutex> lock(mBgLock);
+	auto bGroupItr = mBGmap.find(bgID);
+	if (bGroupItr == mBGmap.end())
 	{
 		BGroupUnrestricted* bGroup = nullptr;
 		try {
 			bGroup = new BGroupUnrestricted(bgID);
 			bGroup->addPeer(peer);
-			m_BGmap.insert(std::pair(bgID, bGroup));
+			mBGmap.insert(std::pair(bgID, bGroup));
 			DEBUG_LOG(Log::log("Added BG: ", bgID);)
 			return (BGroup*)bGroup;
 		}
@@ -97,15 +97,15 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 
 void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 {
-	std::lock_guard<std::mutex> lock(m_bgLock);
-	auto bGroupItr = m_BGmap.find(bgID);
-	if (bGroupItr != m_BGmap.end())
+	std::lock_guard<std::mutex> lock(mBgLock);
+	auto bGroupItr = mBGmap.find(bgID);
+	if (bGroupItr != mBGmap.end())
 	{
 		auto bGroup = bGroupItr->second;
 		bGroup->removePeer(peer);
 		if (bGroup->isEmpty())
 		{
-			m_BGmap.erase(bGroupItr);
+			mBGmap.erase(bGroupItr);
 			DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
 		}
 	}

@@ -13,19 +13,12 @@ Use VCPKG - package manager to manage dependencies.
 ### Installing
 
 RTDS is a console application.  
-Make sure firewalls are set to allow traffic from the appliation.  
-Initially support for TCP on port 349 only.  
-Port number, thread count and maximum connection limit can be set dynamically.  
+Make sure firewalls are set to allow traffic from the appliation (Run as root in Linux).  
+Initially support for TCP and UDP on port 349 (default).  
+Port number and thread count can be passed as arguments -p and -t (ex: rtds -p349 -t8).  
 Use #define PRINT_LOG to enable logging and #define PRINT_DEBUG_LOG for debug logs.  
-Initial version only support IPv4, IPV6 can be targeted using #define RTDS_DUAL_STACK at compile time.  
-Feel free to modify and use it - and please do contribute to make it better.  
-
-### Coding style 
-
-1) Camel Casing for all the variables.
-2) Data Structure names start with capital letter.
-3) Suitable abbrevations are used as per necessity.
-4) All private member functions and variables should prefix _ "undescore" before name.
+Use #define OUTPUT_DEBUG_LOG to print the logs to the console output stream.  
+RTDS supports both IPv4 and IPv6. IPv6 can be targeted using #define RTDS_DUAL_STACK at compile time.  
 
 ## Built And Test
 
@@ -42,7 +35,7 @@ email@thinkalvb@gmail.com
 
 ## Versioning
 
-- 1.0) Development Package. [Based on RTDS draft]
+- 1.0.0) Development Package. [Based on RTDS draft]
 
 ## Authors
 
@@ -58,4 +51,5 @@ RTDS is a resource tracking server for computers, services, or other resources c
 RTDS maintains a directory service which will keep track of the logical address of these resources on the internet.
 RTDS is built to ensure the persistence and integrity of distributed services without compromising the simplicity of the process.
 All RTDS commands and responses are strictly confined to ASCII character encoding.
-The RTDS server follows a command/response model in a strictly sequential order.
+The RTDS server follows a command-response model in a strictly sequential order.
+Feel free to modify and use it - and please do contribute to make it better.

@@ -9,9 +9,9 @@
  ********************************************************************************************/
 class SApair
 {
-	asio::ip::address m_ipAddr;			// IPaddress.
-	unsigned short m_portNumber;			// Associated port number.
-	std::string m_saPairStr;				// SApair string (Version+IPaddress+portNumber)
+	asio::ip::address mIpAddr;			// IPaddress.
+	unsigned short mPortNumber;			// Associated port number.
+	std::string mSaPairStr;				// SApair string (Version+IPaddress+portNumber)
 
 public:
 /*******************************************************************************************

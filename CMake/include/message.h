@@ -9,15 +9,15 @@ typedef std::chrono::time_point<std::chrono::system_clock> TimePoint;
 
 class Message
 {
-	static std::queue<Message*> m_messageQ;				// Concurrent message Queue
-	static std::mutex m_QinsLock;						// Message Q insertion lock
-	static std::mutex m_QremLock;						// Message Q removal lock
+	static std::queue<Message*> mMessageQ;				// Concurrent message Queue
+	static std::mutex mQinsLock;						// Message Q insertion lock
+	static std::mutex mQremLock;						// Message Q removal lock
 
-	TimePoint m_createdTime;							// Message created time
+	TimePoint mCreatedTime;								// Message created time
 /*******************************************************************************************
 * @brief Delete all expired messages from the message queue
 ********************************************************************************************/
-	static void m_cleanMessageQ();
+	static void mCleanMessageQ();
 /*******************************************************************************************
 * @brief Message constructor
 *

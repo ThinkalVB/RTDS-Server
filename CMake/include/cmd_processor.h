@@ -19,7 +19,7 @@ struct CmdProcessor
 * @param[in]			Receive buffer
 * @param[in]			UDP endpoint (orgin of received data)
 ********************************************************************************************/
-	static const std::string processCommand(ReceiveBuffer&, const asio::ip::udp::endpoint);
+	static void processCommand(AdancedBuffer&, const asio::ip::udp::endpoint);
 /*******************************************************************************************
 * @brief Check if the string is a valid Broadcast Group ID
 *
@@ -95,11 +95,11 @@ private:
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void m_cmd_ping(Peer&);
-	static void m_cmd_broadcast(Peer&);
-	static void m_cmd_exit(Peer&);
-	static void m_cmd_listen(Peer&);
-	static void m_cmd_leave(Peer&);
+	static void mTCP_ping(Peer&);
+	static void mTCP_broadcast(Peer&);
+	static void mTCP_exit(Peer&);
+	static void mTCP_listen(Peer&);
+	static void mTCP_leave(Peer&);
 };
 
 #endif

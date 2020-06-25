@@ -2,36 +2,37 @@
 #include <thread>
 #include "rtds_settings.h"
 #include "cmd_processor.h"
+#include "advanced_buffer.h"
 #include "peer.h"
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(const unsigned short portNumber, short threadCount) : m_tcpEp(asio::ip::address_v6::any(), portNumber), m_udpEp(asio::ip::address_v6::any(), portNumber), 
-m_udpSock(m_ioContext), m_tcpAcceptor(m_ioContext), m_worker(m_ioContext)
+RTDS::RTDS(const unsigned short portNumber, short threadCount) : mTCPep(asio::ip::address_v6::any(), portNumber), mUDPep(asio::ip::address_v6::any(), portNumber), 
+mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mWorker(mIOcontext)
 #else 
-RTDS::RTDS(const unsigned short portNumber, short threadCount) : m_tcpEp(asio::ip::address_v4::any(), portNumber), m_udpEp(asio::ip::address_v4::any(), portNumber),
-m_udpSock(m_ioContext), m_tcpAcceptor(m_ioContext), m_worker(m_ioContext)
+RTDS::RTDS(const unsigned short portNumber, short threadCount) : mTCPep(asio::ip::address_v4::any(), portNumber), mUDPep(asio::ip::address_v4::any(), portNumber),
+mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mWorker(mIOcontext)
 #endif
 {
 	START_LOG
 	DEBUG_LOG(Log::log("............... RTDS Log ..............");)
 	DEBUG_LOG(Log::log("RTDS Port : ", portNumber);)
-	m_threadCount = 0;
-	m_addthread(threadCount - 2);
-	m_configTCPserver();
-	m_configUDPserver();
+	mThreadCount = 0;
+	mAddthread(threadCount - 2);
+	mConfigTCPserver();
+	mConfigUDPserver();
 }
 
 RTDS::~RTDS()
 {
-	if (m_serverRunning)
+	if (mServerRunning)
 		stopServer();
 	
-	m_closeSockets();
-	m_ioContext.stop();
+	mCloseSockets();
+	mIOcontext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	} while (!m_ioContext.stopped() && m_threadCount == 0);
+	} while (!mIOcontext.stopped() && mThreadCount == 0);
 
 	DEBUG_LOG(Log::log("RTDS Exiting [Logging stopped]");)
 	STOP_LOG
@@ -39,11 +40,11 @@ RTDS::~RTDS()
 
 void RTDS::startServer()
 {
-	m_ioContext.restart();
-	m_serverRunning = true;
+	mIOcontext.restart();
+	mServerRunning = true;
 	try {
-		std::thread ioThreadLR(&RTDS::m_udpListenRoutine, this);
-		std::thread ioThreadAR(&RTDS::m_tcpAcceptRoutine, this);
+		std::thread ioThreadLR(&RTDS::mUDPlistenRoutine, this);
+		std::thread ioThreadAR(&RTDS::mTCPacceptRoutine, this);
 		ioThreadLR.detach();
 		ioThreadAR.detach();
 		DEBUG_LOG(Log::log("New thread to UDP Listen && TCP Accept routines");)
@@ -58,22 +59,22 @@ void RTDS::startServer()
 
 void RTDS::stopServer()
 {
-	m_serverRunning = false;
-	m_stopTCPserver();
-	m_stopUDPserver();
+	mServerRunning = false;
+	mStopTCPserver();
+	mStopUDPserver();
 }
 
 bool RTDS::isActive()
 {
-	return m_serverRunning;
+	return mServerRunning;
 }
 
 void RTDS::printStatus()
 {
-	std::cout << "Active Threads : " << m_threadCount << "\t\t";
-	std::cout << "RTDS Port      : " << m_tcpEp.port() << std::endl;
+	std::cout << "Active Threads : " << mThreadCount << "\t\t";
+	std::cout << "RTDS Port      : " << mTCPep.port() << std::endl;
 
-	if (m_serverRunning)
+	if (mServerRunning)
 		std::cout << "RTDS Running   : OK " << "\t\t";
 	else
 		std::cout << "RTDS Running   : OK " << "\t\t";
@@ -87,10 +88,10 @@ void RTDS::printStatus()
 	std::cout << "Code Error     : " << CODE_ERR << std::endl;
 }
 
-void RTDS::m_configTCPserver()
+void RTDS::mConfigTCPserver()
 {
 	asio::error_code ec;
-	m_tcpAcceptor.open(m_tcpEp.protocol(), ec);
+	mTCPacceptor.open(mTCPep.protocol(), ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to open TCP acceptor - ", ec.message());)
@@ -99,20 +100,20 @@ void RTDS::m_configTCPserver()
 	}
 	DEBUG_LOG(Log::log("TCP acceptor open");)
 
-	m_tcpAcceptor.bind(m_tcpEp, ec);
+	mTCPacceptor.bind(mTCPep, ec);
 	if (ec)
 	{
-		m_tcpAcceptor.close();
+		mTCPacceptor.close();
 		LOG(Log::log("Failed to bind TCP acceptor - ", ec.message());)
 		REGISTER_SOCKET_ERR
 
 	}
 	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
 
-	m_tcpAcceptor.listen(asio::socket_base::max_listen_connections, ec);
+	mTCPacceptor.listen(asio::socket_base::max_listen_connections, ec);
 	if (ec)
 	{
-		m_tcpAcceptor.close();
+		mTCPacceptor.close();
 		LOG(Log::log("TCP acceptor cannot listen to port - ", ec.message());)
 		REGISTER_SOCKET_ERR
 		exit(0);
@@ -120,10 +121,10 @@ void RTDS::m_configTCPserver()
 	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
 }
 
-void RTDS::m_configUDPserver()
+void RTDS::mConfigUDPserver()
 {
 	asio::error_code ec;
-	m_udpSock.open(m_udpEp.protocol(), ec);
+	mUDPsock.open(mUDPep.protocol(), ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to open UDP acceptor - ", ec.message());)
@@ -132,10 +133,10 @@ void RTDS::m_configUDPserver()
 	}
 	DEBUG_LOG(Log::log("UDP sock open");)
 
-	m_udpSock.bind(m_udpEp, ec);
+	mUDPsock.bind(mUDPep, ec);
 	if (ec)
 	{
-		m_udpSock.close();
+		mUDPsock.close();
 		LOG(Log::log("Failed to bind UDP socket - ", ec.message());)
 		REGISTER_SOCKET_ERR
 		exit(0);
@@ -143,27 +144,27 @@ void RTDS::m_configUDPserver()
 	DEBUG_LOG(Log::log("UDP socket binded to endpoint");)
 }
 
-void RTDS::m_ioThreadJob()
+void RTDS::mIOthreadJob()
 {
 	asio::error_code ec;
-	m_threadCount++;
-	m_ioContext.run(ec);
+	mThreadCount++;
+	mIOcontext.run(ec);
 	if (ec)
 	{
 		LOG(Log::log("ioContext.run() failed - ", ec.message());)
 		REGISTER_IO_ERR
 	}
 
-	m_threadCount--;
+	mThreadCount--;
 	DEBUG_LOG(Log::log("ioContext thread exiting");)
 }
 
-void RTDS::m_addthread(int threadCount)
+void RTDS::mAddthread(int threadCount)
 {
 	for (int i = 0; i < threadCount; i++)
 	{
 		try {
-			std::thread ioThread(&RTDS::m_ioThreadJob, this);
+			std::thread ioThread(&RTDS::mIOthreadJob, this);
 			ioThread.detach();
 			DEBUG_LOG(Log::log("New thread added to ioContext");)
 		}
@@ -176,21 +177,21 @@ void RTDS::m_addthread(int threadCount)
 	}
 }
 
-void RTDS::m_tcpAcceptRoutine()
+void RTDS::mTCPacceptRoutine()
 {
-	m_threadCount++;
-	while (m_serverRunning)
+	mThreadCount++;
+	while (mServerRunning)
 	{
 		asio::ip::tcp::socket* peerSocket = nullptr;
 		try
-		{	peerSocket = new asio::ip::tcp::socket(m_ioContext);	}
+		{	peerSocket = new asio::ip::tcp::socket(mIOcontext);	}
 		catch (std::bad_alloc) {
 			LOG(Log::log("Peer socket bad allocation");)
 			REGISTER_MEMMORY_ERR
 		}
 
 		asio::error_code ec;
-		m_tcpAcceptor.accept(*peerSocket, ec);
+		mTCPacceptor.accept(*peerSocket, ec);
 		if (ec)
 		{
 			DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)
@@ -225,19 +226,19 @@ void RTDS::m_tcpAcceptRoutine()
 			}
 		}
 	}
-	m_threadCount--;
+	mThreadCount--;
 }
 
-void RTDS::m_udpListenRoutine()
+void RTDS::mUDPlistenRoutine()
 {
-	m_threadCount++;
-	while (m_serverRunning)
+	mThreadCount++;
+	while (mServerRunning)
 	{
 		asio::ip::udp::endpoint udpEp;
-		ReceiveBuffer udpBuffer;
+		AdancedBuffer dataBuffer;
 		asio::error_code ec;
 
-		auto size = m_udpSock.receive_from(asio::buffer(udpBuffer.data(), RTDS_BUFF_SIZE), udpEp, 0, ec);
+		auto dataSize = mUDPsock.receive_from(dataBuffer.getAsioBuffer(), udpEp, 0, ec);
 		if (ec)
 		{	
 			DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)	
@@ -245,18 +246,18 @@ void RTDS::m_udpListenRoutine()
 		}
 		else
 		{
-			udpBuffer[size] = '\0';
-			auto response = CmdProcessor::processCommand(udpBuffer, udpEp);
-			m_udpSock.send_to(asio::buffer(response.data(), response.size()), udpEp);
+			dataBuffer.cookString(dataSize);
+			CmdProcessor::processCommand(dataBuffer, udpEp);
+			mUDPsock.send_to(dataBuffer.getAsioBuffer(), udpEp);
 		}
 	}
-	m_threadCount--;
+	mThreadCount--;
 }
 
-void RTDS::m_stopUDPserver()
+void RTDS::mStopUDPserver()
 {
 	asio::error_code ec;
-	m_udpSock.cancel(ec);
+	mUDPsock.cancel(ec);
 	if (ec)
 	{	
 		DEBUG_LOG(Log::log("UDP socket cannot cancel - ", ec.message());)	
@@ -264,10 +265,10 @@ void RTDS::m_stopUDPserver()
 	}
 }
 
-void RTDS::m_stopTCPserver()
+void RTDS::mStopTCPserver()
 {
 	asio::error_code ec;
-	m_tcpAcceptor.cancel(ec);
+	mTCPacceptor.cancel(ec);
 	if (ec)
 	{	
 		DEBUG_LOG(Log::log("TCP acceptor cannot cancel - ", ec.message());)	
@@ -275,17 +276,17 @@ void RTDS::m_stopTCPserver()
 	}
 }
 
-void RTDS::m_closeSockets()
+void RTDS::mCloseSockets()
 {
 	asio::error_code ec;
-	m_udpSock.close(ec);
+	mUDPsock.close(ec);
 	if (ec)
 	{	
 		DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	
 		REGISTER_SOCKET_ERR
 	}
 
-	m_tcpAcceptor.close(ec);
+	mTCPacceptor.close(ec);
 	{	
 		DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)
 		REGISTER_SOCKET_ERR

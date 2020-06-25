@@ -6,12 +6,13 @@
 
 class AdancedBuffer
 {
-	std::array<char, RTDS_BUFF_SIZE + 1> m_buffer;		// Actual data buffer
-	std::size_t m_virtualSize;							// Virtual size of the buffer
+	std::array<char, RTDS_BUFF_SIZE + 1> mBuffer;			// Actual data buffer
+	std::size_t mVirtualSize;								// Virtual size of the buffer
 public:
 	void operator =(const std::string&);
 	void cookString(const size_t);
 	asio::mutable_buffer getAsioBuffer();
+	std::string_view getStringView();
 };
 
 #endif

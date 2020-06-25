@@ -43,9 +43,6 @@ void processCommand(RTDS& rtdsServer, std::string command)
 		std::cout << "RTDS : Invalid command !!" << std::endl;
 }
 
-
-
-#include "advanced_buffer.h"
 int main(int argCount, const char* args[])
 {
 	for (auto i = 1; i < argCount; i++)

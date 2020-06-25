@@ -24,31 +24,30 @@ void CmdProcessor::processCommand(Peer& peer)
 {
 	auto command = extractElement(peer.commandStr);
 	if (command == COMM[(short)Command::PING])
-		m_cmd_ping(peer);
+		mTCP_ping(peer);
 	else if (command == COMM[(short)Command::LISTEN])
-		m_cmd_listen(peer);
+		mTCP_listen(peer);
 	else if (command == COMM[(short)Command::LEAVE])
-		m_cmd_leave(peer);
+		mTCP_leave(peer);
 	else if (command == COMM[(short)Command::BROADCAST])
-		m_cmd_broadcast(peer);
+		mTCP_broadcast(peer);
 	else if (command == COMM[(short)Command::EXIT])
-		m_cmd_exit(peer);
+		mTCP_exit(peer);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
 
-const const std::string CmdProcessor::processCommand(ReceiveBuffer& udpBuffer, const asio::ip::udp::endpoint udpEp)
+void CmdProcessor::processCommand(AdancedBuffer& dataBuffer, const asio::ip::udp::endpoint udpEp)
 {
-	std::string_view commandStr;
-	commandStr = (char*)udpBuffer.data();
+	auto cmdStr = dataBuffer.getStringView();
 	std::string response = "[R] ";
 
-	auto command = extractElement(commandStr);
+	auto command = extractElement(cmdStr);
 	if (command == COMM[(short)Command::PING])
 		response += toSAPInfo(udpEp);
 	else
 		response += CmdProcessor::RESP[(short)Response::BAD_COMMAND];
-	return response;
+	dataBuffer = response;
 }
 
 bool CmdProcessor::isBGID(const std::string_view& bgid)
@@ -158,7 +157,7 @@ std::string CmdProcessor::toSAPInfo(const asio::ip::udp::endpoint udpEp)
 }
 
 
-void CmdProcessor::m_cmd_ping(Peer& peer)
+void CmdProcessor::mTCP_ping(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.printPingInfo();
@@ -166,7 +165,7 @@ void CmdProcessor::m_cmd_ping(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::m_cmd_broadcast(Peer& peer)
+void CmdProcessor::mTCP_broadcast(Peer& peer)
 {
 	auto message = extractElement(peer.commandStr);
 	auto bgTag = extractElement(peer.commandStr);
@@ -183,7 +182,7 @@ void CmdProcessor::m_cmd_broadcast(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::m_cmd_exit(Peer& peer)
+void CmdProcessor::mTCP_exit(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.disconnect();
@@ -191,7 +190,7 @@ void CmdProcessor::m_cmd_exit(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::m_cmd_listen(Peer& peer)
+void CmdProcessor::mTCP_listen(Peer& peer)
 {
 	auto bgID = extractElement(peer.commandStr);
 	auto bgTag = extractElement(peer.commandStr);
@@ -201,7 +200,7 @@ void CmdProcessor::m_cmd_listen(Peer& peer)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::m_cmd_leave(Peer& peer)
+void CmdProcessor::mTCP_leave(Peer& peer)
 {
 	if (peer.commandStr.empty())
 		peer.leaveBG();
