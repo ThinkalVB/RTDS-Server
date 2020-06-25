@@ -182,12 +182,13 @@ void RTDS::mTCPacceptRoutine()
 	mThreadCount++;
 	while (mServerRunning)
 	{
-		asio::ip::tcp::socket* peerSocket = nullptr;
-		try
-		{	peerSocket = new asio::ip::tcp::socket(mIOcontext);	}
-		catch (std::bad_alloc) {
+		auto peerSocket = new (std::nothrow) asio::ip::tcp::socket(mIOcontext);
+		if (peerSocket == nullptr)
+		{
 			LOG(Log::log("Peer socket bad allocation");)
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 			REGISTER_MEMMORY_ERR
+			continue;
 		}
 
 		asio::error_code ec;
@@ -216,9 +217,9 @@ void RTDS::mTCPacceptRoutine()
 				REGISTER_WARNING
 			}
 
-			try 
-			{	new Peer(peerSocket);	}
-			catch (std::bad_alloc) {
+			auto peer = new (std::nothrow) Peer(peerSocket);
+			if (peer == nullptr)
+			{
 				LOG(Log::log("Peer memmory bad allocation");)
 				REGISTER_MEMMORY_ERR
 				peerSocket->close();

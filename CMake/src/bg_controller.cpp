@@ -64,32 +64,27 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 	auto bGroupItr = mBGmap.find(bgID);
 	if (bGroupItr == mBGmap.end())
 	{
-		BGroupUnrestricted* bGroup = nullptr;
-		try {
-			bGroup = new BGroupUnrestricted(bgID);
-			bGroup->addPeer(peer);
-			mBGmap.insert(std::pair(bgID, bGroup));
-			DEBUG_LOG(Log::log("Added BG: ", bgID);)
-			return (BGroup*)bGroup;
-		}
-		catch (std::system_error ec) {
-			LOG(Log::log("Failed to add BG: ", bgID, " Sync Failed ", ec.what());)
-			if (bGroup != nullptr)
-				delete bGroup;
+		auto bGroup = new (std::nothrow) BGroupUnrestricted(bgID);
+		if (bGroup == nullptr)
+		{
+			LOG(Log::log("Failed to create BG: ", bgID);)
 			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
-		catch (...) {
-			if (bGroup != nullptr)
-			{
-				LOG(Log::log("Failed to add BG: ", bgID);)
+		else
+		{
+			try {
+				bGroup->addPeer(peer);
+				mBGmap.insert(std::pair(bgID, bGroup));
+				DEBUG_LOG(Log::log("Added BG: ", bgID);)
+				return (BGroup*)bGroup;
+			}
+			catch (...) {
+				LOG(Log::log("Failed to add peer to BG!");)
 				delete bGroup;
+				REGISTER_MEMMORY_ERR
 				return nullptr;
 			}
-			else
-			{	LOG(Log::log("Failed to make BG");)	}
-			REGISTER_MEMMORY_ERR
-			return nullptr;
 		}
 	}
 	else
@@ -99,12 +94,8 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 			bGroup->addPeer(peer);
 			return (BGroup*)bGroup;
 		}
-		catch (std::system_error ec) {
-			LOG(Log::log("Failed to add peer to BG: ", bgID, " Sync Failed ", ec.what());)
-			REGISTER_MEMMORY_ERR
-		}
 		catch (...) {
-			LOG(Log::log("Failed to add peer to BG: ", bgID);)
+			LOG(Log::log("Failed to add peer to BG! ");)
 			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
@@ -118,16 +109,11 @@ void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 	if (bGroupItr != mBGmap.end())
 	{
 		auto bGroup = bGroupItr->second;
-		try {
-			bGroup->removePeer(peer);
-			if (bGroup->isEmpty())
-			{
-				mBGmap.erase(bGroupItr);
-				DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
-			}
-		}catch (std::system_error ec) {
-			LOG(Log::log("Failed to remove BG: ", bgID, " Sync Failed ", ec.what());)
-			REGISTER_MEMMORY_ERR
+		bGroup->removePeer(peer);
+		if (bGroup->isEmpty())
+		{
+			mBGmap.erase(bGroupItr);
+			DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
 		}
 	}
 	else

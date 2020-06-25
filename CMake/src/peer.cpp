@@ -140,7 +140,7 @@ void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 		if (mBgPtr != nullptr)
 		{
 			mIsInBG = true;
-			auto message = Message::makeAddMsg(mSApair, mBgTag);
+			auto message = Message::makeAddMsg(mSApair);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 
@@ -160,7 +160,7 @@ void Peer::leaveBG()
 	{
 		DEBUG_LOG(Log::log(mSApair.toString(), " Peer leavig BG ", mBgID);)
 		BGcontroller::removeFromBG(this, mBgID);
-		auto message = Message::makeRemMsg(mSApair, mBgTag);
+		auto message = Message::makeRemMsg(mSApair);
 		if (message != nullptr)
 			mBgPtr->broadcast(this, message);
 

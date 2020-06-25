@@ -43,14 +43,14 @@ public:
 * @param[in]		Broadcast Group Tag.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	static const Message* makeAddMsg(const SApair&, const std::string&);
+	static const Message* makeAddMsg(const SApair&);
 /*******************************************************************************************
 * @brief Make new peer removal message
 *
 * @param[in]		Source address pair.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	static const Message* makeRemMsg(const SApair&, const std::string&);
+	static const Message* makeRemMsg(const SApair&);
 /*******************************************************************************************
 * @brief Make a new broadcast message
 *
@@ -59,6 +59,16 @@ public:
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
 	static const Message* makeBrdMsg(const SApair&, const std::string_view&);
+/*******************************************************************************************
+* @brief Insert message to the the message Queue
+*
+* @param[in]		Message.
+* @return			True if success
+*
+* @details
+* Message is deleted if the push_back fails.
+********************************************************************************************/
+	static bool insertMssg2Q(Message*);
 };
 
 #endif
