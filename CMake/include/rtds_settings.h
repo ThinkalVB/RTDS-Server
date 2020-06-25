@@ -34,12 +34,16 @@ class Settings
 /*******************************************************************************************
 * @brief Find port number.
 *
+* @param[in]		Port number as string
+*
 * @details
 * std::err will display the error in argument and exit if the arguments are incorrect.
 ********************************************************************************************/
 	static void mFindPortNumber(std::string portNStr);
 /*******************************************************************************************
 * @brief Find Thread count.
+*
+* @param[in]		Thread cound as string
 *
 * @details
 * std::err will display the error in argument and exit if the arguments are incorrect.

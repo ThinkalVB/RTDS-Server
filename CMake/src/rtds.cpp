@@ -238,7 +238,7 @@ void RTDS::mUDPlistenRoutine()
 		AdancedBuffer dataBuffer;
 		asio::error_code ec;
 
-		auto dataSize = mUDPsock.receive_from(dataBuffer.getAsioBuffer(), udpEp, 0, ec);
+		auto dataSize = mUDPsock.receive_from(dataBuffer.getReadBuffer(), udpEp, 0, ec);
 		if (ec)
 		{	
 			DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)	
@@ -248,7 +248,7 @@ void RTDS::mUDPlistenRoutine()
 		{
 			dataBuffer.cookString(dataSize);
 			CmdProcessor::processCommand(dataBuffer, udpEp);
-			mUDPsock.send_to(dataBuffer.getAsioBuffer(), udpEp);
+			mUDPsock.send_to(dataBuffer.getSendBuffer(), udpEp);
 		}
 	}
 	mThreadCount--;

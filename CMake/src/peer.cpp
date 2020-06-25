@@ -92,7 +92,7 @@ void Peer::mPeerReceiveData()
 {
 	if (mPeerIsActive)
 	{
-		mPeerSocket->async_receive(mDataBuffer.getAsioBuffer(), 0, std::bind(&Peer::mProcessData,
+		mPeerSocket->async_receive(mDataBuffer.getReadBuffer(), 0, std::bind(&Peer::mProcessData,
 			this, std::placeholders::_1, std::placeholders::_2));
 	}
 	else
