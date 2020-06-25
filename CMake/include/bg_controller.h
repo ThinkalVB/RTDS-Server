@@ -1,6 +1,7 @@
 #ifndef BG_CONTROLLER_H
 #define BG_CONTROLLER_H
 
+#include <shared_mutex>
 #include <vector>
 #include <map>
 #include "peer.h"
@@ -9,8 +10,8 @@
 class BGroupUnrestricted
 {
 protected:
-	std::string mBgID;									// Broadcast Group ID
-	std::mutex mPeerListLock;							// Peer list lock
+	std::string mBgID;									// Broadcast Group ID	
+	std::shared_mutex mPeerListLock;					// Peer list lock
 	std::vector<Peer*> mPeerList;						// Peers in the Broadcast group
 
 public:

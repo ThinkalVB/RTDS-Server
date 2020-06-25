@@ -9,16 +9,18 @@ BGroupUnrestricted::BGroupUnrestricted(const std::string& bgID)
 
 void BGroupUnrestricted::addPeer(Peer* peer)
 {
-	std::lock_guard<std::mutex> lock(mPeerListLock);
+	mPeerListLock.lock();
 	mPeerList.push_back(peer);
+	mPeerListLock.unlock();
 }
 
 void BGroupUnrestricted::removePeer(Peer* peer)
 {
-	std::lock_guard<std::mutex> lock(mPeerListLock);
+	mPeerListLock.lock();
 	auto itr = std::find(mPeerList.begin(), mPeerList.end(), peer);
 	std::iter_swap(itr, mPeerList.end() - 1);
 	mPeerList.pop_back();
+	mPeerListLock.unlock();
 }
 
 bool BGroupUnrestricted::isEmpty() const
@@ -32,22 +34,24 @@ bool BGroupUnrestricted::isEmpty() const
 
 void BGroup::broadcast(Peer* mPeer, const Message* message, const std::string_view& bgTag)
 {
-	std::lock_guard<std::mutex> lock(mPeerListLock);
+	mPeerListLock.lock_shared();
 	for (auto peer : mPeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message, bgTag);
 	}
+	mPeerListLock.unlock_shared();
 }
 
 void BGroup::broadcast(Peer* mPeer, const Message* message)
 {
-	std::lock_guard<std::mutex> lock(mPeerListLock);
+	mPeerListLock.lock_shared();
 	for (auto peer : mPeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message);
 	}
+	mPeerListLock.unlock_shared();
 }
 
 
@@ -68,14 +72,22 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 			DEBUG_LOG(Log::log("Added BG: ", bgID);)
 			return (BGroup*)bGroup;
 		}
+		catch (std::system_error ec) {
+			LOG(Log::log("Failed to add BG: ", bgID, " Sync Failed ", ec.what());)
+			if (bGroup != nullptr)
+				delete bGroup;
+			REGISTER_MEMMORY_ERR
+			return nullptr;
+		}
 		catch (...) {
 			if (bGroup != nullptr)
 			{
 				LOG(Log::log("Failed to add BG: ", bgID);)
 				delete bGroup;
+				return nullptr;
 			}
 			else
-			{	LOG(Log::log("Failed to add peer to BG");)	}
+			{	LOG(Log::log("Failed to make BG");)	}
 			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
@@ -87,8 +99,12 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 			bGroup->addPeer(peer);
 			return (BGroup*)bGroup;
 		}
+		catch (std::system_error ec) {
+			LOG(Log::log("Failed to add peer to BG: ", bgID, " Sync Failed ", ec.what());)
+			REGISTER_MEMMORY_ERR
+		}
 		catch (...) {
-			LOG(Log::log("Failed to add peer to BG");)
+			LOG(Log::log("Failed to add peer to BG: ", bgID);)
 			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
@@ -102,11 +118,16 @@ void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 	if (bGroupItr != mBGmap.end())
 	{
 		auto bGroup = bGroupItr->second;
-		bGroup->removePeer(peer);
-		if (bGroup->isEmpty())
-		{
-			mBGmap.erase(bGroupItr);
-			DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
+		try {
+			bGroup->removePeer(peer);
+			if (bGroup->isEmpty())
+			{
+				mBGmap.erase(bGroupItr);
+				DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
+			}
+		}catch (std::system_error ec) {
+			LOG(Log::log("Failed to remove BG: ", bgID, " Sync Failed ", ec.what());)
+			REGISTER_MEMMORY_ERR
 		}
 	}
 	else
