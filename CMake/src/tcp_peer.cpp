@@ -1,12 +1,12 @@
-#include "peer.h"
+#include "tcp_peer.h"
 #include <functional>
 #include "cmd_processor.h"
 #include "bg_controller.h"
 #include "log.h"
 
-std::atomic_int Peer::mPeerCount = 0;
+std::atomic_int TCPpeer::mPeerCount = 0;
 
-Peer::Peer(asio::ip::tcp::socket* socketPtr) : mSApair(socketPtr)
+TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr) : mSApair(socketPtr)
 {
 	mPeerSocket = socketPtr;
 	mPeerIsActive = true;
@@ -18,12 +18,12 @@ Peer::Peer(asio::ip::tcp::socket* socketPtr) : mSApair(socketPtr)
 	mPeerReceiveData();
 }
 
-int Peer::peerCount()
+int TCPpeer::peerCount()
 {
 	return mPeerCount;
 }
 
-Peer::~Peer()
+TCPpeer::~TCPpeer()
 {
 	leaveBG();
 	mPeerCount--;
@@ -37,32 +37,32 @@ Peer::~Peer()
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer Disconnected");)
 }
 
-std::string_view Peer::getCommandString()
+std::string_view TCPpeer::getCommandString()
 {
 	return mDataBuffer.getStringView();
 }
 
 
-void Peer::sendMessage(const Message* message, const std::string_view& bgTag)
+void TCPpeer::sendMessage(const Message* message, const std::string_view& bgTag)
 {
 	if (mPeerIsActive && mBgTag == bgTag)
 	{
 		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
-			std::bind(&Peer::mSendMssgFuncFeedbk, this, std::placeholders::_1, std::placeholders::_2));
+			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
 	}
 }
 
-void Peer::sendMessage(const Message* message)
+void TCPpeer::sendMessage(const Message* message)
 {
 	if (mPeerIsActive)
 	{
 		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
-			std::bind(&Peer::mSendMssgFuncFeedbk, this, std::placeholders::_1, std::placeholders::_2));
+			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
 	}
 }
 
 
-void Peer::mSendFuncFeedbk(const asio::error_code& ec, std::size_t size)
+void TCPpeer::mSendFuncFeedbk(const asio::error_code& ec)
 {
 	if (ec)
 	{
@@ -73,7 +73,7 @@ void Peer::mSendFuncFeedbk(const asio::error_code& ec, std::size_t size)
 		mPeerReceiveData();
 }
 
-void Peer::mSendMssgFuncFeedbk(const asio::error_code& ec, std::size_t size)
+void TCPpeer::mSendMssgFuncFeedbk(const asio::error_code& ec)
 {
 	if (ec)
 	{
@@ -83,24 +83,24 @@ void Peer::mSendMssgFuncFeedbk(const asio::error_code& ec, std::size_t size)
 }
 
 
-void Peer::mSendPeerBufferData()
+void TCPpeer::mSendPeerBufferData()
 {
-	mPeerSocket->async_send(mDataBuffer.getSendBuffer(), std::bind(&Peer::mSendFuncFeedbk,
-		this, std::placeholders::_1, std::placeholders::_2));
+	mPeerSocket->async_send(mDataBuffer.getSendBuffer(), std::bind(&TCPpeer::mSendFuncFeedbk,
+		this, std::placeholders::_1));
 }
 
-void Peer::mPeerReceiveData()
+void TCPpeer::mPeerReceiveData()
 {
 	if (mPeerIsActive)
 	{
-		mPeerSocket->async_receive(mDataBuffer.getReadBuffer(), 0, std::bind(&Peer::mProcessData,
+		mPeerSocket->async_receive(mDataBuffer.getReadBuffer(), 0, std::bind(&TCPpeer::mProcessData,
 			this, std::placeholders::_1, std::placeholders::_2));
 	}
 	else
 		delete this;
 }
 
-void Peer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
+void TCPpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 {
 	if (ec)
 	{
@@ -120,13 +120,13 @@ void Peer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 }
 
 
-void Peer::disconnect()
+void TCPpeer::disconnect()
 {
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer Disconnecting");)
 	mPeerIsActive = false;
 }
 
-void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
+void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 {
 	std::string response;
 	if (mIsInBG)
@@ -153,7 +153,7 @@ void Peer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 	mDataBuffer = response;
 }
 
-void Peer::leaveBG()
+void TCPpeer::leaveBG()
 {
 	std::string response;
 	if (mIsInBG)
@@ -173,7 +173,7 @@ void Peer::leaveBG()
 	mDataBuffer = response;
 }
 
-void Peer::printPingInfo()
+void TCPpeer::printPingInfo()
 {
 	std::string response;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer pinging");)
@@ -181,7 +181,7 @@ void Peer::printPingInfo()
 	mDataBuffer = response;
 }
 
-void Peer::respondWith(Response resp)
+void TCPpeer::respondWith(Response resp)
 {
 	std::string response;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)resp]);)
@@ -189,34 +189,40 @@ void Peer::respondWith(Response resp)
 	mDataBuffer = response;
 }
 
-void Peer::broadcast(const std::string_view& messageStr)
+void TCPpeer::broadcast(const std::string_view& messageStr)
 {
 	std::string response;
 	if (mIsInBG)
 	{
 		auto message = Message::makeBrdMsg(mSApair, messageStr);
 		if (message != nullptr)
+		{
 			mBgPtr->broadcast(this, message);
-
-		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
+			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
+		}
+		else
+			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
 	else
 		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	mDataBuffer = response;
 }
 
-void Peer::broadcast(const std::string_view& messageStr, const std::string_view& bgTag)
+void TCPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgTag)
 {
 	std::string response;
 	if (mIsInBG)
 	{
 		auto message = Message::makeBrdMsg(mSApair, messageStr);
 		if (message != nullptr)
+		{
 			mBgPtr->broadcast(this, message, bgTag);
-
-		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
+			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
+		}
+		else
+			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
 	else
 		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];

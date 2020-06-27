@@ -1,8 +1,8 @@
 #ifndef CMD_PROCESSOR_H
 #define CMD_PROCESSOR_H
 
-#include "peer.h"
-#include <asio/ip/udp.hpp>
+#include "tcp_peer.h"
+#include "udp_peer.h"
 
 struct CmdProcessor
 {
@@ -13,14 +13,14 @@ struct CmdProcessor
 *
 * @param[in]			The peer system from which the command is comming.
 ********************************************************************************************/
-	static void processCommand(Peer&);
+	static void processCommand(TCPpeer&);
 /*******************************************************************************************
 * @brief Process the commands from Receive Buffer and return response
 *
+* @param[in]			The peer system from which the command is comming.
 * @param[in]			Receive buffer
-* @param[in]			UDP endpoint (orgin of received data)
 ********************************************************************************************/
-	static void processCommand(AdancedBuffer&, const asio::ip::udp::endpoint);
+	static void processCommand(UDPpeer&, AdancedBuffer&);
 /*******************************************************************************************
 * @brief Check if the string is a valid Broadcast Group ID
 *
@@ -79,13 +79,6 @@ struct CmdProcessor
 * @return				True if thread count.
 ********************************************************************************************/
 	static bool isThreadCount(const std::string, short&);
-/*******************************************************************************************
-* @brief Convert UDP endpoint to SAP string
-*
-* @param[in]			UDP endpoint
-* @return				SAP address in string
-********************************************************************************************/
-	static std::string toSAPInfo(const asio::ip::udp::endpoint);
 
 private:
 /*******************************************************************************************
@@ -97,11 +90,25 @@ private:
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void mTCP_ping(Peer&, std::string_view&);
-	static void mTCP_broadcast(Peer&, std::string_view&);
-	static void mTCP_exit(Peer&, std::string_view&);
-	static void mTCP_listen(Peer&, std::string_view&);
-	static void mTCP_leave(Peer&, std::string_view&);
+	static void mTCP_ping(TCPpeer&, std::string_view&);
+	static void mTCP_broadcast(TCPpeer&, std::string_view&);
+	static void mTCP_exit(TCPpeer&, std::string_view&);
+	static void mTCP_listen(TCPpeer&, std::string_view&);
+	static void mTCP_leave(TCPpeer&, std::string_view&);
+
+/*******************************************************************************************
+* @brief Respond to the ping request
+*
+* @param[in]			Peer.
+* @param[in]			Rest of the command string.
+* @param[in]			Response Buffer
+*
+* @details
+* Call the appropriate peer functions based on the commands and parameters.
+* Response to the command will be copied back to the Advanced buffer.
+********************************************************************************************/
+	static void mUDP_ping(UDPpeer&, std::string_view&, AdancedBuffer&);
+	static void mUDP_broadcast(UDPpeer&, std::string_view&, AdancedBuffer&);
 };
 
 #endif

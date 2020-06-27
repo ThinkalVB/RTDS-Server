@@ -1,5 +1,5 @@
-#ifndef PEER_H
-#define PEER_H
+#ifndef TCP_PEER_H
+#define TCP_PEER_H
 
 #include <asio/ip/tcp.hpp>
 #include <atomic>
@@ -9,7 +9,7 @@
 #include "advanced_buffer.h"
 
 class BGroup;
-class Peer
+class TCPpeer
 {		
 	static std::atomic_int mPeerCount;		// Keep the total count of peers
 	
@@ -57,23 +57,21 @@ class Peer
 * @brief This callback function will be called after sending data in the write buffer
 *
 * @param[in] ec					Asio error code
-* @param[in] size				Number of bytes send
 *
 * @details
 * If ec state a error in connection, this object will be deleted.
 * If the connection is ok then, clear the write buffer and register for next receive.
 ********************************************************************************************/
-	void mSendFuncFeedbk(const asio::error_code&, std::size_t);
+	void mSendFuncFeedbk(const asio::error_code&);
 /*******************************************************************************************
 * @brief This callback function will be called after sending message
 *
 * @param[in] ec					Asio error code
-* @param[in] size				Number of bytes send
 *
 * @details
 * If ec state a error in connection, signal peer object to be deleted.
 ********************************************************************************************/
-	void mSendMssgFuncFeedbk(const asio::error_code&, std::size_t);
+	void mSendMssgFuncFeedbk(const asio::error_code&);
 /*******************************************************************************************
 * @brief Close and delete peerSocket
 *
@@ -81,7 +79,7 @@ class Peer
 * Leave the BG if in listening mode.
 * Decrement peer count. Shutdown and delete peer socket.
 ********************************************************************************************/
-	~Peer();
+	~TCPpeer();
 
 public:
 /*******************************************************************************************
@@ -93,7 +91,7 @@ public:
 * Reserve buffer size and get the peer endpoint.
 * Create a SourceAddressPair with the pointer to the socket. 
 ********************************************************************************************/
-	Peer(asio::ip::tcp::socket*);
+	TCPpeer(asio::ip::tcp::socket*);
 /*******************************************************************************************
 * @brief Return the number of peers
 *

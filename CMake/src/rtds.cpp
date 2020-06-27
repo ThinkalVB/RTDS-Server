@@ -1,9 +1,10 @@
 ﻿#include "rtds.h"
 #include <thread>
 #include "rtds_settings.h"
+#include "udp_peer.h"
 #include "cmd_processor.h"
 #include "advanced_buffer.h"
-#include "peer.h"
+#include "tcp_peer.h"
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
@@ -78,7 +79,7 @@ void RTDS::printStatus()
 		std::cout << "RTDS Running   : OK " << "\t\t";
 	else
 		std::cout << "RTDS Running   : OK " << "\t\t";
-	std::cout << "Connections    : " << Peer::peerCount() << std::endl;
+	std::cout << "Connections    : " << TCPpeer::peerCount() << std::endl;
 
 	std::cout << "Warning        : " << WARNINGS << "\t\t";
 	std::cout << "Memmory Error  : " << MEMMORY_ERR << std::endl;
@@ -141,6 +142,7 @@ void RTDS::mConfigUDPserver()
 		REGISTER_SOCKET_ERR
 		exit(0);
 	}
+	UDPpeer::registerUDPsocket(&mUDPsock);
 	DEBUG_LOG(Log::log("UDP socket binded to endpoint");)
 }
 
@@ -217,7 +219,7 @@ void RTDS::mTCPacceptRoutine()
 				REGISTER_WARNING
 			}
 
-			auto peer = new (std::nothrow) Peer(peerSocket);
+			auto peer = new (std::nothrow) TCPpeer(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("Peer memmory bad allocation");)
@@ -233,13 +235,13 @@ void RTDS::mTCPacceptRoutine()
 void RTDS::mUDPlistenRoutine()
 {
 	mThreadCount++;
+	UDPpeer udpPeer;
+	AdancedBuffer dataBuffer;
+	asio::error_code ec;
+
 	while (mServerRunning)
 	{
-		asio::ip::udp::endpoint udpEp;
-		AdancedBuffer dataBuffer;
-		asio::error_code ec;
-
-		auto dataSize = mUDPsock.receive_from(dataBuffer.getReadBuffer(), udpEp, 0, ec);
+		auto dataSize = mUDPsock.receive_from(dataBuffer.getReadBuffer(), udpPeer.getRefToEp(), 0, ec);
 		if (ec)
 		{	
 			DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)	
@@ -248,8 +250,8 @@ void RTDS::mUDPlistenRoutine()
 		else
 		{
 			dataBuffer.cookString(dataSize);
-			CmdProcessor::processCommand(dataBuffer, udpEp);
-			mUDPsock.send_to(dataBuffer.getSendBuffer(), udpEp);
+			CmdProcessor::processCommand(udpPeer, dataBuffer);
+			mUDPsock.send_to(dataBuffer.getSendBuffer(), udpPeer.getRefToEp());
 		}
 	}
 	mThreadCount--;

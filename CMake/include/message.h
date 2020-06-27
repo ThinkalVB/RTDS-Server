@@ -60,6 +60,14 @@ public:
 ********************************************************************************************/
 	static const Message* makeBrdMsg(const SApair&, const std::string_view&);
 /*******************************************************************************************
+* @brief Make a new broadcast message
+*
+* @param[in]		Source address pair string.
+* @param[in]		Message
+* @return			Constant pointer to the message or nullptr.
+********************************************************************************************/
+	static const Message* makeBrdMsg(const std::string, const std::string_view&);
+/*******************************************************************************************
 * @brief Insert message to the the message Queue
 *
 * @param[in]		Message.

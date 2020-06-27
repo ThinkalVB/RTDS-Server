@@ -4,15 +4,18 @@
 #include <shared_mutex>
 #include <vector>
 #include <map>
-#include "peer.h"
+
+#include "tcp_peer.h"
+#include "udp_peer.h"
 #include "message.h"
 
 class BGroupUnrestricted
 {
 protected:
-	std::string mBgID;									// Broadcast Group ID	
-	std::shared_mutex mPeerListLock;					// Peer list lock
-	std::vector<Peer*> mPeerList;						// Peers in the Broadcast group
+	std::string mBgID;								// Broadcast Group ID
+
+	std::shared_mutex mTCPpeerListLock;				// Peer list lock
+	std::vector<TCPpeer*> mTCPpeerList;				// Peers in the Broadcast group
 
 public:
 /*******************************************************************************************
@@ -20,13 +23,13 @@ public:
 *
 * @param[in]			Pointer to the peer
 ********************************************************************************************/
-	void addPeer(Peer*);
+	void addPeer(TCPpeer*);
 /*******************************************************************************************
 * @brief Remove a peer from the peer list
 *
 * @param[in]			Pointer to the peer
 ********************************************************************************************/
-	void removePeer(Peer*);
+	void removePeer(TCPpeer*);
 /*******************************************************************************************
 * @brief Constructor
 *
@@ -39,29 +42,34 @@ public:
 * @return				True if the peer list is empty
 ********************************************************************************************/
 	bool isEmpty() const;
+/*******************************************************************************************
+* @brief Broadcast a message to all peers in the peer list
+*
+* @param[in]			Message
+* @param[in]			Broadcast Group Tag
+********************************************************************************************/
+	void broadcast(const Message* message, const std::string_view& bgTag);
+	void broadcast(const Message* message);
 };
 
 class BGroup : BGroupUnrestricted
 {
 public:
 /*******************************************************************************************
-* @brief Broadcast a message to all peers in the peer list
+* @brief Broadcast a message to all peers in the peer list (except the calling peer)
 *
 * @param[in]			Message broadcasting peer
 * @param[in]			Message
-* @param[in]			Broadcast Group Tag
-*
-* @details
-* The message won't be send to the messaging peer
+* @param[in]			Broadcast Group Tag (for tag specific broadcast)
 ********************************************************************************************/
-	void broadcast(Peer*, const Message*, const std::string_view&);
-	void broadcast(Peer*, const Message*);
+	void broadcast(TCPpeer*, const Message*, const std::string_view&);
+	void broadcast(TCPpeer*, const Message*);
 };
 
 class BGcontroller
 {
-	static std::map<std::string, BGroupUnrestricted*> mBGmap;		// Broadcast Group Map
-	static std::mutex mBgLock;										// Lock this Mutex before insertion
+	static std::map<std::string, BGroupUnrestricted*> mBGmap;		// Broadcast Group Map				
+	static std::shared_mutex mBgLock;								// Mutex for thread safety
 public:
 /*******************************************************************************************
 * @brief Add the peer to the broadcast group
@@ -73,14 +81,23 @@ public:
 * @details
 * Return null pointer if the operation fails
 ********************************************************************************************/
-	static BGroup* addToBG(Peer*, const BGID&);
+	static BGroup* addToBG(TCPpeer*, const BGID&);
 /*******************************************************************************************
 * @brief Remove a peer from the broadcast group
 *
 * @param[in]			Peer
 * @param[in]			Broadcast Group ID
 ********************************************************************************************/
-	static void removeFromBG(Peer*, const BGID&);
+	static void removeFromBG(TCPpeer*, const BGID&);
+/*******************************************************************************************
+* @brief Broadcast a message to all peers in the peer list
+*
+* @param[in]			Message
+* @param[in]			Broadcast Group ID
+* @param[in]			Broadcast Group Tag
+********************************************************************************************/
+	static void broadcast(const Message*, const BGID);
+	static void broadcast(const Message*, const BGID, const std::string_view&);
 };
 
 #endif

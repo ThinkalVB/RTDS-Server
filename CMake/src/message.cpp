@@ -83,6 +83,26 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	}
 }
 
+const Message* Message::makeBrdMsg(const std::string saPairStr, const std::string_view& messageStr)
+{
+	auto brdMssg = "[W] " + saPairStr + " ";
+	brdMssg += messageStr;
+	auto message = new (std::nothrow) Message(brdMssg);
+	if (message == nullptr)
+	{
+		LOG(Log::log("Failed to create message! ", brdMssg);)
+		REGISTER_MEMMORY_ERR
+		return nullptr;
+	}
+	else
+	{
+		if (!insertMssg2Q(message))
+			return nullptr;
+		else
+			return message;
+	}
+}
+
 bool Message::insertMssg2Q(Message* message)
 {
 	try

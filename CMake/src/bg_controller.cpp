@@ -7,60 +7,70 @@ BGroupUnrestricted::BGroupUnrestricted(const std::string& bgID)
 	mBgID = bgID;
 }
 
-void BGroupUnrestricted::addPeer(Peer* peer)
+void BGroupUnrestricted::addPeer(TCPpeer* peer)
 {
-	mPeerListLock.lock();
-	mPeerList.push_back(peer);
-	mPeerListLock.unlock();
+	std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
+	mTCPpeerList.push_back(peer);
 }
 
-void BGroupUnrestricted::removePeer(Peer* peer)
+void BGroupUnrestricted::removePeer(TCPpeer* peer)
 {
-	mPeerListLock.lock();
-	auto itr = std::find(mPeerList.begin(), mPeerList.end(), peer);
-	std::iter_swap(itr, mPeerList.end() - 1);
-	mPeerList.pop_back();
-	mPeerListLock.unlock();
+	std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
+	auto itr = std::find(mTCPpeerList.begin(), mTCPpeerList.end(), peer);
+	std::iter_swap(itr, mTCPpeerList.end() - 1);
+	mTCPpeerList.pop_back();
 }
 
 bool BGroupUnrestricted::isEmpty() const
 {
-	if (mPeerList.size() == 0)
+	if (mTCPpeerList.size() == 0)
 		return true;
 	else
 		return false;
 }
 
-
-void BGroup::broadcast(Peer* mPeer, const Message* message, const std::string_view& bgTag)
+void BGroupUnrestricted::broadcast(const Message* message, const std::string_view& bgTag)
 {
-	mPeerListLock.lock_shared();
-	for (auto peer : mPeerList)
+	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
+	for (auto peer : mTCPpeerList)
+		peer->sendMessage(message, bgTag);
+}
+
+void BGroupUnrestricted::broadcast(const Message* message)
+{
+	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
+	for (auto peer : mTCPpeerList)
+			peer->sendMessage(message);
+}
+
+
+void BGroup::broadcast(TCPpeer* mPeer, const Message* message, const std::string_view& bgTag)
+{
+	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
+	for (auto peer : mTCPpeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message, bgTag);
 	}
-	mPeerListLock.unlock_shared();
 }
 
-void BGroup::broadcast(Peer* mPeer, const Message* message)
+void BGroup::broadcast(TCPpeer* mPeer, const Message* message)
 {
-	mPeerListLock.lock_shared();
-	for (auto peer : mPeerList)
+	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
+	for (auto peer : mTCPpeerList)
 	{
 		if (peer != mPeer)
 			peer->sendMessage(message);
 	}
-	mPeerListLock.unlock_shared();
 }
 
 
 std::map<std::string, BGroupUnrestricted*> BGcontroller::mBGmap;
-std::mutex BGcontroller::mBgLock;
+std::shared_mutex BGcontroller::mBgLock;
 
-BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
+BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
 {
-	std::lock_guard<std::mutex> lock(mBgLock);
+	std::lock_guard<std::shared_mutex> writeLock(mBgLock);
 	auto bGroupItr = mBGmap.find(bgID);
 	if (bGroupItr == mBGmap.end())
 	{
@@ -102,9 +112,9 @@ BGroup* BGcontroller::addToBG(Peer* peer, const BGID& bgID)
 	}
 }
 
-void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
+void BGcontroller::removeFromBG(TCPpeer* peer, const BGID& bgID)
 {
-	std::lock_guard<std::mutex> lock(mBgLock);
+	std::lock_guard<std::shared_mutex> writeLock(mBgLock);
 	auto bGroupItr = mBGmap.find(bgID);
 	if (bGroupItr != mBGmap.end())
 	{
@@ -120,5 +130,27 @@ void BGcontroller::removeFromBG(Peer* peer, const BGID& bgID)
 	{	
 		LOG(Log::log("Peer must be in map, but not found");)
 		REGISTER_CODE_ERROR
+	}
+}
+
+void BGcontroller::broadcast(const Message* message, const BGID bgID)
+{
+	std::shared_lock<std::shared_mutex> readLock(mBgLock);
+	auto bGroupItr = mBGmap.find(bgID);
+	if (bGroupItr != mBGmap.end())
+	{
+		auto bGroup = bGroupItr->second;
+		bGroup->broadcast(message);
+	}
+}
+
+void BGcontroller::broadcast(const Message* message, const BGID bgID, const std::string_view& bgTag)
+{
+	std::shared_lock<std::shared_mutex> readLock(mBgLock);
+	auto bGroupItr = mBGmap.find(bgID);
+	if (bGroupItr != mBGmap.end())
+	{
+		auto bGroup = bGroupItr->second;
+		bGroup->broadcast(message, bgTag);
 	}
 }

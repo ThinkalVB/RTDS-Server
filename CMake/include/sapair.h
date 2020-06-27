@@ -20,7 +20,7 @@ public:
 *
 * @param[in]			Asio pointer to the TCP socket.
 ********************************************************************************************/
-	SApair(asio::ip::tcp::socket* tcpSocket);
+	SApair(asio::ip::tcp::socket*);
 /*******************************************************************************************
 * @brief Convert the source address pair to string (Version, IP address, port number)
 *

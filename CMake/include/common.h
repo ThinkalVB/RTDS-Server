@@ -20,10 +20,13 @@
 
 #define STR_V4 "v4"						// Version V4 in string
 #define STR_V6 "v6"						// Version V6 in string
+#define ALL_TAG "*"						// Represent all tags in a BG
 
 #define RTDS_BUFF_SIZE 512				// Maximum size of the readBuffer
+#define MIN_BGID_SIZE 2					// Minimum size of BGID
 #define MAX_BGID_SIZE 128				// Maximum size of BGID
 #define MAX_BROADCAST_SIZE 256			// Maximum size of B data
+#define MIN_TAG_SIZE 2					// Minimum size of Tag
 #define MAX_TAG_SIZE 32					// Maximum size of Tag
 #define MAX_MSG_CACHE_SIZE 128			// Maximum number of messages to be cached
 #define MIN_MSG_KEEP_TIME 1				// Minimum number of minutes to keep the message
@@ -42,6 +45,7 @@ typedef std::string BGT;
 * wait_retry		Wait and try again after sometime.
 * is_listening		Peer is already listening to a BG.
 * not_listening		Peer is not listening to any BG.
+* not_allowed		The operation is not allowed.
 ********************************************************************************************/
 enum class Response
 {
@@ -50,7 +54,8 @@ enum class Response
 	BAD_PARAM = 2,
 	WAIT_RETRY = 3,
 	IS_IN_BG = 4,
-	NOT_IN_BG = 5
+	NOT_IN_BG = 5,
+	NOT_ALLOWED = 6
 };
 
 /*******************************************************************************************
