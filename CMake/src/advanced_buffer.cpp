@@ -2,7 +2,7 @@
 
 void AdancedBuffer::operator=(const std::string& responseStr)
 {
-	strcpy_s(mBuffer.data(), RTDS_BUFF_SIZE + 1, responseStr.c_str());
+	memcpy(mBuffer.data(), responseStr.data(), responseStr.length());
 	mVirtualSize = responseStr.length();
 }
 
