@@ -1,4 +1,5 @@
 #include "bg_controller.h"
+#include <algorithm>
 #include "rtds_settings.h"
 #include "log.h"
 
