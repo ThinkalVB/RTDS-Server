@@ -1,4 +1,5 @@
 #include "udp_peer.h"
+#include <functional>
 #include "rtds_settings.h"
 #include "cmd_processor.h"
 #include "bg_controller.h"
