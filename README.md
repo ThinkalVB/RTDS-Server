@@ -1,5 +1,7 @@
 # RTDS-Server
 Resource Tracking Directory Server
+RTDS (UDP and TCP) Available at (IPv4 35.209.185.6 port 389)
+
 ## Getting Started
 
 Active development in Visual Studio 2019. You can generate the project using CMake.
@@ -14,7 +16,7 @@ Use VCPKG - package manager to manage dependencies.
 
 RTDS is a console application.  
 Make sure firewalls are set to allow traffic from the appliation (Run as root in Linux).  
-Initially support for TCP and UDP on port 349 (default).  
+Initially support for TCP and UDP on port 389 (default).  
 Port number and thread count can be passed as arguments -p and -t (ex: rtds -p349 -t8).  
 Use #define PRINT_LOG to enable logging and #define PRINT_DEBUG_LOG for debug logs.  
 Use #define OUTPUT_DEBUG_LOG to print the logs to the console output stream.  

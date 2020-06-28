@@ -43,8 +43,8 @@ typedef std::string BGT;
 * bad_command		Bad command.
 * bad_param			Bad parameter provided with the command.
 * wait_retry		Wait and try again after sometime.
-* is_in_bg			Peer is already listening to a BG.
-* not_in_bg			Peer is not listening to any BG.
+* is_listening		Peer is already listening to a BG.
+* not_listening		Peer is not listening to any BG.
 * not_allowed		The operation is not allowed.
 ********************************************************************************************/
 enum class Response
