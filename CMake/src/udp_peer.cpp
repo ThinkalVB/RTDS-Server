@@ -10,8 +10,8 @@ asio::ip::udp::socket* UDPpeer::mPeerSocket;
 void UDPpeer::mSendMssgFuncFeedbk(const asio::error_code& ec)
 {
 	REGISTER_SOCKET_ERR
-	DEBUG_LOG( if (ec)
-			Log::log("UDP message sending failed", ec.message());	)
+	DEBUG_LOG(	if (ec)
+					Log::log("UDP message sending failed", ec.message());	)
 }
 
 void UDPpeer::registerUDPsocket(asio::ip::udp::socket* udpSock)
@@ -32,20 +32,20 @@ const std::string UDPpeer::getSApairString() const
 
 	if (ipAddr.is_v4())
 	{
-		saPairStr += STR_V4;
+		saPairStr = STR_V4;
 		auto _ipAddr4 = ipAddr.to_v4();
-		saPairStr += " " + _ipAddr4.to_string();
+		saPairStr += "\t" + _ipAddr4.to_string();
 	}
 	else
 	{
-		saPairStr += STR_V6;
+		saPairStr = STR_V6;
 		auto _ipAddr6 = ipAddr.to_v6();
 		if (_ipAddr6.is_v4_mapped())
-			saPairStr += " " + _ipAddr6.to_v4().to_string();
+			saPairStr += "\t" + _ipAddr6.to_v4().to_string();
 		else
-			saPairStr += " " + _ipAddr6.to_string();
+			saPairStr += "\t" + _ipAddr6.to_string();
 	}
-	saPairStr += " " + std::to_string(portNumber);
+	saPairStr += "\t" + std::to_string(portNumber);
 	return saPairStr;
 }
 
@@ -68,7 +68,7 @@ void UDPpeer::sendMessage(const Message* message)
 
 void UDPpeer::printPingInfo(AdancedBuffer& dataBuffer) const
 {
-	std::string response = "[R] " + getSApairString();
+	std::string response = "[R]\t" + getSApairString();
 	dataBuffer = response;
 	DEBUG_LOG(Log::log("UDP Peer pinging");)
 }
@@ -76,7 +76,7 @@ void UDPpeer::printPingInfo(AdancedBuffer& dataBuffer) const
 void UDPpeer::respondWith(const Response resp, AdancedBuffer& dataBuffer) const
 {
 	DEBUG_LOG(Log::log("UDP Peer responding: ", CmdProcessor::RESP[(short)resp]);)
-	std::string response = "[R] " + CmdProcessor::RESP[(short)resp];
+	std::string response = "[R]\t" + CmdProcessor::RESP[(short)resp];
 	dataBuffer = response;
 }
 
@@ -88,11 +88,11 @@ void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 	if (message != nullptr)
 	{
 		BGcontroller::broadcast(message, std::string(bgID));
-		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
 	}
 	else
-		response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	dataBuffer = response;
 }
 
@@ -104,10 +104,10 @@ void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 	if (message != nullptr)
 	{
 		BGcontroller::broadcast(message, std::string(bgID), bgTag);
-		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
 	}
 	else
-		response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	dataBuffer = response;
 }

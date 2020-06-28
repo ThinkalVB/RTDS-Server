@@ -27,7 +27,7 @@ bool Message::haveExpired() const
 
 const Message* Message::makeAddMsg(const SApair& saPair)
 {
-	auto addMssg = "[C] " + saPair.toString();
+	auto addMssg = "[C]\t" + saPair.toString();
 	auto message = new (std::nothrow) Message(addMssg);
 	if (message == nullptr)
 	{
@@ -46,7 +46,7 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 
 const Message* Message::makeRemMsg(const SApair& saPair)
 {
-	auto remMssg = "[D] " + saPair.toString();
+	auto remMssg = "[D]\t" + saPair.toString();
 	auto message = new (std::nothrow) Message(remMssg);
 	if (message == nullptr)
 	{
@@ -65,7 +65,7 @@ const Message* Message::makeRemMsg(const SApair& saPair)
 
 const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view& messageStr)
 {
-	auto brdMssg = "[M] " + saPair.toString() + " ";
+	auto brdMssg = "[M]\t" + saPair.toString() + "\t";
 	brdMssg += messageStr;
 	auto message = new (std::nothrow) Message(brdMssg);
 	if (message == nullptr)
@@ -85,7 +85,7 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 
 const Message* Message::makeBrdMsg(const std::string saPairStr, const std::string_view& messageStr)
 {
-	auto brdMssg = "[W] " + saPairStr + " ";
+	auto brdMssg = "[W]\t" + saPairStr + "\t";
 	brdMssg += messageStr;
 	auto message = new (std::nothrow) Message(brdMssg);
 	if (message == nullptr)

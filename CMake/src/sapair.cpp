@@ -11,18 +11,18 @@ SApair::SApair(asio::ip::tcp::socket* tcpSocket)
 	{
 		mSaPairStr += STR_V4;
 		auto _ipAddr4 = mIpAddr.to_v4();
-		mSaPairStr += " " + _ipAddr4.to_string();
+		mSaPairStr += "\t" + _ipAddr4.to_string();
 	}
 	else
 	{
 		mSaPairStr += STR_V6;
 		auto _ipAddr6 = mIpAddr.to_v6();
 		if (_ipAddr6.is_v4_mapped())
-			mSaPairStr += " " + _ipAddr6.to_v4().to_string();
+			mSaPairStr += "\t" + _ipAddr6.to_v4().to_string();
 		else
-			mSaPairStr += " " + _ipAddr6.to_string();
+			mSaPairStr += "\t" + _ipAddr6.to_string();
 	}
-	mSaPairStr += " " + std::to_string(mPortNumber);
+	mSaPairStr += "\t" + std::to_string(mPortNumber);
 }
 
 std::string SApair::toString() const

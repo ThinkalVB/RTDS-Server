@@ -54,7 +54,17 @@ struct CmdProcessor
 ********************************************************************************************/
 	static bool isBmessage(const std::string_view&);
 /*******************************************************************************************
-* @brief Check if the string view contains characters which are printable except space
+* @brief Check if the string view contains characters which are printable (except space)
+*
+* @param[in]			Command string.
+* @return				True if printable
+*
+* @details
+* Return true for empty strings.
+********************************************************************************************/
+	static bool isConsistent(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string view contains characters which are printable
 *
 * @param[in]			Command string.
 * @return				True if printable
@@ -63,6 +73,7 @@ struct CmdProcessor
 * Return true for empty strings.
 ********************************************************************************************/
 	static bool isPrintable(const std::string_view&);
+
 /*******************************************************************************************
 * @brief Check if the string is a port number
 *

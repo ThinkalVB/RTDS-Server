@@ -130,7 +130,7 @@ void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgT
 {
 	std::string response;
 	if (mIsInBG)
-		response += "[R] " + CmdProcessor::RESP[(short)Response::IS_IN_BG];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::IS_IN_BG];
 	else
 	{
 		mBgID = bgID;
@@ -144,11 +144,11 @@ void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgT
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 
-			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
 		}
 		else
-			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
 	mDataBuffer = response;
 }
@@ -166,10 +166,10 @@ void TCPpeer::leaveBG()
 
 		mIsInBG = false;
 		mBgPtr = nullptr;
-		response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 	}
 	else
-		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	mDataBuffer = response;
 }
 
@@ -177,7 +177,7 @@ void TCPpeer::printPingInfo()
 {
 	std::string response;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer pinging");)
-	response += "[R] " + mSApair.toString();
+	response = "[R]\t" + mSApair.toString();
 	mDataBuffer = response;
 }
 
@@ -185,7 +185,7 @@ void TCPpeer::respondWith(Response resp)
 {
 	std::string response;
 	DEBUG_LOG(Log::log(mSApair.toString(), " Peer responding: ", CmdProcessor::RESP[(short)resp]);)
-	response = "[R] " + CmdProcessor::RESP[(short)resp];
+	response = "[R]\t" + CmdProcessor::RESP[(short)resp];
 	mDataBuffer = response;
 }
 
@@ -198,14 +198,14 @@ void TCPpeer::broadcast(const std::string_view& messageStr)
 		if (message != nullptr)
 		{
 			mBgPtr->broadcast(this, message);
-			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
 		}
 		else
-			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
 	else
-		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	mDataBuffer = response;
 }
 
@@ -218,13 +218,13 @@ void TCPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 		if (message != nullptr)
 		{
 			mBgPtr->broadcast(this, message, bgTag);
-			response += "[R] " + CmdProcessor::RESP[(short)Response::SUCCESS];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
 		}
 		else
-			response += "[R] " + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	}
 	else
-		response += "[R] " + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+		response = "[R]\t" + CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	mDataBuffer = response;
 }

@@ -24,14 +24,14 @@ const std::string CmdProcessor::COMM[] =
 
 bool CmdProcessor::isBGID(const std::string_view& bgid)
 {
-	if (bgid.size() >= MIN_BGID_SIZE && isPrintable(bgid) && bgid.size() <= MAX_BGID_SIZE)
+	if (bgid.size() >= MIN_BGID_SIZE && isConsistent(bgid) && bgid.size() <= MAX_BGID_SIZE)
 		return true;
 	return false;
 }
 
 bool CmdProcessor::isTag(const std::string_view& tag)
 {
-	if (tag.size() >= MIN_BGID_SIZE && isPrintable(tag) && tag.size() <= MAX_TAG_SIZE)
+	if (tag.size() >= MIN_BGID_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
 		return true;
 	return false;
 }
@@ -43,11 +43,21 @@ bool CmdProcessor::isBmessage(const std::string_view& bMessage)
 	return false;
 }
 
-bool CmdProcessor::isPrintable(const std::string_view& strElement)
+bool CmdProcessor::isConsistent(const std::string_view& strElement)
 {
 	for (auto invChar : strElement)
 	{
 		if (!(invChar > 32 && invChar != 127))
+			return false;
+	}
+	return true;
+}
+
+bool CmdProcessor::isPrintable(const std::string_view& strElement)
+{
+	for (auto invChar : strElement)
+	{
+		if (!(invChar >= 32 && invChar != 127))
 			return false;
 	}
 	return true;
@@ -85,7 +95,7 @@ bool CmdProcessor::isThreadCount(const std::string threadCStr, short& threadCoun
 
 const std::string_view CmdProcessor::extractElement(std::string_view& command)
 {
-	auto endIndex = command.find_first_of(' ');
+	auto endIndex = command.find_first_of('\t');
 	if (endIndex == std::string::npos)
 	{
 		auto element = command;

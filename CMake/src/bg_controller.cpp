@@ -124,7 +124,7 @@ void BGcontroller::removeFromBG(TCPpeer* peer, const BGID& bgID)
 		if (bGroup->isEmpty())
 		{
 			mBGmap.erase(bGroupItr);
-			DEBUG_LOG(Log::log(bgID, "Deleted BG: ", bgID);)
+			DEBUG_LOG(Log::log(bgID, " Deleted BG: ", bgID);)
 		}
 	}
 	else
