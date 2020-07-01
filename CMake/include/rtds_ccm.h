@@ -1,5 +1,5 @@
-#ifndef RTDS_SETTINGS_H
-#define RTDS_SETTINGS_H
+#ifndef RTDS_CCM_H
+#define RTDS_CCM_H
 
 #define REGISTER_WARNING Error::mWarnings++;
 #define REGISTER_MEMMORY_ERR Error::mError_memmory++;
@@ -13,8 +13,9 @@
 #define IO_ERR Error::mError_io
 #define CODE_ERR Error::mError_code
 
-#define RTDS_PORT Settings::mRtdsPortNo
-#define RTDS_START_THREAD Settings::mRtdsThreadCount
+#define RTDS_PORT Settings::mRTDSportNo
+#define RTDS_CCM Settings::mRTDSccmPortNo
+#define RTDS_START_THREAD Settings::mRTDSthreadCount
 #define RESET_ERROR_COUNTER Error::mResetErrorCounts();
 
 #include <string>
@@ -41,7 +42,8 @@ class Settings
 * @details
 * std::err will display the error in argument and exit if the arguments are incorrect.
 ********************************************************************************************/
-	static void mFindPortNumber(std::string portNStr);
+	static void mFindPortNumber(std::string);
+	static void mFindccmPortNumber(std::string);
 /*******************************************************************************************
 * @brief Find Thread count.
 *
@@ -50,10 +52,11 @@ class Settings
 * @details
 * std::err will display the error in argument and exit if the arguments are incorrect.
 ********************************************************************************************/
-	static void mFindThreadCount(std::string threadCStr);
+	static void mFindThreadCount(std::string);
 public:
-	static unsigned short mRtdsPortNo;			// RTDS port number
-	static short mRtdsThreadCount;				// Number of RTDS threads
+	static unsigned short mRTDSportNo;			// RTDS port number
+	static unsigned short mRTDSccmPortNo;		// RTDS CCM port number
+	static short mRTDSthreadCount;				// Number of RTDS threads
 /*******************************************************************************************
 * @brief Process Arguments string
 *

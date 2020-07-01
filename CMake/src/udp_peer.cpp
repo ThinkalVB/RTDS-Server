@@ -1,6 +1,6 @@
 #include "udp_peer.h"
 #include <functional>
-#include "rtds_settings.h"
+#include "rtds_ccm.h"
 #include "cmd_processor.h"
 #include "bg_controller.h"
 #include "log.h"
@@ -68,46 +68,55 @@ void UDPpeer::sendMessage(const Message* message)
 
 void UDPpeer::printPingInfo(AdancedBuffer& dataBuffer) const
 {
-	std::string response = "[R]\t" + getSApairString();
+	std::string response = "[R]\t";
+	response += getSApairString();
+	response += "\n";
 	dataBuffer = response;
+
 	DEBUG_LOG(Log::log("UDP Peer pinging");)
 }
 
 void UDPpeer::respondWith(const Response resp, AdancedBuffer& dataBuffer) const
 {
-	DEBUG_LOG(Log::log("UDP Peer responding: ", CmdProcessor::RESP[(short)resp]);)
-	std::string response = "[R]\t" + CmdProcessor::RESP[(short)resp];
+	std::string response = "[R]\t";
+	response += CmdProcessor::RESP[(short)resp];
+	response += "\n";
 	dataBuffer = response;
+
+	DEBUG_LOG(Log::log("UDP Peer responding: ", CmdProcessor::RESP[(short)resp]);)
+
 }
 
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, AdancedBuffer& dataBuffer) const
 {
-	std::string response;
+	std::string response = "[R]\t";
 	auto message = Message::makeBrdMsg(getSApairString(), messageStr);
 	
 	if (message != nullptr)
 	{
 		BGcontroller::broadcast(message, std::string(bgID));
-		response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response += CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
 	}
 	else
-		response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+	response += "\n";
 	dataBuffer = response;
 }
 
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag, AdancedBuffer& dataBuffer) const
 {
-	std::string response;
+	std::string response = "[R]\t";
 	auto message = Message::makeBrdMsg(getSApairString(), messageStr);
 
 	if (message != nullptr)
 	{
 		BGcontroller::broadcast(message, std::string(bgID), bgTag);
-		response = "[R]\t" + CmdProcessor::RESP[(short)Response::SUCCESS];
+		response += CmdProcessor::RESP[(short)Response::SUCCESS];
 		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
 	}
 	else
-		response = "[R]\t" + CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+	response += "\n";
 	dataBuffer = response;
 }

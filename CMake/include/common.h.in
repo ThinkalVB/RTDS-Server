@@ -7,7 +7,8 @@
 #define RTDS_PATCH @RTDS_PATCH@
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support
-#define RDTS_DEF_PORT 389				// Default RTDS port number
+#define RDTS_DEF_PORT 321				// Default RTDS port number
+#define RTDS_CCM_PORT 322				// Default CCM port number
 #define MAX_THREAD_COUNT 28				// Maximum Thread Count
 #define MIN_THREAD_COUNT 4				// Minimum Thread Count
 #define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number
@@ -43,8 +44,8 @@ typedef std::string BGT;
 * bad_command		Bad command.
 * bad_param			Bad parameter provided with the command.
 * wait_retry		Wait and try again after sometime.
-* is_listening		Peer is already listening to a BG.
-* not_listening		Peer is not listening to any BG.
+* is_in_bg			Peer is already listening to a BG.
+* not_in_bg			Peer is not listening to any BG.
 * not_allowed		The operation is not allowed.
 ********************************************************************************************/
 enum class Response

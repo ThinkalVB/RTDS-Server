@@ -1,5 +1,5 @@
 #include "log.h"
-#include "rtds_settings.h"
+#include "rtds_ccm.h"
 
 std::atomic_bool Log::mCanLog;
 std::mutex Log::mWriteLock;

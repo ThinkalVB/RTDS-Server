@@ -1,6 +1,6 @@
 ﻿#include "rtds.h"
 #include <thread>
-#include "rtds_settings.h"
+#include "rtds_ccm.h"
 #include "udp_peer.h"
 #include "cmd_processor.h"
 #include "advanced_buffer.h"
@@ -8,11 +8,11 @@
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(const unsigned short portNumber, short threadCount) : mTCPep(asio::ip::address_v6::any(), portNumber), mUDPep(asio::ip::address_v6::any(), portNumber), 
-mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mWorker(mIOcontext)
-#else 
+//RTDS::RTDS(const unsigned short portNumber, short threadCount) : mTCPep(asio::ip::address_v6::any(), portNumber), mUDPep(asio::ip::address_v6::any(), portNumber), 
+//mUDPsock(mTCPcontext), mTCPacceptor(mTCPcontext), mTCPworker(mTCPcontext)
+//#else 
 RTDS::RTDS(const unsigned short portNumber, short threadCount) : mTCPep(asio::ip::address_v4::any(), portNumber), mUDPep(asio::ip::address_v4::any(), portNumber),
-mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mWorker(mIOcontext)
+mUDPsock(mTCPcontext), mTCPacceptor(mTCPcontext), mTCPworker(mTCPcontext)
 #endif
 {
 	START_LOG
@@ -30,10 +30,10 @@ RTDS::~RTDS()
 		stopServer();
 	
 	mCloseSockets();
-	mIOcontext.stop();
+	mTCPcontext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	} while (!mIOcontext.stopped() && mThreadCount == 0);
+	} while (!mTCPcontext.stopped() && mThreadCount == 0);
 
 	DEBUG_LOG(Log::log("RTDS Exiting [Logging stopped]");)
 	STOP_LOG
@@ -41,7 +41,7 @@ RTDS::~RTDS()
 
 void RTDS::startServer()
 {
-	mIOcontext.restart();
+	mTCPcontext.restart();
 	mServerRunning = true;
 	try {
 		std::thread ioThreadLR(&RTDS::mUDPlistenRoutine, this);
@@ -150,7 +150,7 @@ void RTDS::mIOthreadJob()
 {
 	asio::error_code ec;
 	mThreadCount++;
-	mIOcontext.run(ec);
+	mTCPcontext.run(ec);
 	if (ec)
 	{
 		LOG(Log::log("ioContext.run() failed - ", ec.message());)
@@ -184,7 +184,7 @@ void RTDS::mTCPacceptRoutine()
 	mThreadCount++;
 	while (mServerRunning)
 	{
-		auto peerSocket = new (std::nothrow) asio::ip::tcp::socket(mIOcontext);
+		auto peerSocket = new (std::nothrow) asio::ip::tcp::socket(mTCPcontext);
 		if (peerSocket == nullptr)
 		{
 			LOG(Log::log("Peer socket bad allocation");)

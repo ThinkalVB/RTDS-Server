@@ -18,6 +18,7 @@ project ("RTDS" VERSION ${RTDS_VERSION})
 #set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 find_package(asio CONFIG REQUIRED)
+  find_package(OpenSSL REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/src)
 configure_file (
@@ -33,4 +34,5 @@ add_executable(rtds ${all_SRCS})
 
 target_link_libraries(rtds Threads::Threads)
 target_link_libraries(rtds asio asio::asio)
+target_link_libraries(rtds OpenSSL::SSL OpenSSL::Crypto)
 # TODO: Add tests and install targets if needed.

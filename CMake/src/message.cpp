@@ -1,5 +1,5 @@
 #include "message.h"
-#include "rtds_settings.h"
+#include "rtds_ccm.h"
 #include "common.h"
 #include "log.h"
 
@@ -27,7 +27,7 @@ bool Message::haveExpired() const
 
 const Message* Message::makeAddMsg(const SApair& saPair)
 {
-	auto addMssg = "[C]\t" + saPair.toString();
+	auto addMssg = "[C]\t" + saPair.toString() + "\n";
 	auto message = new (std::nothrow) Message(addMssg);
 	if (message == nullptr)
 	{
@@ -46,7 +46,7 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 
 const Message* Message::makeRemMsg(const SApair& saPair)
 {
-	auto remMssg = "[D]\t" + saPair.toString();
+	auto remMssg = "[D]\t" + saPair.toString() + "\n";
 	auto message = new (std::nothrow) Message(remMssg);
 	if (message == nullptr)
 	{
@@ -67,6 +67,8 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 {
 	auto brdMssg = "[M]\t" + saPair.toString() + "\t";
 	brdMssg += messageStr;
+	brdMssg += "\n";
+
 	auto message = new (std::nothrow) Message(brdMssg);
 	if (message == nullptr)
 	{
@@ -87,6 +89,8 @@ const Message* Message::makeBrdMsg(const std::string saPairStr, const std::strin
 {
 	auto brdMssg = "[W]\t" + saPairStr + "\t";
 	brdMssg += messageStr;
+	brdMssg += "\n";
+
 	auto message = new (std::nothrow) Message(brdMssg);
 	if (message == nullptr)
 	{

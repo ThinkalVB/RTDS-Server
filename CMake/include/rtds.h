@@ -6,8 +6,8 @@
 
 class RTDS
 {
-	asio::io_context mIOcontext;				// ioContext controls all the async functions related to ASIO
-	asio::io_context::work mWorker;				// Worker object to prevent ioContext.run() from exiting when without async jobs
+	asio::io_context mTCPcontext;				// ioContext controls all the async functions related to ASIO
+	asio::io_context::work mTCPworker;			// Worker object to prevent ioContext.run() from exiting when without async jobs
 	asio::ip::tcp::endpoint mTCPep;				// TCP endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
 	asio::ip::tcp::acceptor mTCPacceptor;		// TCP acceptor socket that accept incoming tcp connections
 

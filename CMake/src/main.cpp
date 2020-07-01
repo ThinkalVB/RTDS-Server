@@ -1,7 +1,7 @@
 #include "rtds.h"
 #include <iostream>
 #include "common.h"
-#include "rtds_settings.h"
+#include "rtds_ccm.h"
 
 void processCommand(RTDS& rtdsServer, std::string command)
 {
