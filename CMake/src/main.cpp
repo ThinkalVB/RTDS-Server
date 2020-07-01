@@ -51,7 +51,7 @@ int main(int argCount, const char* args[])
 		Settings::processArgument(argument);
 	}
 
-	RTDS rtdsServer(RTDS_PORT, RTDS_START_THREAD);
+	RTDS rtdsServer(RTDS_PORT, RTDS_CCM, RTDS_START_THREAD);
 	rtdsServer.startServer();
 
 	while (true)

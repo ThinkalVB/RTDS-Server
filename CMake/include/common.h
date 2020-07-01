@@ -8,7 +8,7 @@
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support
 #define RDTS_DEF_PORT 321				// Default RTDS port number
-#define RTDS_CCM_PORT 322				// Default CCM port number
+#define RTDS_DEF_CCM_PORT 322			// Default CCM port number
 #define MAX_THREAD_COUNT 28				// Maximum Thread Count
 #define MIN_THREAD_COUNT 4				// Minimum Thread Count
 #define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number

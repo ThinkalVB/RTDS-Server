@@ -9,7 +9,7 @@ int Error::mError_io = 0;
 int Error::mError_code = 0;
 
 unsigned short Settings::mRTDSportNo = RDTS_DEF_PORT;
-unsigned short Settings::mRTDSccmPortNo = RTDS_CCM_PORT;
+unsigned short Settings::mRTDSccmPortNo = RTDS_DEF_CCM_PORT;
 short Settings::mRTDSthreadCount = MIN_THREAD_COUNT;
 
 void Settings::mFindPortNumber(std::string portNStr)
