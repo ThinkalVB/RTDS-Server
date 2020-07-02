@@ -29,19 +29,13 @@ SSLpeer::~SSLpeer()
 	asio::error_code ec;
 	mPeerSocket->shutdown(ec);
 	if (ec)
-	{
-		LOG(Log::log("SSL socket cannot shutdown - ", ec.message());)
-	}
+	{	DEBUG_LOG(Log::log("SSL socket cannot shutdown - ", ec.message());)	}
 	mPeerSocket->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
 	if (ec)
-	{
-		LOG(Log::log("SSL lowest layer cannot shutdown - ", ec.message());)
-	}
+	{	DEBUG_LOG(Log::log("SSL lowest layer cannot shutdown - ", ec.message());)	}
 	mPeerSocket->lowest_layer().close(ec);
 	if (ec)
-	{
-		LOG(Log::log("SSL socket cannot close - ", ec.message());)
-	}
+	{	DEBUG_LOG(Log::log("SSL socket cannot close - ", ec.message());)	}
 
 	delete mPeerSocket;
 	DEBUG_LOG(Log::log("SSL Peer Disconnected");)
