@@ -13,7 +13,7 @@ TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr) : mSApair(socketPtr)
 	mBgPtr = nullptr;
 	mIsInBG = false;
 
-	DEBUG_LOG(Log::log(mSApair.toString()," Peer Connected");)
+	DEBUG_LOG(Log::log(mSApair.toString()," TCP Peer Connected");)
 	mPeerCount++;
 	mPeerReceiveData();
 }
@@ -34,7 +34,7 @@ TCPpeer::~TCPpeer()
 	if (ec)
 	{	LOG(Log::log(mSApair.toString(), " socket cannot close - ", ec.message());)		}
 	delete mPeerSocket;
-	DEBUG_LOG(Log::log(mSApair.toString(), " Peer Disconnected");)
+	DEBUG_LOG(Log::log(mSApair.toString(), " TCP Peer Disconnected");)
 }
 
 std::string_view TCPpeer::getCommandString()
@@ -109,8 +109,10 @@ void TCPpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 	}
 	else
 	{
-		mDataBuffer.cookString(dataSize);
-		CmdProcessor::processCommand(*this);
+		if (mDataBuffer.cookString(dataSize))
+			CmdProcessor::processCommand(*this);
+		else
+			respondWith(Response::BAD_COMMAND);
 
 		if (mPeerIsActive)
 			mSendPeerBufferData();

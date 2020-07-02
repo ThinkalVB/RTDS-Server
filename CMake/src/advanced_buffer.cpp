@@ -6,9 +6,13 @@ void AdancedBuffer::operator=(const std::string& responseStr)
 	mVirtualSize = responseStr.length();
 }
 
-void AdancedBuffer::cookString(const size_t noOfStrBytes)
+bool AdancedBuffer::cookString(const size_t noOfStrBytes)
 {
-	mVirtualSize = noOfStrBytes;
+	mVirtualSize = noOfStrBytes - 1;
+	if (mBuffer[mVirtualSize] == '\n')
+		return true;
+	else
+		return false;
 }
 
 asio::mutable_buffer AdancedBuffer::getReadBuffer()

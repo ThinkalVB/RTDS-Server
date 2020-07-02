@@ -1,37 +1,13 @@
 #ifndef RTDS_CCM_H
 #define RTDS_CCM_H
 
-#define REGISTER_WARNING Error::mWarnings++;
-#define REGISTER_MEMMORY_ERR Error::mError_memmory++;
-#define REGISTER_SOCKET_ERR Error::mError_socket++;
-#define REGISTER_IO_ERR Error::mError_io++;
-#define REGISTER_CODE_ERROR Error::mError_code++;
-
-#define WARNINGS Error::mWarnings
-#define MEMMORY_ERR Error::mError_memmory
-#define SOCKET_ERR Error::mError_socket
-#define IO_ERR Error::mError_io
-#define CODE_ERR Error::mError_code
-
 #define RTDS_PORT Settings::mRTDSportNo
 #define RTDS_CCM Settings::mRTDSccmPortNo
 #define RTDS_START_THREAD Settings::mRTDSthreadCount
-#define RESET_ERROR_COUNTER Error::mResetErrorCounts();
+#define NEED_TO_ABORT Settings::mNeedToAbort
+#define SIGNAL_ABORT Settings::mNeedToAbort = true;
 
 #include <string>
-struct Error
-{
-	static int mWarnings;						// Number of Warnings
-	static int mError_memmory;					// Number of Memmory Errors
-	static int mError_socket;					// Number of Socket Errors
-	static int mError_io;						// Number of IO Error
-	static int mError_code;						// Number of Code Error
-/*******************************************************************************************
-* @brief Reset all the error counters to zero
-********************************************************************************************/
-	static void mResetErrorCounts();
-};
-
 class Settings
 {
 /*******************************************************************************************
@@ -57,6 +33,7 @@ public:
 	static unsigned short mRTDSportNo;			// RTDS port number
 	static unsigned short mRTDSccmPortNo;		// RTDS CCM port number
 	static short mRTDSthreadCount;				// Number of RTDS threads
+	static bool mNeedToAbort;					// True if RTDS needs to be aborted
 /*******************************************************************************************
 * @brief Process Arguments string
 *

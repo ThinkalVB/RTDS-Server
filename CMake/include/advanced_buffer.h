@@ -19,11 +19,12 @@ public:
 * @brief Prepare the buffer to be converted to a string view
 *
 * @param[in]		Size of the received data (in bytes)
+* @return			True if ends with newline
 *
 * @details
-* Append a null char at the end of the received data
+* Check for newline char at the end of the received data, else return false
 ********************************************************************************************/
-	void cookString(const size_t);
+	bool cookString(const size_t);
 /*******************************************************************************************
 * @brief Get read buffer (Get the entire buffer for reading from peer)
 *

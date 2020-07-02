@@ -1,13 +1,12 @@
 ﻿#include "rtds.h"
 #include <thread>
-#include "rtds_ccm.h"
 #include "udp_peer.h"
 #include "cmd_processor.h"
 #include "advanced_buffer.h"
 #include "tcp_peer.h"
+#include "ssl_peer.h"
 #include "log.h"
 
-typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
 #ifdef RTDS_DUAL_STACK
 RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::address_v6::any(), portNumber),
@@ -27,13 +26,13 @@ mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::address_v4::any(), ccm
 	mConfigTCPserver();
 	mConfigUDPserver();
 	mConfigSSLserver();
+	mStartServer();
 }
 
 RTDS::~RTDS()
 {
 	if (mServerRunning)
-		stopServer();
-	
+		mStopServer();
 	mCloseSockets();
 	mIOcontext.stop();
 	do {
@@ -44,54 +43,31 @@ RTDS::~RTDS()
 	STOP_LOG
 }
 
-void RTDS::startServer()
+void RTDS::mStartServer()
 {
-	mIOcontext.restart();
 	mServerRunning = true;
 	try {
 		std::thread ioThreadLR(&RTDS::mUDPlistenRoutine, this);
 		std::thread ioThreadAR(&RTDS::mTCPacceptRoutine, this);
+		std::thread ioThreadSR(&RTDS::mSSLacceptRoutine, this);
 		ioThreadLR.detach();
 		ioThreadAR.detach();
-		DEBUG_LOG(Log::log("New thread to UDP & TCP routines");)
+		ioThreadSR.detach();
+		DEBUG_LOG(Log::log("New thread to UDP, TCP & SSL routines");)
 	}
 	catch (std::runtime_error& ec)
 	{
 		LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
-		REGISTER_IO_ERR
 		exit(0);
 	}
 }
 
-void RTDS::stopServer()
+void RTDS::mStopServer()
 {
 	mServerRunning = false;
 	mStopTCPserver();
 	mStopUDPserver();
-}
-
-bool RTDS::isActive()
-{
-	return mServerRunning;
-}
-
-void RTDS::printStatus()
-{
-	std::cout << "Active Threads : " << mThreadCount << "\t\t";
-	std::cout << "RTDS Port      : " << mTCPep.port() << std::endl;
-
-	if (mServerRunning)
-		std::cout << "RTDS Running   : OK " << "\t\t";
-	else
-		std::cout << "RTDS Running   : OK " << "\t\t";
-	std::cout << "Connections    : " << TCPpeer::peerCount() << std::endl;
-
-	std::cout << "Warning        : " << WARNINGS << "\t\t";
-	std::cout << "Memmory Error  : " << MEMMORY_ERR << std::endl;
-
-	std::cout << "Socket Error   : " << SOCKET_ERR << "\t\t";
-	std::cout << "IO Error       : " << IO_ERR << std::endl;
-	std::cout << "Code Error     : " << CODE_ERR << std::endl;
+	mStopSSLserver();
 }
 
 void RTDS::mConfigTCPserver()
@@ -101,7 +77,6 @@ void RTDS::mConfigTCPserver()
 	if (ec)
 	{
 		LOG(Log::log("Failed to open TCP acceptor - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("TCP acceptor open");)
@@ -111,8 +86,6 @@ void RTDS::mConfigTCPserver()
 	{
 		mTCPacceptor.close();
 		LOG(Log::log("Failed to bind TCP acceptor - ", ec.message());)
-		REGISTER_SOCKET_ERR
-
 	}
 	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
 
@@ -121,7 +94,6 @@ void RTDS::mConfigTCPserver()
 	{
 		mTCPacceptor.close();
 		LOG(Log::log("TCP acceptor cannot listen to port - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
@@ -134,7 +106,6 @@ void RTDS::mConfigUDPserver()
 	if (ec)
 	{
 		LOG(Log::log("Failed to open UDP acceptor - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("UDP sock open");)
@@ -144,7 +115,6 @@ void RTDS::mConfigUDPserver()
 	{
 		mUDPsock.close();
 		LOG(Log::log("Failed to bind UDP socket - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	UDPpeer::registerUDPsocket(&mUDPsock);
@@ -154,29 +124,32 @@ void RTDS::mConfigUDPserver()
 void RTDS::mConfigSSLserver()
 {
 	asio::error_code ec;
-	mSSLcontext.set_options(asio::ssl::context::default_workarounds, ec);
+	mSSLcontext.set_options(asio::ssl::context::default_workarounds
+		| asio::ssl::context::no_sslv2 | asio::ssl::context::single_dh_use, ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to set SSL options - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 
-	mSSLcontext.use_certificate_file("RTDScert.pem", asio::ssl::context::pem, ec);
-	mSSLcontext.set_options(asio::ssl::context::default_workarounds, ec);
+	mSSLcontext.use_certificate_file("server_cert.pem", asio::ssl::context::pem, ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to use SSL certificate - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 
-	mSSLcontext.use_private_key_file("RTDSpk.pem", asio::ssl::context::pem, ec);
-	mSSLcontext.set_options(asio::ssl::context::default_workarounds, ec);
+	mSSLcontext.use_private_key_file("server_cert.pem", asio::ssl::context::pem, ec);
 	if (ec)
 	{
 		LOG(Log::log("Failed to set SSL Private key - ", ec.message());)
-		REGISTER_SOCKET_ERR
+		exit(0);
+	}
+
+	mSSLcontext.use_tmp_dh_file("dh2048.pem", ec);
+	if (ec)
+	{
+		LOG(Log::log("Failed to DH512 - ", ec.message());)
 		exit(0);
 	}
 
@@ -184,7 +157,6 @@ void RTDS::mConfigSSLserver()
 	if (ec)
 	{
 		LOG(Log::log("Failed to open SSL acceptor - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("SSL acceptor open");)
@@ -194,8 +166,6 @@ void RTDS::mConfigSSLserver()
 	{
 		mTCPacceptor.close();
 		LOG(Log::log("Failed to bind SSL acceptor - ", ec.message());)
-			REGISTER_SOCKET_ERR
-
 	}
 	DEBUG_LOG(Log::log("SSL acceptor binded to endpoint");)
 
@@ -204,22 +174,9 @@ void RTDS::mConfigSSLserver()
 	{
 		mSSLacceptor.close();
 		LOG(Log::log("SSL acceptor cannot listen to port - ", ec.message());)
-		REGISTER_SOCKET_ERR
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("SSL acceptor listening to port");)
-
-	try {
-		std::thread ioThread(&RTDS::mSSLacceptRoutine, this);
-		ioThread.detach();
-		DEBUG_LOG(Log::log("New thread to SSL routine");)
-	}
-	catch (std::runtime_error& ec)
-	{
-		LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
-		REGISTER_IO_ERR
-		exit(0);
-	}
 }
 
 void RTDS::mIOthreadJob()
@@ -228,10 +185,7 @@ void RTDS::mIOthreadJob()
 	mThreadCount++;
 	mIOcontext.run(ec);
 	if (ec)
-	{
-		LOG(Log::log("ioContext.run() failed - ", ec.message());)
-		REGISTER_IO_ERR
-	}
+	{	LOG(Log::log("ioContext.run() failed - ", ec.message());)	}
 
 	mThreadCount--;
 	DEBUG_LOG(Log::log("ioContext thread exiting");)
@@ -249,7 +203,6 @@ void RTDS::mAddthread(int threadCount)
 		catch (std::runtime_error& ec)
 		{
 			LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
-			REGISTER_IO_ERR
 			exit(0);
 		}
 	}
@@ -265,7 +218,6 @@ void RTDS::mTCPacceptRoutine()
 		{
 			LOG(Log::log("TCP Peer socket bad allocation");)
 			std::this_thread::sleep_for(std::chrono::seconds(1));
-			REGISTER_MEMMORY_ERR
 			continue;
 		}
 
@@ -273,8 +225,9 @@ void RTDS::mTCPacceptRoutine()
 		mTCPacceptor.accept(*peerSocket, ec);
 		if (ec)
 		{
-			DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)
-			REGISTER_SOCKET_ERR
+			if (mServerRunning) {
+				DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)
+			}
 			delete peerSocket;
 		}
 		else
@@ -283,23 +236,16 @@ void RTDS::mTCPacceptRoutine()
 			asio::socket_base::enable_connection_aborted connAbortSignal(true);
 			peerSocket->set_option(keepAlive, ec);
 			if (ec)
-			{
-				DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)
-				REGISTER_WARNING
-			}
+			{	DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)	}
 
 			peerSocket->set_option(connAbortSignal, ec);
 			if (ec)
-			{
-				DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)
-				REGISTER_WARNING
-			}
+			{	DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)	}
 
 			auto peer = new (std::nothrow) TCPpeer(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("TCP Peer memmory bad allocation");)
-				REGISTER_MEMMORY_ERR
 				peerSocket->close();
 				delete peerSocket;
 			}
@@ -320,13 +266,16 @@ void RTDS::mUDPlistenRoutine()
 		auto dataSize = mUDPsock.receive_from(dataBuffer.getReadBuffer(), udpPeer.getRefToEp(), 0, ec);
 		if (ec)
 		{	
-			DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)	
-			REGISTER_SOCKET_ERR
+			if (mServerRunning) {
+				DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)
+			}
 		}
 		else
 		{
-			dataBuffer.cookString(dataSize);
-			CmdProcessor::processCommand(udpPeer, dataBuffer);
+			if (dataBuffer.cookString(dataSize))
+				CmdProcessor::processCommand(udpPeer, dataBuffer);
+			else
+				udpPeer.respondWith(Response::BAD_COMMAND, dataBuffer);
 			mUDPsock.send_to(dataBuffer.getSendBuffer(), udpPeer.getRefToEp());
 		}
 	}
@@ -336,14 +285,13 @@ void RTDS::mUDPlistenRoutine()
 void RTDS::mSSLacceptRoutine()
 {
 	mThreadCount++;
-	while (true)
+	while (mServerRunning)
 	{
 		auto peerSocket = new (std::nothrow) SSLsocket(mIOcontext, mSSLcontext);
 		if (peerSocket == nullptr)
 		{
 			LOG(Log::log("SSL Peer socket bad allocation");)
 			std::this_thread::sleep_for(std::chrono::seconds(1));
-			REGISTER_MEMMORY_ERR
 			continue;
 		}
 
@@ -351,8 +299,9 @@ void RTDS::mSSLacceptRoutine()
 		mSSLacceptor.accept((*peerSocket).lowest_layer(), ec);
 		if (ec)
 		{
-			DEBUG_LOG(Log::log("SSL Acceptor failed - ", ec.message());)
-			REGISTER_SOCKET_ERR
+			if (mServerRunning) {
+				DEBUG_LOG(Log::log("SSL Acceptor failed - ", ec.message());)
+			}
 			delete peerSocket;
 		}
 		else
@@ -361,28 +310,23 @@ void RTDS::mSSLacceptRoutine()
 			asio::socket_base::enable_connection_aborted connAbortSignal(true);
 			peerSocket->lowest_layer().set_option(keepAlive, ec);
 			if (ec)
-			{
-				DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)
-				REGISTER_WARNING
-			}
+			{	DEBUG_LOG(Log::log("SSL set_option(keepAlive) failed - ", ec.message());)	}
 
 			peerSocket->lowest_layer().set_option(connAbortSignal, ec);;
 			if (ec)
-			{
-				DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)
-				REGISTER_WARNING
-			}
+			{	DEBUG_LOG(Log::log("SSL set_option(connAbortSignal) failed - ", ec.message());)	}
 
-			/*
-			auto peer = new (std::nothrow) TCPpeer(peerSocket);
+			peerSocket->handshake(asio::ssl::stream_base::server, ec);
+			if (ec)
+			{	DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)	}
+
+			auto peer = new (std::nothrow) SSLpeer(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("Peer memmory bad allocation");)
-				REGISTER_MEMMORY_ERR
-				peerSocket->close();
+				peerSocket->shutdown();
 				delete peerSocket;
 			}
-			*/
 		}
 	}
 	mThreadCount--;
@@ -393,10 +337,7 @@ void RTDS::mStopUDPserver()
 	asio::error_code ec;
 	mUDPsock.cancel(ec);
 	if (ec)
-	{	
-		DEBUG_LOG(Log::log("UDP socket cannot cancel - ", ec.message());)	
-		REGISTER_SOCKET_ERR
-	}
+	{	DEBUG_LOG(Log::log("UDP socket cannot cancel - ", ec.message());)	}
 }
 
 void RTDS::mStopTCPserver()
@@ -404,10 +345,15 @@ void RTDS::mStopTCPserver()
 	asio::error_code ec;
 	mTCPacceptor.cancel(ec);
 	if (ec)
-	{	
-		DEBUG_LOG(Log::log("TCP acceptor cannot cancel - ", ec.message());)	
-		REGISTER_SOCKET_ERR
-	}
+	{	DEBUG_LOG(Log::log("TCP acceptor cannot cancel - ", ec.message());)	}
+}
+
+void RTDS::mStopSSLserver()
+{
+	asio::error_code ec;
+	mSSLacceptor.cancel(ec);
+	if (ec)
+	{	DEBUG_LOG(Log::log("SSL acceptor cannot cancel - ", ec.message());)	}
 }
 
 void RTDS::mCloseSockets()
@@ -415,14 +361,13 @@ void RTDS::mCloseSockets()
 	asio::error_code ec;
 	mUDPsock.close(ec);
 	if (ec)
-	{	
-		DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	
-		REGISTER_SOCKET_ERR
-	}
+	{	DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	}
 
 	mTCPacceptor.close(ec);
-	{	
-		DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)
-		REGISTER_SOCKET_ERR
-	}
+	if (ec)
+	{	DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	}
+
+	mSSLacceptor.close(ec);
+	if (ec)
+	{	DEBUG_LOG(Log::log("SSL socket cannot close - ", ec.message());)	}
 }

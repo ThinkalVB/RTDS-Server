@@ -18,7 +18,9 @@ const std::string CmdProcessor::COMM[] =
 	"ping",
 	"listen",
 	"leave",
-	"exit"
+	"exit",
+	"login",
+	"abort"
 };
 
 
@@ -61,6 +63,25 @@ bool CmdProcessor::isPrintable(const std::string_view& strElement)
 			return false;
 	}
 	return true;
+}
+
+bool CmdProcessor::isUsername(const std::string_view& username)
+{
+	if (username.size() == 0 || username.size() > USRN_MAX_SIZE)
+		return false;
+	for (auto invChar : username)
+	{
+		if (!(invChar > 32 && invChar != 127))
+			return false;
+	}
+	return true;
+}
+
+bool CmdProcessor::isPassword(const std::string_view& password)
+{
+	if (password.size() != 0 && isPrintable(password) && password.size() <= PASS_MAX_SIZE)
+		return true;
+	return false;
 }
 
 bool CmdProcessor::isPortNumber(const std::string portNStr, unsigned short& portNum)
@@ -128,6 +149,20 @@ void CmdProcessor::processCommand(TCPpeer& peer)
 		mTCP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
 		mTCP_exit(peer, commandStr);
+	else
+		peer.respondWith(Response::BAD_COMMAND);
+}
+
+void CmdProcessor::processCommand(SSLpeer& peer)
+{
+	auto commandStr = peer.getCommandString();
+	auto command = extractElement(commandStr);
+	if (command == COMM[(short)Command::LOGIN])
+		mSSL_login(peer, commandStr);
+	else if (command == COMM[(short)Command::EXIT])
+		mSSL_exit(peer, commandStr);
+	else if (command == COMM[(short)Command::ABORT])
+		mSSL_abort(peer, commandStr);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
@@ -228,4 +263,35 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr, A
 	}
 	else
 		peer.respondWith(Response::BAD_PARAM, dataBuffer);
+}
+
+
+void CmdProcessor::mSSL_login(SSLpeer& peer, std::string_view& commandStr)
+{
+	auto usrName = extractElement(commandStr);
+	auto password = extractElement(commandStr);
+	if (isUsername(usrName) && isPassword(password) && commandStr.empty())
+		peer.login(usrName, password);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::mSSL_exit(SSLpeer& peer, std::string_view& commandStr)
+{
+	if (commandStr.empty())
+		peer.disconnect();
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::mSSL_status(SSLpeer&, std::string_view&)
+{
+}
+
+void CmdProcessor::mSSL_abort(SSLpeer& peer, std::string_view& commandStr)
+{
+	if (commandStr.empty())
+		peer.abort();
+	else
+		peer.respondWith(Response::BAD_PARAM);
 }

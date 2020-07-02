@@ -33,7 +33,7 @@ class TCPpeer
 ********************************************************************************************/
 	void mSendPeerBufferData();
 /*******************************************************************************************
- * @brief Shedule handler funtion for peerSocket to receive the data in dataBuffer[]
+ * @brief Shedule handler funtion for peerSocket to receive the data in Data Buffer
  *
  * @details
  * The callback function _processData() will be invoked when their is new data in buffer.
@@ -88,7 +88,6 @@ public:
 * @param[in]			Pointer to the newly accepted socket
 *
 * @details
-* Reserve buffer size and get the peer endpoint.
 * Create a SourceAddressPair with the pointer to the socket. 
 ********************************************************************************************/
 	TCPpeer(asio::ip::tcp::socket*);

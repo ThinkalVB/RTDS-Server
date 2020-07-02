@@ -3,6 +3,7 @@
 
 #include "tcp_peer.h"
 #include "udp_peer.h"
+#include "ssl_peer.h"
 
 struct CmdProcessor
 {
@@ -14,6 +15,7 @@ struct CmdProcessor
 * @param[in]			The peer system from which the command is comming.
 ********************************************************************************************/
 	static void processCommand(TCPpeer&);
+	static void processCommand(SSLpeer&);
 /*******************************************************************************************
 * @brief Process the commands from Receive Buffer and return response
 *
@@ -73,6 +75,8 @@ struct CmdProcessor
 * Return true for empty strings.
 ********************************************************************************************/
 	static bool isPrintable(const std::string_view&);
+	static bool isUsername(const std::string_view&);
+	static bool isPassword(const std::string_view&);
 
 /*******************************************************************************************
 * @brief Check if the string is a port number
@@ -93,7 +97,7 @@ struct CmdProcessor
 
 private:
 /*******************************************************************************************
-* @brief Respond to the ping request
+* @brief Respond to the request
 *
 * @param[in]			Peer.
 * @param[in]			Rest of the command string.
@@ -108,7 +112,7 @@ private:
 	static void mTCP_leave(TCPpeer&, std::string_view&);
 
 /*******************************************************************************************
-* @brief Respond to the ping request
+* @brief Respond to the request
 *
 * @param[in]			Peer.
 * @param[in]			Rest of the command string.
@@ -120,6 +124,20 @@ private:
 ********************************************************************************************/
 	static void mUDP_ping(UDPpeer&, std::string_view&, AdancedBuffer&);
 	static void mUDP_broadcast(UDPpeer&, std::string_view&, AdancedBuffer&);
+
+/*******************************************************************************************
+* @brief Respond to the ping request
+*
+* @param[in]			Peer.
+* @param[in]			Rest of the command string.
+*
+* @details
+* Call the appropriate peer functions based on the commands and parameters
+********************************************************************************************/
+	static void mSSL_login(SSLpeer&, std::string_view&);
+	static void mSSL_exit(SSLpeer&, std::string_view&);
+	static void mSSL_status(SSLpeer&, std::string_view&);
+	static void mSSL_abort(SSLpeer&, std::string_view&);
 };
 
 #endif

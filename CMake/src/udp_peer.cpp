@@ -1,6 +1,5 @@
 #include "udp_peer.h"
 #include <functional>
-#include "rtds_ccm.h"
 #include "cmd_processor.h"
 #include "bg_controller.h"
 #include "log.h"
@@ -9,7 +8,6 @@ asio::ip::udp::socket* UDPpeer::mPeerSocket;
 
 void UDPpeer::mSendMssgFuncFeedbk(const asio::error_code& ec)
 {
-	REGISTER_SOCKET_ERR
 	DEBUG_LOG(	if (ec)
 					Log::log("UDP message sending failed", ec.message());	)
 }

@@ -2,15 +2,10 @@
 #include "cmd_processor.h"
 #include <iostream>
 
-int Error::mWarnings = 0;
-int Error::mError_memmory = 0;
-int Error::mError_socket = 0;
-int Error::mError_io = 0;
-int Error::mError_code = 0;
-
 unsigned short Settings::mRTDSportNo = RDTS_DEF_PORT;
 unsigned short Settings::mRTDSccmPortNo = RTDS_DEF_CCM_PORT;
 short Settings::mRTDSthreadCount = MIN_THREAD_COUNT;
+bool Settings::mNeedToAbort = false;
 
 void Settings::mFindPortNumber(std::string portNStr)
 {
@@ -52,13 +47,4 @@ void Settings::processArgument(std::string arg)
 		std::cerr << "Invalid argument";
 		exit(0);
 	}
-}
-
-void Error::mResetErrorCounts()
-{
-	mWarnings = 0;
-	mError_memmory = 0;
-	mError_socket = 0;
-	mError_io = 0;
-	mError_code = 0;
 }

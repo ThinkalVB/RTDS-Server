@@ -1,6 +1,5 @@
 #include "bg_controller.h"
 #include <algorithm>
-#include "rtds_ccm.h"
 #include "log.h"
 
 BGroupUnrestricted::BGroupUnrestricted(const std::string& bgID)
@@ -79,7 +78,6 @@ BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
 		if (bGroup == nullptr)
 		{
 			LOG(Log::log("Failed to create BG: ", bgID);)
-			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
 		else
@@ -93,7 +91,6 @@ BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
 			catch (...) {
 				LOG(Log::log("Failed to add peer to BG!");)
 				delete bGroup;
-				REGISTER_MEMMORY_ERR
 				return nullptr;
 			}
 		}
@@ -107,7 +104,6 @@ BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
 		}
 		catch (...) {
 			LOG(Log::log("Failed to add peer to BG! ");)
-			REGISTER_MEMMORY_ERR
 			return nullptr;
 		}
 	}
@@ -130,7 +126,6 @@ void BGcontroller::removeFromBG(TCPpeer* peer, const BGID& bgID)
 	else
 	{	
 		LOG(Log::log("Peer must be in map, but not found");)
-		REGISTER_CODE_ERROR
 	}
 }
 

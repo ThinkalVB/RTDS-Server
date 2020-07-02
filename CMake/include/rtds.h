@@ -36,7 +36,11 @@ class RTDS
 
 	void mStopUDPserver();
 	void mStopTCPserver();
+	void mStopSSLserver();
 	void mCloseSockets();
+
+	void mStartServer();
+	void mStopServer();
 
 public:
 /*******************************************************************************************
@@ -52,11 +56,6 @@ public:
 ********************************************************************************************/
 	RTDS(const unsigned short, const unsigned short, short);
 	~RTDS();
-
-	void startServer();
-	void stopServer();
-	bool isActive();
-	void printStatus();
 };
 
 #endif

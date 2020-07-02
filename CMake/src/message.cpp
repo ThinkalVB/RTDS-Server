@@ -1,5 +1,4 @@
 #include "message.h"
-#include "rtds_ccm.h"
 #include "common.h"
 #include "log.h"
 
@@ -32,7 +31,6 @@ const Message* Message::makeAddMsg(const SApair& saPair)
 	if (message == nullptr)
 	{
 		LOG(Log::log("Failed to create message! ", addMssg);)
-		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 	else
@@ -51,7 +49,6 @@ const Message* Message::makeRemMsg(const SApair& saPair)
 	if (message == nullptr)
 	{
 		LOG(Log::log("Failed to create message! ", remMssg);)
-		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 	else
@@ -73,7 +70,6 @@ const Message* Message::makeBrdMsg(const SApair& saPair, const std::string_view&
 	if (message == nullptr)
 	{
 		LOG(Log::log("Failed to create message! ", brdMssg);)
-		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 	else
@@ -95,7 +91,6 @@ const Message* Message::makeBrdMsg(const std::string saPairStr, const std::strin
 	if (message == nullptr)
 	{
 		LOG(Log::log("Failed to create message! ", brdMssg);)
-		REGISTER_MEMMORY_ERR
 		return nullptr;
 	}
 	else
@@ -117,7 +112,6 @@ bool Message::insertMssg2Q(Message* message)
 		return true;
 	}catch (...) {
 		LOG(Log::log("Failed to add message to Queue!");)
-		REGISTER_MEMMORY_ERR
 		delete message;
 		return false;
 	}

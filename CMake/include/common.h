@@ -23,14 +23,21 @@
 #define STR_V6 "v6"						// Version V6 in string
 #define ALL_TAG "*"						// Represent all tags in a BG
 
-#define RTDS_BUFF_SIZE 512				// Maximum size of the readBuffer
 #define MIN_BGID_SIZE 2					// Minimum size of BGID
 #define MAX_BGID_SIZE 128				// Maximum size of BGID
-#define MAX_BROADCAST_SIZE 256			// Maximum size of B data
+
 #define MIN_TAG_SIZE 2					// Minimum size of Tag
 #define MAX_TAG_SIZE 32					// Maximum size of Tag
+
+#define RTDS_BUFF_SIZE 512				// Maximum size of the readBuffer
+#define MAX_BROADCAST_SIZE 256			// Maximum size of B data
 #define MAX_MSG_CACHE_SIZE 128			// Maximum number of messages to be cached
 #define MIN_MSG_KEEP_TIME 1				// Minimum number of minutes to keep the message
+
+#define USRN_MAX_SIZE 15				// Maximum size of username
+#define PASS_MAX_SIZE 30				// Maximum size of password
+#define ROOT_USRN "admin"
+#define ROOT_PASS "admin"
 
 #include <string>
 typedef std::string BGID;
@@ -69,6 +76,8 @@ enum class Response
 * change			Change the Broadcast Group.
 * leave				Stop listening the Broadcast group.
 * exit				Terminate the connection.
+* login				[CCM] Login to RTDS CCM
+* abort				[CCM] Terminate the RTDS server
 ********************************************************************************************/
 enum class Command
 {
@@ -76,7 +85,9 @@ enum class Command
 	PING = 1,
 	LISTEN = 2,
 	LEAVE = 3,
-	EXIT = 4
+	EXIT = 4,
+	LOGIN = 5,
+	ABORT = 6
 };
 
 #endif
