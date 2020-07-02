@@ -43,5 +43,11 @@ public:
 * std::err will display the error in argument and exit if the arguments are incorrect.
 ********************************************************************************************/
 	static void processArgument(std::string);
+/*******************************************************************************************
+* @brief Generate status string
+*
+* @param[in]		Status string
+********************************************************************************************/
+	static std::string generateStatus();
 };
 #endif

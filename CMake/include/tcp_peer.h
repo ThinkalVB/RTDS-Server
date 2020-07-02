@@ -17,6 +17,7 @@ class TCPpeer
 	asio::ip::tcp::socket* mPeerSocket;		// Socket handling the data from peer system
 	const SApair mSApair;					// Source address pair of this peer
 
+	PeerMode mPeerMode;						// Hearing mode of the peer
 	BGroup* mBgPtr;							// Pointer to broadcast group
 	BGID mBgID;								// Broadcast group ID
 	BGT mBgTag;								// Broadcast group Tag
@@ -130,8 +131,20 @@ public:
 * @details
 * Send WAIT_RETRY if peer failed to join the broadcast group
 * Send SUCCESS if the joining was success 
+* All group members are notified
 ********************************************************************************************/
 	void listenTo(const std::string_view&, const std::string_view&);
+/*******************************************************************************************
+* @brief Start hearing to a brodcast group
+*
+* @param[in]			Broadcast Group ID
+* @param[in]			Broadcast Group Tag
+*
+* @details
+* Send WAIT_RETRY if peer failed to join the broadcast group
+* Send SUCCESS if the joining was success
+********************************************************************************************/
+	void hearTo(const std::string_view&, const std::string_view&);
 /*******************************************************************************************
 * @brief Leave the brodcast group
 ********************************************************************************************/

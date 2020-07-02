@@ -5,6 +5,8 @@
 #include "log.h"
 #include "rtds.h"
 
+std::atomic_int SSLpeer::mPeerCount = 0;
+
 SSLpeer::SSLpeer(SSLsocket* socketPtr)
 {
 	mPeerSocket = socketPtr;
@@ -12,7 +14,37 @@ SSLpeer::SSLpeer(SSLsocket* socketPtr)
 	mPeerIsActive = true;
 
 	DEBUG_LOG(Log::log("SSL Peer Connected");)
+	mPeerCount++;
 	mPeerReceiveData();
+}
+
+int SSLpeer::peerCount()
+{
+	return mPeerCount;
+}
+
+SSLpeer::~SSLpeer()
+{
+	mPeerCount--;
+	asio::error_code ec;
+	mPeerSocket->shutdown(ec);
+	if (ec)
+	{
+		LOG(Log::log("SSL socket cannot shutdown - ", ec.message());)
+	}
+	mPeerSocket->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+	if (ec)
+	{
+		LOG(Log::log("SSL lowest layer cannot shutdown - ", ec.message());)
+	}
+	mPeerSocket->lowest_layer().close(ec);
+	if (ec)
+	{
+		LOG(Log::log("SSL socket cannot close - ", ec.message());)
+	}
+
+	delete mPeerSocket;
+	DEBUG_LOG(Log::log("SSL Peer Disconnected");)
 }
 
 std::string_view SSLpeer::getCommandString()
@@ -20,50 +52,6 @@ std::string_view SSLpeer::getCommandString()
 	return mDataBuffer.getStringView();
 }
 
-void SSLpeer::abort()
-{
-	std::string response = "[R]\t";
-	if (mIsAdmin)
-	{
-		DEBUG_LOG(Log::log("RTDS aborted");)
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		SIGNAL_ABORT
-	}
-	else
-		response += CmdProcessor::RESP[(short)Response::BAD_COMMAND];
-	response += "\n";
-	mDataBuffer = response;
-}
-
-void SSLpeer::disconnect()
-{
-	DEBUG_LOG(Log::log("SSL Peer Disconnecting");)
-	mPeerIsActive = false;
-}
-
-void SSLpeer::login(const std::string_view& usr, const std::string_view& pass)
-{
-	std::string response = "[R]\t";
-	if (usr == ROOT_USRN && pass == ROOT_PASS)
-	{
-		mIsAdmin = true;
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log("SSL peer authenticated");)
-	}
-	else
-		response += CmdProcessor::RESP[(short)Response::NOT_ALLOWED];
-	response += "\n";
-	mDataBuffer = response;
-}
-
-void SSLpeer::respondWith(const Response resp)
-{
-	std::string response = "[R]\t";
-	DEBUG_LOG(Log::log("SSL Peer responding: ", CmdProcessor::RESP[(short)resp]);)
-	response += CmdProcessor::RESP[(short)resp];
-	response += "\n";
-	mDataBuffer = response;
-}
 
 void SSLpeer::mPeerReceiveData()
 {
@@ -81,7 +69,7 @@ void SSLpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 	if (ec)
 	{
 		DEBUG_LOG(Log::log("SSL Peer socket _processData() failed ", ec.message());)
-		delete this;
+			delete this;
 	}
 	else
 	{
@@ -108,25 +96,68 @@ void SSLpeer::mSendFuncFeedbk(const asio::error_code& ec)
 	if (ec)
 	{
 		DEBUG_LOG(Log::log("SSL Peer socket _sendMessage() failed", ec.message());)
-		mPeerIsActive = false;
+			mPeerIsActive = false;
 	}
 	else
 		mPeerReceiveData();
 }
 
-SSLpeer::~SSLpeer()
-{
-	asio::error_code ec;
-	mPeerSocket->shutdown(ec);
-	if (ec)
-	{	LOG(Log::log("SSL socket cannot shutdown - ", ec.message());)		}
-	mPeerSocket->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-		if (ec)
-	{	LOG(Log::log("SSL lowest laayer cannot shutdown - ", ec.message());)	}
-	mPeerSocket->lowest_layer().close(ec);
-	if (ec)
-	{	LOG(Log::log("SSL socket cannot close - ", ec.message());)		}
 
-	delete mPeerSocket;
-	DEBUG_LOG(Log::log("SSL Peer Disconnected");)
+void SSLpeer::abort()
+{
+	std::string response = "[R]\t";
+	if (mIsAdmin)
+	{
+		DEBUG_LOG(Log::log("RTDS aborted");)
+		SIGNAL_ABORT
+	}
+	else
+		response += CmdProcessor::RESP[(short)Response::BAD_COMMAND];
+	response += "\n";
+	mDataBuffer = response;
+}
+
+void SSLpeer::disconnect()
+{
+	DEBUG_LOG(Log::log("SSL Peer Disconnecting");)
+	mPeerIsActive = false;
+}
+
+void SSLpeer::status()
+{
+	std::string response = "[R]\t";
+	if (mIsAdmin)
+	{
+		DEBUG_LOG(Log::log("RTDS requesting status");)
+		response += Settings::generateStatus();
+	}
+	else
+		response += CmdProcessor::RESP[(short)Response::NOT_ALLOWED];
+	response += "\n";
+	mDataBuffer = response;
+
+}
+
+void SSLpeer::login(const std::string_view& usr, const std::string_view& pass)
+{
+	std::string response = "[R]\t";
+	if (usr == ROOT_USRN && pass == ROOT_PASS)
+	{
+		mIsAdmin = true;
+		response += CmdProcessor::RESP[(short)Response::SUCCESS];
+		DEBUG_LOG(Log::log("SSL peer authenticated");)
+	}
+	else
+		response += CmdProcessor::RESP[(short)Response::NOT_ALLOWED];
+	response += "\n";
+	mDataBuffer = response;
+}
+
+void SSLpeer::respondWith(const Response resp)
+{
+	std::string response = "[R]\t";
+	DEBUG_LOG(Log::log("SSL Peer responding: ", CmdProcessor::RESP[(short)resp]);)
+	response += CmdProcessor::RESP[(short)resp];
+	response += "\n";
+	mDataBuffer = response;
 }

@@ -8,6 +8,8 @@ typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
 class SSLpeer
 {
+	static std::atomic_int mPeerCount;		// Keep the total count of peers
+
 	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	SSLsocket* mPeerSocket;					// Socket handling the data from peer system
 	bool mPeerIsActive;						// True if the peer socket is operational
@@ -67,6 +69,12 @@ public:
 ********************************************************************************************/
 	SSLpeer(SSLsocket*);
 /*******************************************************************************************
+* @brief Return the number of peers
+*
+* @return				Return peer count
+********************************************************************************************/
+	static int peerCount();
+/*******************************************************************************************
 * @brief Return the string view of the received command
 *
 * @return				Return peer count
@@ -81,6 +89,10 @@ public:
 * @brief Disconnect the peer and delete the object
 ********************************************************************************************/
 	void disconnect();
+/*******************************************************************************************
+* @brief Give status of the RTDS server
+********************************************************************************************/
+	void status();
 /*******************************************************************************************
 * @brief Login to RTDS
 *

@@ -17,10 +17,12 @@ const std::string CmdProcessor::COMM[] =
 	"broadcast",
 	"ping",
 	"listen",
+	"hear",
 	"leave",
 	"exit",
 	"login",
-	"abort"
+	"abort",
+	"status"
 };
 
 
@@ -143,26 +145,14 @@ void CmdProcessor::processCommand(TCPpeer& peer)
 		mTCP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
 		mTCP_listen(peer, commandStr);
+	else if (command == COMM[(short)Command::HEAR])
+		mTCP_hear(peer, commandStr);
 	else if (command == COMM[(short)Command::LEAVE])
 		mTCP_leave(peer, commandStr);
 	else if (command == COMM[(short)Command::BROADCAST])
 		mTCP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
 		mTCP_exit(peer, commandStr);
-	else
-		peer.respondWith(Response::BAD_COMMAND);
-}
-
-void CmdProcessor::processCommand(SSLpeer& peer)
-{
-	auto commandStr = peer.getCommandString();
-	auto command = extractElement(commandStr);
-	if (command == COMM[(short)Command::LOGIN])
-		mSSL_login(peer, commandStr);
-	else if (command == COMM[(short)Command::EXIT])
-		mSSL_exit(peer, commandStr);
-	else if (command == COMM[(short)Command::ABORT])
-		mSSL_abort(peer, commandStr);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
@@ -211,6 +201,16 @@ void CmdProcessor::mTCP_listen(TCPpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
+void CmdProcessor::mTCP_hear(TCPpeer& peer, std::string_view& commandStr)
+{
+	auto bgID = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
+	if (isTag(bgTag) && isBGID(bgID) && commandStr.empty())
+		peer.hearTo(bgID, bgTag);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
 void CmdProcessor::mTCP_leave(TCPpeer& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
@@ -229,6 +229,8 @@ void CmdProcessor::processCommand(UDPpeer& peer, AdancedBuffer& dataBuffer)
 	else if (command == COMM[(short)Command::BROADCAST])
 		mUDP_broadcast(peer, commandStr, dataBuffer);
 	else if (command == COMM[(short)Command::LISTEN])
+		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+	else if (command == COMM[(short)Command::HEAR])
 		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
 	else if (command == COMM[(short)Command::LEAVE])
 		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
@@ -266,6 +268,22 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr, A
 }
 
 
+void CmdProcessor::processCommand(SSLpeer& peer)
+{
+	auto commandStr = peer.getCommandString();
+	auto command = extractElement(commandStr);
+	if (command == COMM[(short)Command::LOGIN])
+		mSSL_login(peer, commandStr);
+	else if (command == COMM[(short)Command::STATUS])
+		mSSL_status(peer, commandStr);
+	else if (command == COMM[(short)Command::EXIT])
+		mSSL_exit(peer, commandStr);
+	else if (command == COMM[(short)Command::ABORT])
+		mSSL_abort(peer, commandStr);
+	else
+		peer.respondWith(Response::BAD_COMMAND);
+}
+
 void CmdProcessor::mSSL_login(SSLpeer& peer, std::string_view& commandStr)
 {
 	auto usrName = extractElement(commandStr);
@@ -284,8 +302,12 @@ void CmdProcessor::mSSL_exit(SSLpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_status(SSLpeer&, std::string_view&)
+void CmdProcessor::mSSL_status(SSLpeer& peer, std::string_view& commandStr)
 {
+	if (commandStr.empty())
+		peer.status();
+	else
+		peer.respondWith(Response::BAD_PARAM);
 }
 
 void CmdProcessor::mSSL_abort(SSLpeer& peer, std::string_view& commandStr)

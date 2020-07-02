@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 set(RTDS_MAJOR 1)
-set(RTDS_MINOR 0)
+set(RTDS_MINOR 1)
 set(RTDS_PATCH 0)
 set(ROOT_USRN \"admin\")
 set(ROOT_PASS \"admin\")

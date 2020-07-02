@@ -142,9 +142,37 @@ void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgT
 		if (mBgPtr != nullptr)
 		{
 			mIsInBG = true;
+			mPeerMode = PeerMode::LISTEN;
+
 			auto message = Message::makeAddMsg(mSApair);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
+
+			response += CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log(mSApair.toString(), " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
+		}
+		else
+			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+	}
+	response += "\n";
+	mDataBuffer = response;
+}
+
+void TCPpeer::hearTo(const std::string_view& bgID, const std::string_view& bgTag)
+{
+	std::string response = "[R]\t";
+	if (mIsInBG)
+		response += CmdProcessor::RESP[(short)Response::IS_IN_BG];
+	else
+	{
+		mBgID = bgID;
+		mBgTag = bgTag;
+
+		mBgPtr = BGcontroller::addToBG(this, mBgID);
+		if (mBgPtr != nullptr)
+		{
+			mIsInBG = true;
+			mPeerMode = PeerMode::HEAR;
 
 			response += CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
@@ -163,9 +191,13 @@ void TCPpeer::leaveBG()
 	{
 		DEBUG_LOG(Log::log(mSApair.toString(), " Peer leavig BG ", mBgID);)
 		BGcontroller::removeFromBG(this, mBgID);
-		auto message = Message::makeRemMsg(mSApair);
-		if (message != nullptr)
-			mBgPtr->broadcast(this, message);
+
+		if (mPeerMode == PeerMode::LISTEN)
+		{
+			auto message = Message::makeRemMsg(mSApair);
+			if (message != nullptr)
+				mBgPtr->broadcast(this, message);
+		}
 
 		mIsInBG = false;
 		mBgPtr = nullptr;

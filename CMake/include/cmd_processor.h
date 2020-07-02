@@ -109,6 +109,7 @@ private:
 	static void mTCP_broadcast(TCPpeer&, std::string_view&);
 	static void mTCP_exit(TCPpeer&, std::string_view&);
 	static void mTCP_listen(TCPpeer&, std::string_view&);
+	static void mTCP_hear(TCPpeer&, std::string_view&);
 	static void mTCP_leave(TCPpeer&, std::string_view&);
 
 /*******************************************************************************************

@@ -1,9 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define RTDS_VERSION 1.0.0
+#define RTDS_VERSION 1.1.0
 #define RTDS_MAJOR 1
-#define RTDS_MINOR 0
+#define RTDS_MINOR 1
 #define RTDS_PATCH 0
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support
@@ -73,21 +73,38 @@ enum class Response
 * broadcast			Broadcast a message to the BG.
 * ping				Ping with the RTDS server.
 * listen			Listen to the activities in a Broadcast Group.
+* hear				Hear the activities in a Broadcast Group.
 * change			Change the Broadcast Group.
 * leave				Stop listening the Broadcast group.
 * exit				Terminate the connection.
 * login				[CCM] Login to RTDS CCM
 * abort				[CCM] Terminate the RTDS server
+* status			[CCM] Status of the RTDS server
 ********************************************************************************************/
 enum class Command
 {
 	BROADCAST = 0,
 	PING = 1,
 	LISTEN = 2,
-	LEAVE = 3,
-	EXIT = 4,
-	LOGIN = 5,
-	ABORT = 6
+	HEAR = 3,
+	LEAVE = 4,
+	EXIT = 5,
+	LOGIN = 6,
+	ABORT = 7,
+	STATUS = 8
+};
+
+/*******************************************************************************************
+* @brief Enum class for Peer listening mode
+*
+* @details
+* listen			Listening to the activities in a Broadcast Group.
+* hear				Hearing the activities in a Broadcast Group.
+********************************************************************************************/
+enum class PeerMode
+{
+	LISTEN = 0,
+	HEAR
 };
 
 #endif
