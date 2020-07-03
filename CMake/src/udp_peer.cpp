@@ -85,30 +85,10 @@ void UDPpeer::respondWith(const Response resp, AdancedBuffer& dataBuffer) const
 
 }
 
-void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, AdancedBuffer& dataBuffer) const
-{
-	/*
-	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(getSApairString(), messageStr, ALL_TAG);
-	
-	if (message != nullptr)
-	{
-		BGcontroller::broadcast(message, std::string(bgID));
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
-	}
-	else
-		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-	response += "\n";
-	dataBuffer = response;
-	*/
-}
-
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag, AdancedBuffer& dataBuffer) const
 {
-	/*
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(getSApairString(), messageStr, ALL_TAG);
+	auto message = Message::makeBrdMsg(getSApairString(), messageStr, UDP_TAG, bgTag, PeerType::UDP);
 
 	if (message != nullptr)
 	{
@@ -117,8 +97,11 @@ void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
 	}
 	else
+	{
 		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		LOG(Log::log("Failed to create UDP message!");)
+	}
+
 	response += "\n";
 	dataBuffer = response;
-	*/
 }

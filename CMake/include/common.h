@@ -22,6 +22,7 @@
 #define STR_V4 "v4"						// Version V4 in string
 #define STR_V6 "v6"						// Version V6 in string
 #define ALL_TAG "*"						// Represent all tags in a BG
+#define UDP_TAG "$"						// BGT for UDP peers
 
 #define MIN_BGID_SIZE 2					// Minimum size of BGID
 #define MAX_BGID_SIZE 128				// Maximum size of BGID

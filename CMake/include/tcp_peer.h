@@ -179,7 +179,6 @@ public:
 * @param[in]			Message
 * @param[in]			Broadcast Group Tag
 ********************************************************************************************/
-	void broadcastAll(const std::string_view&);
 	void broadcastTo(const std::string_view&, const std::string_view&);
 };
 

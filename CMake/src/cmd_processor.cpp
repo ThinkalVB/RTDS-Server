@@ -184,16 +184,13 @@ void CmdProcessor::mTCP_broadcast(TCPpeer& peer, std::string_view& commandStr)
 	auto bgTag = extractElement(commandStr);
 	if (isBmessage(message) && commandStr.empty())
 	{
-		if (bgTag == ALL_TAG)
-			peer.broadcastAll(message);
-		else if (isTag(bgTag))
+		if (isWTag(bgTag))
 			peer.broadcastTo(message, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
 	}
 	else
 		peer.respondWith(Response::BAD_PARAM);
-
 }
 
 void CmdProcessor::mTCP_exit(TCPpeer& peer, std::string_view& commandStr)
@@ -280,9 +277,7 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr, A
 
 	if (isBmessage(message) && commandStr.empty())
 	{
-		if (bgTag == "*" && isBGID(bgID))
-			peer.broadcast(message, bgID, dataBuffer);
-		else if (isTag(bgTag) && isBGID(bgID))
+		if (isWTag(bgTag) && isBGID(bgID))
 			peer.broadcast(message, bgID, bgTag, dataBuffer);
 		else
 			peer.respondWith(Response::BAD_PARAM, dataBuffer);
