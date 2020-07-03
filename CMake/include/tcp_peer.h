@@ -2,7 +2,7 @@
 #define TCP_PEER_H
 
 #include <asio/ip/tcp.hpp>
-#include <atomic>
+#include <shared_mutex>
 #include "message.h"
 #include "sapair.h"
 #include "common.h"
@@ -15,6 +15,7 @@ class TCPpeer
 	
 	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	asio::ip::tcp::socket* mPeerSocket;		// Socket handling the data from peer system
+	std::shared_mutex mPeerResourceMtx;		// Mutex for locking the shared resources
 	const SApair mSApair;					// Source address pair of this peer
 
 	PeerMode mPeerMode;						// Hearing mode of the peer
@@ -150,6 +151,16 @@ public:
 ********************************************************************************************/
 	void leaveBG();
 /*******************************************************************************************
+* @brief Change the tag if participating in a group
+*
+* @param[in]			Broadcast Group Tag
+*
+* @details
+* Send NOT_IN_BG if peer is not in a broadcast group
+* Send SUCCESS if the changing was success
+********************************************************************************************/
+	void changeTag(const std::string_view&);
+/*******************************************************************************************
 * @brief Print the source address pair info to the write buffer
 *
 * @details
@@ -168,8 +179,8 @@ public:
 * @param[in]			Message
 * @param[in]			Broadcast Group Tag
 ********************************************************************************************/
-	void broadcast(const std::string_view&);
-	void broadcast(const std::string_view&, const std::string_view&);
+	void broadcastAll(const std::string_view&);
+	void broadcastTo(const std::string_view&, const std::string_view&);
 };
 
 #endif

@@ -38,6 +38,13 @@ struct CmdProcessor
 ********************************************************************************************/
 	static bool isTag(const std::string_view&);
 /*******************************************************************************************
+* @brief Check if the string is a valid Tag (includes * tag)
+*
+* @param[in]			The string view of the Tag.
+* @return				True if the strig view is a Wildchar Tag.
+********************************************************************************************/
+	static bool isWTag(const std::string_view&);
+/*******************************************************************************************
 * @brief Extract the next element from the command string.
 *
 * @param[in]			Command string.
@@ -109,6 +116,7 @@ private:
 	static void mTCP_broadcast(TCPpeer&, std::string_view&);
 	static void mTCP_exit(TCPpeer&, std::string_view&);
 	static void mTCP_listen(TCPpeer&, std::string_view&);
+	static void mTCP_change(TCPpeer&, std::string_view&);
 	static void mTCP_hear(TCPpeer&, std::string_view&);
 	static void mTCP_leave(TCPpeer&, std::string_view&);
 

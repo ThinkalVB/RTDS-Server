@@ -87,8 +87,9 @@ void UDPpeer::respondWith(const Response resp, AdancedBuffer& dataBuffer) const
 
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, AdancedBuffer& dataBuffer) const
 {
+	/*
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(getSApairString(), messageStr);
+	auto message = Message::makeBrdMsg(getSApairString(), messageStr, ALL_TAG);
 	
 	if (message != nullptr)
 	{
@@ -100,12 +101,14 @@ void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	response += "\n";
 	dataBuffer = response;
+	*/
 }
 
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag, AdancedBuffer& dataBuffer) const
 {
+	/*
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(getSApairString(), messageStr);
+	auto message = Message::makeBrdMsg(getSApairString(), messageStr, ALL_TAG);
 
 	if (message != nullptr)
 	{
@@ -117,4 +120,5 @@ void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
 	response += "\n";
 	dataBuffer = response;
+	*/
 }

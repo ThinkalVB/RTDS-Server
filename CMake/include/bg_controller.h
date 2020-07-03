@@ -46,10 +46,10 @@ public:
 * @brief Broadcast a message to all peers in the peer list
 *
 * @param[in]			Message
-* @param[in]			Broadcast Group Tag
+* @param[in]			Peer's Broadcast Group Tag
 ********************************************************************************************/
-	void broadcast(const Message* message, const std::string_view& bgTag);
-	void broadcast(const Message* message);
+	void broadcast(const Message*, const std::string_view&);
+	void broadcast(const Message*);
 };
 
 class BGroup : BGroupUnrestricted

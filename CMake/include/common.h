@@ -57,13 +57,13 @@ typedef std::string BGT;
 ********************************************************************************************/
 enum class Response
 {
-	SUCCESS = 0,
-	BAD_COMMAND = 1,
-	BAD_PARAM = 2,
-	WAIT_RETRY = 3,
-	IS_IN_BG = 4,
-	NOT_IN_BG = 5,
-	NOT_ALLOWED = 6
+	SUCCESS,
+	BAD_COMMAND,
+	BAD_PARAM,
+	WAIT_RETRY,
+	IS_IN_BG,
+	NOT_IN_BG,
+	NOT_ALLOWED
 };
 
 /*******************************************************************************************
@@ -76,6 +76,7 @@ enum class Response
 * hear				Hear the activities in a Broadcast Group.
 * change			Change the Broadcast Group.
 * leave				Stop listening the Broadcast group.
+* change			Change the tag of the peer.
 * exit				Terminate the connection.
 * login				[CCM] Login to RTDS CCM
 * abort				[CCM] Terminate the RTDS server
@@ -83,15 +84,16 @@ enum class Response
 ********************************************************************************************/
 enum class Command
 {
-	BROADCAST = 0,
-	PING = 1,
-	LISTEN = 2,
-	HEAR = 3,
-	LEAVE = 4,
-	EXIT = 5,
-	LOGIN = 6,
-	ABORT = 7,
-	STATUS = 8
+	BROADCAST,
+	PING,
+	LISTEN,
+	HEAR,
+	LEAVE,
+	CHANGE,
+	EXIT,
+	LOGIN,
+	ABORT,
+	STATUS
 };
 
 /*******************************************************************************************
@@ -103,8 +105,22 @@ enum class Command
 ********************************************************************************************/
 enum class PeerMode
 {
-	LISTEN = 0,
+	LISTEN,
 	HEAR
+};
+
+/*******************************************************************************************
+* @brief Enum class pEER TYPE
+*
+* @details
+* TCP				Listening to the activities in a Broadcast Group.
+* UDP				Hearing the activities in a Broadcast Group.
+********************************************************************************************/
+enum class PeerType
+{
+	TCP,
+	UDP,
+	SSL
 };
 
 #endif

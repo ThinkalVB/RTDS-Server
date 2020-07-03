@@ -45,6 +45,7 @@ std::string_view TCPpeer::getCommandString()
 
 void TCPpeer::sendMessage(const Message* message, const std::string_view& bgTag)
 {
+	std::shared_lock<std::shared_mutex> readLock(mPeerResourceMtx);
 	if (mPeerIsActive && mBgTag == bgTag)
 	{
 		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
@@ -144,7 +145,7 @@ void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgT
 			mIsInBG = true;
 			mPeerMode = PeerMode::LISTEN;
 
-			auto message = Message::makeAddMsg(mSApair);
+			auto message = Message::makeAddMsg(mSApair, mBgTag);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 
@@ -194,7 +195,7 @@ void TCPpeer::leaveBG()
 
 		if (mPeerMode == PeerMode::LISTEN)
 		{
-			auto message = Message::makeRemMsg(mSApair);
+			auto message = Message::makeRemMsg(mSApair, mBgTag);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 		}
@@ -205,6 +206,23 @@ void TCPpeer::leaveBG()
 	}
 	else
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	response += "\n";
+	mDataBuffer = response;
+}
+
+void TCPpeer::changeTag(const std::string_view& bgTag)
+{
+	std::string response = "[R]\t";
+	if (!mIsInBG)
+		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	else
+	{
+		std::lock_guard<std::shared_mutex> writeLock(mPeerResourceMtx);
+		mBgTag = bgTag;
+
+		response += CmdProcessor::RESP[(short)Response::SUCCESS];
+		DEBUG_LOG(Log::log(mSApair.toString(), " Changed Tag to: ", mBgTag);)
+	}
 	response += "\n";
 	mDataBuffer = response;
 }
@@ -227,12 +245,13 @@ void TCPpeer::respondWith(Response resp)
 	mDataBuffer = response;
 }
 
-void TCPpeer::broadcast(const std::string_view& messageStr)
+void TCPpeer::broadcastAll(const std::string_view& messageStr)
 {
+	/*
 	std::string response = "[R]\t";
 	if (mIsInBG)
 	{
-		auto message = Message::makeBrdMsg(mSApair, messageStr);
+		auto message = Message::makeBrdMsg(mSApair.toString(), messageStr, ALL_TAG);
 		if (message != nullptr)
 		{
 			mBgPtr->broadcast(this, message);
@@ -246,14 +265,16 @@ void TCPpeer::broadcast(const std::string_view& messageStr)
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	response += "\n";
 	mDataBuffer = response;
+	*/
 }
 
-void TCPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgTag)
+void TCPpeer::broadcastTo(const std::string_view& messageStr, const std::string_view& bgTag)
 {
+	/*
 	std::string response = "[R]\t";
 	if (mIsInBG)
 	{
-		auto message = Message::makeBrdMsg(mSApair, messageStr);
+		auto message = Message::makeBrdMsg(mSApair.toString(), messageStr, mBgTag);
 		if (message != nullptr)
 		{
 			mBgPtr->broadcast(this, message, bgTag);
@@ -267,4 +288,5 @@ void TCPpeer::broadcast(const std::string_view& messageStr, const std::string_vi
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	response += "\n";
 	mDataBuffer = response;
+	*/
 }

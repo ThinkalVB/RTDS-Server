@@ -19,6 +19,7 @@ const std::string CmdProcessor::COMM[] =
 	"listen",
 	"hear",
 	"leave",
+	"change",
 	"exit",
 	"login",
 	"abort",
@@ -35,6 +36,16 @@ bool CmdProcessor::isBGID(const std::string_view& bgid)
 
 bool CmdProcessor::isTag(const std::string_view& tag)
 {
+	if (tag.size() >= MIN_BGID_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
+		return true;
+	return false;
+}
+
+bool CmdProcessor::isWTag(const std::string_view& tag)
+{
+	if (tag == "*")
+		return true;
+
 	if (tag.size() >= MIN_BGID_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
 		return true;
 	return false;
@@ -149,6 +160,8 @@ void CmdProcessor::processCommand(TCPpeer& peer)
 		mTCP_hear(peer, commandStr);
 	else if (command == COMM[(short)Command::LEAVE])
 		mTCP_leave(peer, commandStr);
+	else if (command == COMM[(short)Command::CHANGE])
+		mTCP_change(peer, commandStr);
 	else if (command == COMM[(short)Command::BROADCAST])
 		mTCP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
@@ -172,9 +185,9 @@ void CmdProcessor::mTCP_broadcast(TCPpeer& peer, std::string_view& commandStr)
 	if (isBmessage(message) && commandStr.empty())
 	{
 		if (bgTag == ALL_TAG)
-			peer.broadcast(message);
+			peer.broadcastAll(message);
 		else if (isTag(bgTag))
-			peer.broadcast(message, bgTag);
+			peer.broadcastTo(message, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
 	}
@@ -197,6 +210,15 @@ void CmdProcessor::mTCP_listen(TCPpeer& peer, std::string_view& commandStr)
 	auto bgTag = extractElement(commandStr);
 	if (isTag(bgTag) && isBGID(bgID) && commandStr.empty())
 		peer.listenTo(bgID, bgTag);
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::mTCP_change(TCPpeer& peer, std::string_view& commandStr)
+{
+	auto bgTag = extractElement(commandStr);
+	if (isTag(bgTag) && commandStr.empty())
+		peer.changeTag(bgTag);
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
@@ -233,6 +255,8 @@ void CmdProcessor::processCommand(UDPpeer& peer, AdancedBuffer& dataBuffer)
 	else if (command == COMM[(short)Command::HEAR])
 		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
 	else if (command == COMM[(short)Command::LEAVE])
+		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+	else if (command == COMM[(short)Command::CHANGE])
 		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
 	else if (command == COMM[(short)Command::EXIT])
 		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
