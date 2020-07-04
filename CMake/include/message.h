@@ -62,15 +62,15 @@ public:
 	template<typename BGTstrT1, typename BGTstrT2>
 	static const Message* makeAddMsg(const SAP& sapStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
 	{
-		std::string remMssg;
+		std::string addMssg;
 		if (pType == PeerType::TCP)
-			remMssg = "[CT]";
+			addMssg = "[CT]";
 		else if (pType == PeerType::SSL)
-			remMssg = "[CS]";
-		else
-			remMssg = "[CU]";
+			addMssg = "[CS]";
+		else if (pType == PeerType::UDP)
+			addMssg = "[CU]";
 
-		auto addMssg = "\t" + sapStr + "\n";
+		addMssg += "\t" + sapStr + "\n";
 		auto message = new (std::nothrow) Message(addMssg, sTag, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
@@ -100,7 +100,7 @@ public:
 		else
 			remMssg = "[DU]";
 
-		remMssg = "\t" + sapStr + "\n";
+		remMssg += "\t" + sapStr + "\n";
 		auto message = new (std::nothrow) Message(remMssg, sTag, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
