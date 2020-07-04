@@ -33,14 +33,21 @@ struct CmdProcessor
 * @param[in]			The string view of the Tag.
 * @return				True if the strig view is a Tag.
 ********************************************************************************************/
-	static bool isTag(const std::string_view&);
+	static bool isGeneralTag(const std::string_view&);
 /*******************************************************************************************
-* @brief Check if the string is a valid Tag (includes * tag)
+* @brief Check if the string is a UDP compatible Tag (General tag + "*")
 *
 * @param[in]			The string view of the Tag.
-* @return				True if the strig view is a Wildchar Tag.
+* @return				True if the strig view is a UDP compatible Tag.
 ********************************************************************************************/
-	static bool isWTag(const std::string_view&);
+	static bool isUDPcompatibleTag(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string is a Broadcast Tag (General tag + "*" + "+")
+*
+* @param[in]			The string view of the Tag.
+* @return				True if the strig view is a UDP compatible Tag.
+********************************************************************************************/
+	static bool isBroadcastTag(const std::string_view&);
 /*******************************************************************************************
 * @brief Extract the next element from the command string.
 *
@@ -152,7 +159,6 @@ private:
 	static void mTCP_exit(TCPpeer&, std::string_view&);
 	static void mTCP_listen(TCPpeer&, std::string_view&);
 	static void mTCP_change(TCPpeer&, std::string_view&);
-	static void mTCP_hear(TCPpeer&, std::string_view&);
 	static void mTCP_leave(TCPpeer&, std::string_view&);
 
 /*******************************************************************************************
@@ -176,10 +182,10 @@ private:
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void mSSL_login(SSLccm&, std::string_view&);
-	static void mSSL_exit(SSLccm&, std::string_view&);
-	static void mSSL_status(SSLccm&, std::string_view&);
-	static void mSSL_abort(SSLccm&, std::string_view&);
+	static void mCCM_login(SSLccm&, std::string_view&);
+	static void mCCM_exit(SSLccm&, std::string_view&);
+	static void mCCM_status(SSLccm&, std::string_view&);
+	static void mCCM_abort(SSLccm&, std::string_view&);
 };
 
 #endif

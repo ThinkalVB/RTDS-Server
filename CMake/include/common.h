@@ -20,7 +20,9 @@
 #define PRINT_LOG						// Print critical console logs
 
 #define ALL_TAG "*"						// Represent all tags in a BG
-#define UDP_TAG "$"						// BGT for UDP peers
+#define UDP_TAG "$"						// Default BGT for UDP peers
+#define OWN_TAG "+"						// The same peer's tag
+
 
 #define MIN_BGID_SIZE 2					// Minimum size of BGID
 #define MAX_BGID_SIZE 128				// Maximum size of BGID

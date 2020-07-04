@@ -33,19 +33,23 @@ bool CmdProcessor::isBGID(const std::string_view& bgid)
 	return false;
 }
 
-bool CmdProcessor::isTag(const std::string_view& tag)
+bool CmdProcessor::isGeneralTag(const std::string_view& tag)
 {
-	if (tag.size() >= MIN_BGID_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
+	if (tag.size() >= MIN_TAG_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
 		return true;
 	return false;
 }
 
-bool CmdProcessor::isWTag(const std::string_view& tag)
+bool CmdProcessor::isUDPcompatibleTag(const std::string_view& tag)
 {
-	if (tag == "*")
+	if (tag == "*" || isGeneralTag(tag))
 		return true;
+	return false;
+}
 
-	if (tag.size() >= MIN_BGID_SIZE && isConsistent(tag) && tag.size() <= MAX_TAG_SIZE)
+bool CmdProcessor::isBroadcastTag(const std::string_view& tag)
+{
+	if (tag == "+" || isUDPcompatibleTag(tag))
 		return true;
 	return false;
 }
@@ -181,7 +185,7 @@ void CmdProcessor::mTCP_broadcast(TCPpeer& peer, std::string_view& commandStr)
 	auto bgTag = extractElement(commandStr);
 	if (isBmessage(message) && commandStr.empty())
 	{
-		if (isWTag(bgTag))
+		if (isBroadcastTag(bgTag))
 			peer.broadcastTo(message, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
@@ -202,7 +206,7 @@ void CmdProcessor::mTCP_listen(TCPpeer& peer, std::string_view& commandStr)
 {
 	auto bgID = extractElement(commandStr);
 	auto bgTag = extractElement(commandStr);
-	if (isTag(bgTag) && isBGID(bgID) && commandStr.empty())
+	if (isGeneralTag(bgTag) && isBGID(bgID) && commandStr.empty())
 		peer.listenTo(bgID, bgTag);
 	else
 		peer.respondWith(Response::BAD_PARAM);
@@ -211,7 +215,7 @@ void CmdProcessor::mTCP_listen(TCPpeer& peer, std::string_view& commandStr)
 void CmdProcessor::mTCP_change(TCPpeer& peer, std::string_view& commandStr)
 {
 	auto bgTag = extractElement(commandStr);
-	if (isTag(bgTag) && commandStr.empty())
+	if (isGeneralTag(bgTag) && commandStr.empty())
 		peer.changeTag(bgTag);
 	else
 		peer.respondWith(Response::BAD_PARAM);
@@ -262,7 +266,7 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr)
 
 	if (isBmessage(message) && commandStr.empty())
 	{
-		if (isWTag(bgTag) && isBGID(bgID))
+		if (isUDPcompatibleTag(bgTag) && isBGID(bgID))
 			peer.broadcast(message, bgID, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
@@ -277,18 +281,18 @@ void CmdProcessor::processCommand(SSLccm& peer)
 	auto commandStr = peer.getCommandString();
 	auto command = extractElement(commandStr);
 	if (command == COMM[(short)Command::LOGIN])
-		mSSL_login(peer, commandStr);
+		mCCM_login(peer, commandStr);
 	else if (command == COMM[(short)Command::STATUS])
-		mSSL_status(peer, commandStr);
+		mCCM_status(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
-		mSSL_exit(peer, commandStr);
+		mCCM_exit(peer, commandStr);
 	else if (command == COMM[(short)Command::ABORT])
-		mSSL_abort(peer, commandStr);
+		mCCM_abort(peer, commandStr);
 	else
 		peer.respondWith(Response::BAD_COMMAND);
 }
 
-void CmdProcessor::mSSL_login(SSLccm& peer, std::string_view& commandStr)
+void CmdProcessor::mCCM_login(SSLccm& peer, std::string_view& commandStr)
 {
 	auto usrName = extractElement(commandStr);
 	auto password = extractElement(commandStr);
@@ -298,7 +302,7 @@ void CmdProcessor::mSSL_login(SSLccm& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_exit(SSLccm& peer, std::string_view& commandStr)
+void CmdProcessor::mCCM_exit(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.disconnect();
@@ -306,7 +310,7 @@ void CmdProcessor::mSSL_exit(SSLccm& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_status(SSLccm& peer, std::string_view& commandStr)
+void CmdProcessor::mCCM_status(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.status();
@@ -314,7 +318,7 @@ void CmdProcessor::mSSL_status(SSLccm& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_abort(SSLccm& peer, std::string_view& commandStr)
+void CmdProcessor::mCCM_abort(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.abort();
