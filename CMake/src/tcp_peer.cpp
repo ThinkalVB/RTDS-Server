@@ -8,9 +8,6 @@ TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr)
 {
 	mSApair = CmdProcessor::getSAPstring(socketPtr->remote_endpoint());
 	mPeerSocket = socketPtr;
-	mPeerIsActive = true;
-	mBgPtr = nullptr;
-	mIsInBG = false;
 
 	DEBUG_LOG(Log::log(mSApair," TCP Peer Connected");)
 	mPeerReceiveData();
@@ -28,12 +25,6 @@ TCPpeer::~TCPpeer()
 	delete mPeerSocket;
 	DEBUG_LOG(Log::log(mSApair, " TCP Peer Disconnected");)
 }
-
-std::string_view TCPpeer::getCommandString()
-{
-	return mDataBuffer.getStringView();
-}
-
 
 void TCPpeer::mSendFuncFeedbk(const asio::error_code& ec)
 {
@@ -105,12 +96,6 @@ void TCPpeer::sendMessage(const Message* message)
 }
 
 
-void TCPpeer::disconnect()
-{
-	DEBUG_LOG(Log::log(mSApair, " Peer Disconnecting");)
-	mPeerIsActive = false;
-}
-
 void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
@@ -144,32 +129,6 @@ void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgT
 	mDataBuffer = response;
 }
 
-void TCPpeer::hearTo(const std::string_view& bgID, const std::string_view& bgTag)
-{
-	std::string response = "[R]\t";
-	if (mIsInBG)
-		response += CmdProcessor::RESP[(short)Response::IS_IN_BG];
-	else
-	{
-		mBgID = bgID;
-		mBgTag = bgTag;
-
-		mBgPtr = BGcontroller::addToBG(this, mBgID);
-		if (mBgPtr != nullptr)
-		{
-			mIsInBG = true;
-			mPeerMode = PeerMode::HEAR;
-
-			response += CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::log(mSApair, " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
-		}
-		else
-			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-	}
-	response += "\n";
-	mDataBuffer = response;
-}
-
 void TCPpeer::leaveBG()
 {
 	std::string response = "[R]\t";
@@ -194,41 +153,6 @@ void TCPpeer::leaveBG()
 	else
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
 	response += "\n";
-	mDataBuffer = response;
-}
-
-void TCPpeer::changeTag(const std::string_view& bgTag)
-{
-	std::string response = "[R]\t";
-	if (!mIsInBG)
-		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
-	else
-	{
-		std::lock_guard<std::shared_mutex> writeLock(mPeerResourceMtx);
-		mBgTag = bgTag;
-
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log(mSApair, " Changed Tag to: ", mBgTag);)
-	}
-	response += "\n";
-	mDataBuffer = response;
-}
-
-void TCPpeer::printPingInfo()
-{
-	std::string response = "[R]\t";
-	response += mSApair;
-	response += "\n";
-	DEBUG_LOG(Log::log(mSApair, " Peer pinging");)
-	mDataBuffer = response;
-}
-
-void TCPpeer::respondWith(Response resp)
-{
-	std::string response = "[R]\t";
-	response += CmdProcessor::RESP[(short)resp];
-	response += "\n";
-	DEBUG_LOG(Log::log(mSApair, " Peer responding: ", CmdProcessor::RESP[(short)resp]);)
 	mDataBuffer = response;
 }
 

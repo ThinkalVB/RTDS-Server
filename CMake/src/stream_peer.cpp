@@ -4,6 +4,7 @@
 
 std::atomic_int StreamPeer::mGlobalPeerCount;
 
+
 StreamPeer::StreamPeer()
 {
 	mPeerIsActive = true;
@@ -16,6 +17,7 @@ StreamPeer::~StreamPeer()
 {
 	mGlobalPeerCount--;
 }
+
 
 int StreamPeer::getPeerCount()
 {

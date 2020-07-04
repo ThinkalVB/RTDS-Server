@@ -8,8 +8,6 @@ typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
 class SSLccm
 {
-	static std::atomic_int mPeerCount;		// Keep the total count of peers
-
 	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	SSLsocket* mPeerSocket;					// Socket handling the data from peer system
 	bool mPeerIsActive;						// True if the peer socket is operational
@@ -68,12 +66,6 @@ public:
 * @param[in]			Pointer to the newly accepted socket
 ********************************************************************************************/
 	SSLccm(SSLsocket*);
-/*******************************************************************************************
-* @brief Return the number of peers
-*
-* @return				Return peer count
-********************************************************************************************/
-	static int peerCount();
 /*******************************************************************************************
 * @brief Return the string view of the received command
 *

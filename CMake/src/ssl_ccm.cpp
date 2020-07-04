@@ -5,8 +5,6 @@
 #include "log.h"
 #include "rtds.h"
 
-std::atomic_int SSLccm::mPeerCount = 0;
-
 SSLccm::SSLccm(SSLsocket* socketPtr)
 {
 	mPeerSocket = socketPtr;
@@ -14,18 +12,11 @@ SSLccm::SSLccm(SSLsocket* socketPtr)
 	mPeerIsActive = true;
 
 	DEBUG_LOG(Log::log("SSL Peer Connected");)
-	mPeerCount++;
 	mPeerReceiveData();
-}
-
-int SSLccm::peerCount()
-{
-	return mPeerCount;
 }
 
 SSLccm::~SSLccm()
 {
-	mPeerCount--;
 	asio::error_code ec;
 	mPeerSocket->shutdown(ec);
 	if (ec)

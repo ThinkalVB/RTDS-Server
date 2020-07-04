@@ -73,7 +73,6 @@ enum class Response
 * broadcast			Broadcast a message to the BG.
 * ping				Ping with the RTDS server.
 * listen			Listen to the activities in a Broadcast Group.
-* hear				Hear the activities in a Broadcast Group.
 * change			Change the Broadcast Group.
 * leave				Stop listening the Broadcast group.
 * change			Change the tag of the peer.
@@ -87,7 +86,6 @@ enum class Command
 	BROADCAST,
 	PING,
 	LISTEN,
-	HEAR,
 	LEAVE,
 	CHANGE,
 	EXIT,

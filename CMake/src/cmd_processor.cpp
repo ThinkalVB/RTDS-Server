@@ -17,7 +17,6 @@ const std::string CmdProcessor::COMM[] =
 	"broadcast",
 	"ping",
 	"listen",
-	"hear",
 	"leave",
 	"change",
 	"exit",
@@ -156,8 +155,6 @@ void CmdProcessor::processCommand(TCPpeer& peer)
 		mTCP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
 		mTCP_listen(peer, commandStr);
-	else if (command == COMM[(short)Command::HEAR])
-		mTCP_hear(peer, commandStr);
 	else if (command == COMM[(short)Command::LEAVE])
 		mTCP_leave(peer, commandStr);
 	else if (command == COMM[(short)Command::CHANGE])
@@ -220,16 +217,6 @@ void CmdProcessor::mTCP_change(TCPpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mTCP_hear(TCPpeer& peer, std::string_view& commandStr)
-{
-	auto bgID = extractElement(commandStr);
-	auto bgTag = extractElement(commandStr);
-	if (isTag(bgTag) && isBGID(bgID) && commandStr.empty())
-		peer.hearTo(bgID, bgTag);
-	else
-		peer.respondWith(Response::BAD_PARAM);
-}
-
 void CmdProcessor::mTCP_leave(TCPpeer& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
@@ -248,8 +235,6 @@ void CmdProcessor::processCommand(UDPpeer& peer)
 	else if (command == COMM[(short)Command::BROADCAST])
 		mUDP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
-		peer.respondWith(Response::NOT_ALLOWED);
-	else if (command == COMM[(short)Command::HEAR])
 		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::LEAVE])
 		peer.respondWith(Response::NOT_ALLOWED);
