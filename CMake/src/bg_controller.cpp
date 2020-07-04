@@ -29,13 +29,6 @@ bool BGroupUnrestricted::isEmpty() const
 		return false;
 }
 
-void BGroupUnrestricted::broadcast(const Message* message, const std::string_view& bgTag)
-{
-	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
-	for (auto peer : mTCPpeerList)
-		peer->sendMessage(message, bgTag);
-}
-
 void BGroupUnrestricted::broadcast(const Message* message)
 {
 	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
@@ -43,16 +36,6 @@ void BGroupUnrestricted::broadcast(const Message* message)
 			peer->sendMessage(message);
 }
 
-
-void BGroup::broadcast(TCPpeer* mPeer, const Message* message, const std::string_view& bgTag)
-{
-	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
-	for (auto peer : mTCPpeerList)
-	{
-		if (peer != mPeer)
-			peer->sendMessage(message, bgTag);
-	}
-}
 
 void BGroup::broadcast(TCPpeer* mPeer, const Message* message)
 {
@@ -137,16 +120,5 @@ void BGcontroller::broadcast(const Message* message, const BGID bgID)
 	{
 		auto bGroup = bGroupItr->second;
 		bGroup->broadcast(message);
-	}
-}
-
-void BGcontroller::broadcast(const Message* message, const BGID bgID, const std::string_view& bgTag)
-{
-	std::shared_lock<std::shared_mutex> readLock(mBgLock);
-	auto bGroupItr = mBGmap.find(bgID);
-	if (bGroupItr != mBGmap.end())
-	{
-		auto bGroup = bGroupItr->second;
-		bGroup->broadcast(message, bgTag);
 	}
 }

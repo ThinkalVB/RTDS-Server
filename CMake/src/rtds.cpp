@@ -7,15 +7,14 @@
 #include "ssl_peer.h"
 #include "log.h"
 
-
 #ifdef RTDS_DUAL_STACK
-RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::address_v6::any(), portNumber),
-mUDPep(asio::ip::address_v6::any(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
-mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::address_v6::any(), ccmPort), mSSLacceptor(mIOcontext)
+RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v6(), portNumber),
+mUDPep(asio::ip::udp::v6(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
+mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v6(), ccmPort), mSSLacceptor(mIOcontext)
 #else 
-RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::address_v4::any(), portNumber),
-mUDPep(asio::ip::address_v4::any(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
-mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::address_v4::any(), ccmPort), mSSLacceptor(mIOcontext)
+RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v4(), portNumber),
+mUDPep(asio::ip::udp::v4(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
+mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v4(), ccmPort), mSSLacceptor(mIOcontext)
 #endif
 {
 	START_LOG
@@ -117,7 +116,6 @@ void RTDS::mConfigUDPserver()
 		LOG(Log::log("Failed to bind UDP socket - ", ec.message());)
 		exit(0);
 	}
-	UDPpeer::registerUDPsocket(&mUDPsock);
 	DEBUG_LOG(Log::log("UDP socket binded to endpoint");)
 }
 
@@ -257,13 +255,12 @@ void RTDS::mTCPacceptRoutine()
 void RTDS::mUDPlistenRoutine()
 {
 	mThreadCount++;
-	UDPpeer udpPeer;
-	AdancedBuffer dataBuffer;
+	UDPpeer udpPeer(&mUDPsock);
 	asio::error_code ec;
 
 	while (mServerRunning)
 	{
-		auto dataSize = mUDPsock.receive_from(dataBuffer.getReadBuffer(), udpPeer.getRefToEp(), 0, ec);
+		auto dataSize = mUDPsock.receive_from(udpPeer.getReadBuffer(), udpPeer.getRefToEndpoint(), 0, ec);
 		if (ec)
 		{	
 			if (mServerRunning) {
@@ -272,11 +269,10 @@ void RTDS::mUDPlistenRoutine()
 		}
 		else
 		{
-			if (dataBuffer.cookString(dataSize))
-				CmdProcessor::processCommand(udpPeer, dataBuffer);
+			if (udpPeer.cookString(dataSize))
+				CmdProcessor::processCommand(udpPeer);
 			else
-				udpPeer.respondWith(Response::BAD_COMMAND, dataBuffer);
-			mUDPsock.send_to(dataBuffer.getSendBuffer(), udpPeer.getRefToEp());
+				udpPeer.respondWith(Response::BAD_COMMAND);
 		}
 	}
 	mThreadCount--;

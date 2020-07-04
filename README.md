@@ -21,7 +21,7 @@ Initially support for TCP and UDP on port 321 (default).
 Port number and thread count can be passed as arguments -p and -t (ex: rtds -p349 -t8).  
 Use #define PRINT_LOG to enable logging and #define PRINT_DEBUG_LOG for debug logs.  
 Use #define OUTPUT_DEBUG_LOG to print the logs to the console output stream.  
-RTDS supports both IPv4 and IPv6. IPv6 can be targeted using #define RTDS_DUAL_STACK at compile time.  
+RTDS supports both IPv4 and IPv6[Not Tested]. IPv6 can be targeted using #define RTDS_DUAL_STACK at compile time.  
 
 ## Built And Test
 

@@ -6,7 +6,7 @@
 #define RTDS_MINOR @RTDS_MINOR@
 #define RTDS_PATCH @RTDS_PATCH@
 
-#define RTDS_DUAL_STACK					// Enable IPV6 support
+#define RTDS_DUAL_STACK					// Enable IPV6 support (use ::1 for local host)
 #define RDTS_DEF_PORT 321				// Default RTDS port number
 #define RTDS_DEF_CCM_PORT 322			// Default CCM port number
 #define MAX_THREAD_COUNT 28				// Maximum Thread Count
@@ -19,8 +19,6 @@
 #endif
 #define PRINT_LOG						// Print critical console logs
 
-#define STR_V4 "v4"						// Version V4 in string
-#define STR_V6 "v6"						// Version V6 in string
 #define ALL_TAG "*"						// Represent all tags in a BG
 #define UDP_TAG "$"						// BGT for UDP peers
 

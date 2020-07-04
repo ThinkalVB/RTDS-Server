@@ -2,34 +2,29 @@
 #define UDP_PEER_H
 
 #include <asio/ip/udp.hpp>
-#include "advanced_buffer.h"
-#include "message.h"
-#include "common.h"
+#include "peer.h"
 
-class UDPpeer
+class UDPpeer : public Peer
 {
-	static asio::ip::udp::socket* mPeerSocket;		// Reference to the UDP socket
+	static asio::ip::udp::socket* mPeerSocket;		// Pointer to the UDP socket
 
 	asio::ip::udp::endpoint mUDPep;					// UDP endpoint
-	BGT mBgTag;										// Broadcast group Tag
-
 /*******************************************************************************************
-* @brief This callback function will be called after sending message
+* @brief Send dataBuffer contents to the peer system
 *
-* @param[in] ec					Asio error code
+* @details
+* The callback function _sendFeedback() will be invoked after the data is send.
+* The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
-	static void mSendMssgFuncFeedbk(const asio::error_code&);
+	void mSendPeerBufferData();
 
 public:
 /*******************************************************************************************
-* @brief Register the general UDP socket to which the data is to be send
+* @brief Register the general UDP socket
 *
-* @param[in]			Pointer to the UDP socket
-*
-* @details
-* UDP socket must be assigned before using any other functions
+* @param[in]					UDP socket
 ********************************************************************************************/
-	static void registerUDPsocket(asio::ip::udp::socket* udpSock);
+	UDPpeer(asio::ip::udp::socket*);
 /*******************************************************************************************
 * @brief Return the reference to the UDP endpoint
 *
@@ -38,20 +33,7 @@ public:
 * @details
 * UDP endpoint must be assigned before using any other functions
 ********************************************************************************************/
-	asio::ip::udp::endpoint& getRefToEp();
-	const std::string getSApairString()const;
-
-/*******************************************************************************************
-* @brief Shedule a message to the peer system
-*
-* @param[in]			Message to be send
-* @param[in]			Message Tag
-*
-* @details
-* Only send the message if the tags are compatible.
-********************************************************************************************/
-	void sendMessage(const Message*, const std::string_view&);
-	void sendMessage(const Message*);
+	asio::ip::udp::endpoint& getRefToEndpoint();
 
 /*******************************************************************************************
 * @brief Print the source address pair info to the buffer
@@ -61,22 +43,23 @@ public:
 * @details
 * Print Version, IP address and port number
 ********************************************************************************************/
-	void printPingInfo(AdancedBuffer&)const;
+	void printPingInfo();
 /*******************************************************************************************
 * @brief Send response to the peer
 *
 * @param[in]			Response
+* @param[in]			Response Buffer
 ********************************************************************************************/
-	void respondWith(const Response, AdancedBuffer&)const;
+	void respondWith(const Response);
 /*******************************************************************************************
 * @brief Broadcast a message to the group
 *
 * @param[in]			Message
 * @param[in]			Broadcast Group ID
 * @param[in]			Broadcast Group Tag
+* @param[in]			Replay Buffer
 ********************************************************************************************/
-	void broadcast(const std::string_view&, const std::string_view&, AdancedBuffer&)const;
-	void broadcast(const std::string_view&, const std::string_view&, const std::string_view&, AdancedBuffer&)const;
+	void broadcast(const std::string_view&, const std::string_view&, const std::string_view&);
 };
 
 #endif

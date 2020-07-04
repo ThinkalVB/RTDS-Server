@@ -43,26 +43,6 @@ std::string_view TCPpeer::getCommandString()
 }
 
 
-void TCPpeer::sendMessage(const Message* message, const std::string_view& bgTag)
-{
-	std::shared_lock<std::shared_mutex> readLock(mPeerResourceMtx);
-	if (mPeerIsActive && mBgTag == bgTag)
-	{
-		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
-			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
-	}
-}
-
-void TCPpeer::sendMessage(const Message* message)
-{
-	if (mPeerIsActive)
-	{
-		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
-			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
-	}
-}
-
-
 void TCPpeer::mSendFuncFeedbk(const asio::error_code& ec)
 {
 	if (ec)
@@ -119,6 +99,16 @@ void TCPpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 			mSendPeerBufferData();
 		else
 			delete this;
+	}
+}
+
+void TCPpeer::sendMessage(const Message* message)
+{
+	std::shared_lock<std::shared_mutex> readLock(mPeerResourceMtx);
+	if (mPeerIsActive && (message->recverTag == ALL_TAG || message->recverTag == mBgTag))
+	{
+		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
+			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
 	}
 }
 
@@ -258,7 +248,7 @@ void TCPpeer::broadcastTo(const std::string_view& messageStr, const std::string_
 		auto message = Message::makeBrdMsg(mSApair.toString(), messageStr, mBgTag, bgTag, PeerType::TCP);
 		if (message != nullptr)
 		{
-			mBgPtr->broadcast(this, message, bgTag);
+			mBgPtr->broadcast(this, message);
 			response += CmdProcessor::RESP[(short)Response::SUCCESS];
 			DEBUG_LOG(Log::log(mSApair.toString(), " Peer broadcasting: ", messageStr);)
 		}

@@ -46,9 +46,7 @@ public:
 * @brief Broadcast a message to all peers in the peer list
 *
 * @param[in]			Message
-* @param[in]			Peer's Broadcast Group Tag
 ********************************************************************************************/
-	void broadcast(const Message*, const std::string_view&);
 	void broadcast(const Message*);
 };
 
@@ -62,7 +60,6 @@ public:
 * @param[in]			Message
 * @param[in]			Broadcast Group Tag (for tag specific broadcast)
 ********************************************************************************************/
-	void broadcast(TCPpeer*, const Message*, const std::string_view&);
 	void broadcast(TCPpeer*, const Message*);
 };
 
@@ -94,10 +91,8 @@ public:
 *
 * @param[in]			Message
 * @param[in]			Broadcast Group ID
-* @param[in]			Broadcast Group Tag
 ********************************************************************************************/
 	static void broadcast(const Message*, const BGID);
-	static void broadcast(const Message*, const BGID, const std::string_view&);
 };
 
 #endif

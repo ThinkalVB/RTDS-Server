@@ -239,51 +239,51 @@ void CmdProcessor::mTCP_leave(TCPpeer& peer, std::string_view& commandStr)
 }
 
 
-void CmdProcessor::processCommand(UDPpeer& peer, AdancedBuffer& dataBuffer)
+void CmdProcessor::processCommand(UDPpeer& peer)
 {
-	auto commandStr = dataBuffer.getStringView();
+	auto commandStr = peer.getCommandString();
 	auto command = extractElement(commandStr);
 	if (command == COMM[(short)Command::PING])
-		mUDP_ping(peer, commandStr, dataBuffer);
+		mUDP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::BROADCAST])
-		mUDP_broadcast(peer, commandStr, dataBuffer);
+		mUDP_broadcast(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
-		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::HEAR])
-		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::LEAVE])
-		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::CHANGE])
-		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::EXIT])
-		peer.respondWith(Response::NOT_ALLOWED, dataBuffer);
+		peer.respondWith(Response::NOT_ALLOWED);
 	else
-		peer.respondWith(Response::BAD_COMMAND, dataBuffer);
+		peer.respondWith(Response::BAD_COMMAND);
 }
 
-void CmdProcessor::mUDP_ping(UDPpeer& peer, std::string_view& commandStr, AdancedBuffer& dataBuffer)
+void CmdProcessor::mUDP_ping(UDPpeer& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
-		peer.printPingInfo(dataBuffer);
+		peer.printPingInfo();
 	else
-		peer.respondWith(Response::BAD_PARAM, dataBuffer);
+		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr, AdancedBuffer& dataBuffer)
+void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr)
 {
 	auto message = extractElement(commandStr);
-	auto bgTag = extractElement(commandStr);
 	auto bgID = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
 
 	if (isBmessage(message) && commandStr.empty())
 	{
 		if (isWTag(bgTag) && isBGID(bgID))
-			peer.broadcast(message, bgID, bgTag, dataBuffer);
+			peer.broadcast(message, bgID, bgTag);
 		else
-			peer.respondWith(Response::BAD_PARAM, dataBuffer);
+			peer.respondWith(Response::BAD_PARAM);
 	}
 	else
-		peer.respondWith(Response::BAD_PARAM, dataBuffer);
+		peer.respondWith(Response::BAD_PARAM);
 }
 
 

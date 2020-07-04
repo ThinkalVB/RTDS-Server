@@ -4,6 +4,7 @@
 #include "sapair.h"
 #include <chrono>
 #include <queue>
+#include <mutex>
 #include "common.h"
 
 typedef std::chrono::time_point<std::chrono::system_clock> TimePoint;

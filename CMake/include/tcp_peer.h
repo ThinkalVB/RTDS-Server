@@ -27,7 +27,7 @@ class TCPpeer
 	bool mIsInBG;							// True if this peer is in Broadcast Group
 
 /*******************************************************************************************
-* @brief Shedule a send for writeBuffer contents to the peer system
+* @brief Shedule a send for dataBuffer contents to the peer system
 *
 * @details
 * The callback function _sendFeedback() will be invoked after the data is send.
