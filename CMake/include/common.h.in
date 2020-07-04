@@ -41,6 +41,7 @@
 #include <string>
 typedef std::string BGID;
 typedef std::string BGT;
+typedef std::string SAP;
 
 /*******************************************************************************************
 * @brief Enum class for Response

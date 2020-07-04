@@ -3,19 +3,22 @@
 
 #include "tcp_peer.h"
 #include "udp_peer.h"
-#include "ssl_peer.h"
+#include "ssl_ccm.h"
+
+#define STR_V4 "v4"						// Version V4 in string
+#define STR_V6 "v6"						// Version V6 in string
 
 struct CmdProcessor
 {
-	static const std::string RESP[];			// All response string
-	static const std::string COMM[];			// All command string
+	static const std::string RESP[];	// All response string
+	static const std::string COMM[];	// All command string
 /*******************************************************************************************
 * @brief Process the commands from peer system
 *
 * @param[in]			The peer system from which the command is comming.
 ********************************************************************************************/
 	static void processCommand(TCPpeer&);
-	static void processCommand(SSLpeer&);
+	static void processCommand(SSLccm&);
 	static void processCommand(UDPpeer&);
 /*******************************************************************************************
 * @brief Check if the string is a valid Broadcast Group ID
@@ -76,9 +79,20 @@ struct CmdProcessor
 * Return true for empty strings.
 ********************************************************************************************/
 	static bool isPrintable(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string view is a username
+*
+* @param[in]			Command string.
+* @return				True if username
+********************************************************************************************/
 	static bool isUsername(const std::string_view&);
+/*******************************************************************************************
+* @brief Check if the string view is a password
+*
+* @param[in]			Command string.
+* @return				True if password
+********************************************************************************************/
 	static bool isPassword(const std::string_view&);
-
 /*******************************************************************************************
 * @brief Check if the string is a port number
 *
@@ -95,6 +109,33 @@ struct CmdProcessor
 * @return				True if thread count.
 ********************************************************************************************/
 	static bool isThreadCount(const std::string, short&);
+/*******************************************************************************************
+* @brief get SAP string
+*
+* @param[in]			Remote Endpoint.
+* @return				SAP string.
+********************************************************************************************/
+	template<typename ASIOep>
+	static std::string getSAPstring(const ASIOep& remoteEp)
+	{
+		SAP sapString;
+		auto ipAddr = remoteEp.address();
+		auto portNumber = remoteEp.port();
+
+		auto ipAddr6 = ipAddr.to_v6();
+		if (ipAddr6.is_v4_mapped() || ipAddr6.is_v4_compatible())
+		{
+			sapString += STR_V4;
+			sapString += "\t" + ipAddr6.to_v4().to_string();
+		}
+		else
+		{
+			sapString += STR_V6;
+			sapString += "\t" + ipAddr6.to_string();
+		}
+		sapString += "\t" + std::to_string(portNumber);
+		return sapString;
+	}
 
 private:
 /*******************************************************************************************
@@ -135,10 +176,10 @@ private:
 * @details
 * Call the appropriate peer functions based on the commands and parameters
 ********************************************************************************************/
-	static void mSSL_login(SSLpeer&, std::string_view&);
-	static void mSSL_exit(SSLpeer&, std::string_view&);
-	static void mSSL_status(SSLpeer&, std::string_view&);
-	static void mSSL_abort(SSLpeer&, std::string_view&);
+	static void mSSL_login(SSLccm&, std::string_view&);
+	static void mSSL_exit(SSLccm&, std::string_view&);
+	static void mSSL_status(SSLccm&, std::string_view&);
+	static void mSSL_abort(SSLccm&, std::string_view&);
 };
 
 #endif

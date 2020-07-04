@@ -1,6 +1,6 @@
 #include "rtds.h"
 #include <thread>
-#include "rtds_ccm.h"
+#include "rtds_settings.h"
 
 int main(int argCount, const char* args[])
 {

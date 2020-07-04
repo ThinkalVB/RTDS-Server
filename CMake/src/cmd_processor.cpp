@@ -287,7 +287,7 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr)
 }
 
 
-void CmdProcessor::processCommand(SSLpeer& peer)
+void CmdProcessor::processCommand(SSLccm& peer)
 {
 	auto commandStr = peer.getCommandString();
 	auto command = extractElement(commandStr);
@@ -303,7 +303,7 @@ void CmdProcessor::processCommand(SSLpeer& peer)
 		peer.respondWith(Response::BAD_COMMAND);
 }
 
-void CmdProcessor::mSSL_login(SSLpeer& peer, std::string_view& commandStr)
+void CmdProcessor::mSSL_login(SSLccm& peer, std::string_view& commandStr)
 {
 	auto usrName = extractElement(commandStr);
 	auto password = extractElement(commandStr);
@@ -313,7 +313,7 @@ void CmdProcessor::mSSL_login(SSLpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_exit(SSLpeer& peer, std::string_view& commandStr)
+void CmdProcessor::mSSL_exit(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.disconnect();
@@ -321,7 +321,7 @@ void CmdProcessor::mSSL_exit(SSLpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_status(SSLpeer& peer, std::string_view& commandStr)
+void CmdProcessor::mSSL_status(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.status();
@@ -329,7 +329,7 @@ void CmdProcessor::mSSL_status(SSLpeer& peer, std::string_view& commandStr)
 		peer.respondWith(Response::BAD_PARAM);
 }
 
-void CmdProcessor::mSSL_abort(SSLpeer& peer, std::string_view& commandStr)
+void CmdProcessor::mSSL_abort(SSLccm& peer, std::string_view& commandStr)
 {
 	if (commandStr.empty())
 		peer.abort();

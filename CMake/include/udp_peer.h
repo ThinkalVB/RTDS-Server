@@ -7,7 +7,6 @@
 class UDPpeer : public Peer
 {
 	static asio::ip::udp::socket* mPeerSocket;		// Pointer to the UDP socket
-
 	asio::ip::udp::endpoint mUDPep;					// UDP endpoint
 /*******************************************************************************************
 * @brief Send dataBuffer contents to the peer system

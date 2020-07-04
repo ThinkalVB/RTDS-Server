@@ -1,5 +1,4 @@
 #include "udp_peer.h"
-#include <functional>
 #include "cmd_processor.h"
 #include "bg_controller.h"
 #include "log.h"
@@ -24,9 +23,8 @@ UDPpeer::UDPpeer(asio::ip::udp::socket* udpSocket)
 
 void UDPpeer::printPingInfo()
 {
-	auto saPair = SApair(mUDPep);
 	std::string response = "[R]\t";
-	response += saPair.toString();
+	response += CmdProcessor::getSAPstring(mUDPep);
 	response += "\n";
 	mDataBuffer = response;
 
@@ -47,9 +45,8 @@ void UDPpeer::respondWith(const Response resp)
 
 void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
 {
-	auto saPair = SApair(mUDPep);
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(saPair.toString(), messageStr, UDP_TAG, bgTag, PeerType::UDP);
+	auto message = Message::makeBrdMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, UDP_TAG, bgTag, PeerType::UDP);
 
 	if (message != nullptr)
 	{

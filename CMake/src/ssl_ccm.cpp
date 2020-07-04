@@ -1,13 +1,13 @@
-#include "ssl_peer.h"
+#include "ssl_ccm.h"
 #include "cmd_processor.h"
-#include "rtds_ccm.h"
+#include "rtds_settings.h"
 #include <functional>
 #include "log.h"
 #include "rtds.h"
 
-std::atomic_int SSLpeer::mPeerCount = 0;
+std::atomic_int SSLccm::mPeerCount = 0;
 
-SSLpeer::SSLpeer(SSLsocket* socketPtr)
+SSLccm::SSLccm(SSLsocket* socketPtr)
 {
 	mPeerSocket = socketPtr;
 	mIsAdmin = false;
@@ -18,12 +18,12 @@ SSLpeer::SSLpeer(SSLsocket* socketPtr)
 	mPeerReceiveData();
 }
 
-int SSLpeer::peerCount()
+int SSLccm::peerCount()
 {
 	return mPeerCount;
 }
 
-SSLpeer::~SSLpeer()
+SSLccm::~SSLccm()
 {
 	mPeerCount--;
 	asio::error_code ec;
@@ -41,24 +41,24 @@ SSLpeer::~SSLpeer()
 	DEBUG_LOG(Log::log("SSL Peer Disconnected");)
 }
 
-std::string_view SSLpeer::getCommandString()
+std::string_view SSLccm::getCommandString()
 {
 	return mDataBuffer.getStringView();
 }
 
 
-void SSLpeer::mPeerReceiveData()
+void SSLccm::mPeerReceiveData()
 {
 	if (mPeerIsActive)
 	{
-		mPeerSocket->async_read_some(mDataBuffer.getReadBuffer(), std::bind(&SSLpeer::mProcessData,
+		mPeerSocket->async_read_some(mDataBuffer.getReadBuffer(), std::bind(&SSLccm::mProcessData,
 			this, std::placeholders::_1, std::placeholders::_2));
 	}
 	else
 		delete this;
 }
 
-void SSLpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
+void SSLccm::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 {
 	if (ec)
 	{
@@ -79,13 +79,13 @@ void SSLpeer::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 	}
 }
 
-void SSLpeer::mSendPeerBufferData()
+void SSLccm::mSendPeerBufferData()
 {
-	mPeerSocket->async_write_some(mDataBuffer.getSendBuffer(), std::bind(&SSLpeer::mSendFuncFeedbk,
+	mPeerSocket->async_write_some(mDataBuffer.getSendBuffer(), std::bind(&SSLccm::mSendFuncFeedbk,
 		this, std::placeholders::_1));
 }
 
-void SSLpeer::mSendFuncFeedbk(const asio::error_code& ec)
+void SSLccm::mSendFuncFeedbk(const asio::error_code& ec)
 {
 	if (ec)
 	{
@@ -97,7 +97,7 @@ void SSLpeer::mSendFuncFeedbk(const asio::error_code& ec)
 }
 
 
-void SSLpeer::abort()
+void SSLccm::abort()
 {
 	std::string response = "[R]\t";
 	if (mIsAdmin)
@@ -111,13 +111,13 @@ void SSLpeer::abort()
 	mDataBuffer = response;
 }
 
-void SSLpeer::disconnect()
+void SSLccm::disconnect()
 {
 	DEBUG_LOG(Log::log("SSL Peer Disconnecting");)
 	mPeerIsActive = false;
 }
 
-void SSLpeer::status()
+void SSLccm::status()
 {
 	std::string response = "[R]\t";
 	if (mIsAdmin)
@@ -132,7 +132,7 @@ void SSLpeer::status()
 
 }
 
-void SSLpeer::login(const std::string_view& usr, const std::string_view& pass)
+void SSLccm::login(const std::string_view& usr, const std::string_view& pass)
 {
 	std::string response = "[R]\t";
 	if (usr == ROOT_USRN && pass == ROOT_PASS)
@@ -147,7 +147,7 @@ void SSLpeer::login(const std::string_view& usr, const std::string_view& pass)
 	mDataBuffer = response;
 }
 
-void SSLpeer::respondWith(const Response resp)
+void SSLccm::respondWith(const Response resp)
 {
 	std::string response = "[R]\t";
 	DEBUG_LOG(Log::log("SSL Peer responding: ", CmdProcessor::RESP[(short)resp]);)

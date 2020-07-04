@@ -1,7 +1,6 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "sapair.h"
 #include <chrono>
 #include <queue>
 #include <mutex>
@@ -61,7 +60,7 @@ public:
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
 	template<typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeAddMsg(const SApair& saPair, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	static const Message* makeAddMsg(const SAP& sapStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
 	{
 		std::string remMssg;
 		if (pType == PeerType::TCP)
@@ -71,7 +70,7 @@ public:
 		else
 			remMssg = "[CU]";
 
-		auto addMssg = "\t" + saPair.toString() + "\n";
+		auto addMssg = "\t" + sapStr + "\n";
 		auto message = new (std::nothrow) Message(addMssg, sTag, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
@@ -91,7 +90,7 @@ public:
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
 	template<typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeRemMsg(const SApair& saPair, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	static const Message* makeRemMsg(const SAP& sapStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
 	{
 		std::string remMssg;
 		if (pType == PeerType::TCP)
@@ -101,7 +100,7 @@ public:
 		else
 			remMssg = "[DU]";
 
-		remMssg = "\t" + saPair.toString() + "\n";
+		remMssg = "\t" + sapStr + "\n";
 		auto message = new (std::nothrow) Message(remMssg, sTag, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
@@ -122,8 +121,8 @@ public:
 * @param[in]		Receivers Tag.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	template<typename SAPstr, typename MessageStr, typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeBrdMsg(const SAPstr sapStr, const MessageStr& mssgStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	template<typename MessageStr, typename BGTstrT1, typename BGTstrT2>
+	static const Message* makeBrdMsg(const SAP& sapStr, const MessageStr& mssgStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
 	{
 		std::string brdMssg;
 		if (pType == PeerType::TCP)

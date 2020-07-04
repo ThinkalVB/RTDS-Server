@@ -4,24 +4,25 @@
 #include <asio/ip/tcp.hpp>
 #include <shared_mutex>
 #include "message.h"
-#include "sapair.h"
 #include "common.h"
+
+
 #include "advanced_buffer.h"
+
+#include "stream_peer.h"
 
 class BGroup;
 class TCPpeer
 {		
-	static std::atomic_int mPeerCount;		// Keep the total count of peers
-	
 	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	asio::ip::tcp::socket* mPeerSocket;		// Socket handling the data from peer system
 	std::shared_mutex mPeerResourceMtx;		// Mutex for locking the shared resources
-	const SApair mSApair;					// Source address pair of this peer
 
 	PeerMode mPeerMode;						// Hearing mode of the peer
 	BGroup* mBgPtr;							// Pointer to broadcast group
 	BGID mBgID;								// Broadcast group ID
 	BGT mBgTag;								// Broadcast group Tag
+	SAP mSApair;							// Source Address Pair string
 
 	bool mPeerIsActive;						// True if the peer socket is operational
 	bool mIsInBG;							// True if this peer is in Broadcast Group
@@ -116,7 +117,6 @@ public:
 * The callback function _sendMFeedback() will be invoked after the data is send.
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
-	void sendMessage(const Message*, const std::string_view&);
 	void sendMessage(const Message*);
 
 /*******************************************************************************************

@@ -1,5 +1,5 @@
-#ifndef RTDS_CCM_H
-#define RTDS_CCM_H
+#ifndef RTDS_SETTINGS_H
+#define RTDS_SETTINGS_H
 
 #define RTDS_PORT Settings::mRTDSportNo
 #define RTDS_CCM Settings::mRTDSccmPortNo

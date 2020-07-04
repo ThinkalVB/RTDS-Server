@@ -4,7 +4,7 @@
 #include "cmd_processor.h"
 #include "advanced_buffer.h"
 #include "tcp_peer.h"
-#include "ssl_peer.h"
+#include "ssl_ccm.h"
 #include "log.h"
 
 #ifdef RTDS_DUAL_STACK
@@ -316,7 +316,7 @@ void RTDS::mSSLacceptRoutine()
 			if (ec)
 			{	DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)	}
 
-			auto peer = new (std::nothrow) SSLpeer(peerSocket);
+			auto peer = new (std::nothrow) SSLccm(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("Peer memmory bad allocation");)

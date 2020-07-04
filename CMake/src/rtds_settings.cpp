@@ -1,7 +1,5 @@
-#include "rtds_ccm.h"
+#include "rtds_settings.h"
 #include "cmd_processor.h"
-#include "tcp_peer.h"
-#include "ssl_peer.h"
 #include <iostream>
 
 unsigned short Settings::mRTDSportNo = RDTS_DEF_PORT;
@@ -58,8 +56,5 @@ std::string Settings::generateStatus()
 	statusStr += std::to_string(mRTDSportNo) + "\t";
 	statusStr += std::to_string(mRTDSccmPortNo) + "\t";
 	statusStr += std::to_string(mRTDSthreadCount) + "\t";
-
-	statusStr += std::to_string(TCPpeer::peerCount()) + "\t";
-	statusStr += std::to_string(SSLpeer::peerCount()) + "\t";
 	return statusStr;
 }

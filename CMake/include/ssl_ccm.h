@@ -1,12 +1,12 @@
-#ifndef SSL_PEER_H
-#define SSL_PEER_H
+#ifndef SSL_CCM_H
+#define SSL_CCM_H
 
 #include <asio/ip/tcp.hpp>
 #include <asio/ssl.hpp>
 #include "advanced_buffer.h"
 typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
-class SSLpeer
+class SSLccm
 {
 	static std::atomic_int mPeerCount;		// Keep the total count of peers
 
@@ -59,7 +59,7 @@ class SSLpeer
 * @details
 * Shutdown and delete peer socket.
 ********************************************************************************************/
-	~SSLpeer();
+	~SSLccm();
 
 public:
 /*******************************************************************************************
@@ -67,7 +67,7 @@ public:
 *
 * @param[in]			Pointer to the newly accepted socket
 ********************************************************************************************/
-	SSLpeer(SSLsocket*);
+	SSLccm(SSLsocket*);
 /*******************************************************************************************
 * @brief Return the number of peers
 *
