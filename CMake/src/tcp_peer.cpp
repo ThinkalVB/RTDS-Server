@@ -8,6 +8,7 @@ TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr)
 {
 	mSApair = CmdProcessor::getSAPstring(socketPtr->remote_endpoint());
 	mPeerSocket = socketPtr;
+	mPeerType = PeerType::TCP;
 
 	DEBUG_LOG(Log::log(mSApair," TCP Peer Connected");)
 	mPeerReceiveData();
@@ -25,6 +26,7 @@ TCPpeer::~TCPpeer()
 	delete mPeerSocket;
 	DEBUG_LOG(Log::log(mSApair, " TCP Peer Disconnected");)
 }
+
 
 void TCPpeer::mSendFuncFeedbk(const asio::error_code& ec)
 {
@@ -93,89 +95,4 @@ void TCPpeer::sendMessage(const Message* message)
 		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
 			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
 	}
-}
-
-
-void TCPpeer::listenTo(const std::string_view& bgID, const std::string_view& bgTag)
-{
-	std::string response = "[R]\t";
-	if (mIsInBG)
-		response += CmdProcessor::RESP[(short)Response::IS_IN_BG];
-	else
-	{
-		mBgID = bgID;
-		mBgTag = bgTag;
-
-		mBgPtr = BGcontroller::addToBG(this, mBgID);
-		if (mBgPtr != nullptr)
-		{
-			mIsInBG = true;
-			mPeerMode = PeerMode::LISTEN;
-
-			auto message = Message::makeAddMsg(mSApair, mBgTag, mBgTag, PeerType::TCP);
-			if (message != nullptr)
-				mBgPtr->broadcast(this, message);
-
-			response += CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::log(mSApair, " Listening to Tag: ", mBgTag, " BG: ", mBgID);)
-		}
-		else
-		{
-			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-			LOG(Log::log(mSApair, " Failed to create joining message!");)
-		}
-	}
-	response += "\n";
-	mDataBuffer = response;
-}
-
-void TCPpeer::leaveBG()
-{
-	std::string response = "[R]\t";
-	if (mIsInBG)
-	{
-		DEBUG_LOG(Log::log(mSApair, " Peer leavig BG ", mBgID);)
-		BGcontroller::removeFromBG(this, mBgID);
-
-		if (mPeerMode == PeerMode::LISTEN)
-		{
-			auto message = Message::makeRemMsg(mSApair, mBgTag, mBgTag, PeerType::TCP);
-			if (message != nullptr)
-				mBgPtr->broadcast(this, message);
-			else
-			{	LOG(Log::log(mSApair, " Failed to create leaving message!");)	}
-		}
-
-		mIsInBG = false;
-		mBgPtr = nullptr;
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-	}
-	else
-		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
-	response += "\n";
-	mDataBuffer = response;
-}
-
-void TCPpeer::broadcastTo(const std::string_view& messageStr, const std::string_view& bgTag)
-{
-	std::string response = "[R]\t";
-	if (mIsInBG)
-	{
-		auto message = Message::makeBrdMsg(mSApair, messageStr, mBgTag, bgTag, PeerType::TCP);
-		if (message != nullptr)
-		{
-			mBgPtr->broadcast(this, message);
-			response += CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
-		}
-		else
-		{
-			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-			LOG(Log::log(mSApair, " Failed to create message!");)
-		}
-	}
-	else
-		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
-	response += "\n";
-	mDataBuffer = response;
 }

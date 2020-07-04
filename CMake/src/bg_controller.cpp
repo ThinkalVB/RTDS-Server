@@ -7,18 +7,21 @@ BGroupUnrestricted::BGroupUnrestricted(const std::string& bgID)
 	mBgID = bgID;
 }
 
-void BGroupUnrestricted::addPeer(TCPpeer* peer)
+void BGroupUnrestricted::addPeer(StreamPeer* peer)
 {
 	std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
 	mTCPpeerList.push_back(peer);
 }
 
-void BGroupUnrestricted::removePeer(TCPpeer* peer)
+void BGroupUnrestricted::removePeer(StreamPeer* peer)
 {
-	std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
-	auto itr = std::find(mTCPpeerList.begin(), mTCPpeerList.end(), peer);
-	std::iter_swap(itr, mTCPpeerList.end() - 1);
-	mTCPpeerList.pop_back();
+	if (peer->peerType() == PeerType::TCP)
+	{
+		std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
+		auto itr = std::find(mTCPpeerList.begin(), mTCPpeerList.end(), peer);
+		std::iter_swap(itr, mTCPpeerList.end() - 1);
+		mTCPpeerList.pop_back();
+	}
 }
 
 bool BGroupUnrestricted::isEmpty() const
@@ -37,7 +40,7 @@ void BGroupUnrestricted::broadcast(const Message* message)
 }
 
 
-void BGroup::broadcast(TCPpeer* mPeer, const Message* message)
+void BGroup::broadcast(StreamPeer* mPeer, const Message* message)
 {
 	std::shared_lock<std::shared_mutex> readLock(mTCPpeerListLock);
 	for (auto peer : mTCPpeerList)
@@ -51,7 +54,7 @@ void BGroup::broadcast(TCPpeer* mPeer, const Message* message)
 std::map<std::string, BGroupUnrestricted*> BGcontroller::mBGmap;
 std::shared_mutex BGcontroller::mBgLock;
 
-BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
+BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 {
 	std::lock_guard<std::shared_mutex> writeLock(mBgLock);
 	auto bGroupItr = mBGmap.find(bgID);
@@ -92,7 +95,7 @@ BGroup* BGcontroller::addToBG(TCPpeer* peer, const BGID& bgID)
 	}
 }
 
-void BGcontroller::removeFromBG(TCPpeer* peer, const BGID& bgID)
+void BGcontroller::removeFromBG(StreamPeer* peer, const BGID& bgID)
 {
 	std::lock_guard<std::shared_mutex> writeLock(mBgLock);
 	auto bGroupItr = mBGmap.find(bgID);

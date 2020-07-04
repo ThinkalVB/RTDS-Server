@@ -5,6 +5,7 @@
 #include <asio/error_code.hpp>
 #include <atomic>
 #include <shared_mutex>
+#include "message.h"
 
 class BGroup;
 class StreamPeer : public Peer
@@ -17,6 +18,7 @@ protected:
 	BGID mBgID;										// Broadcast group ID
 	BGT mBgTag;										// Broadcast group Tag
 	SAP mSApair;									// SAP string of the peer
+	PeerType mPeerType;								// Peer Type of the peer
 
 	std::shared_mutex mPeerResourceMtx;				// Mutex for locking the shared resources
 	bool mPeerIsActive;								// True if the peer socket is operational
@@ -26,10 +28,21 @@ protected:
 	~StreamPeer();
 
 public:
+	virtual void sendMessage(const Message*) = 0;
+/*******************************************************************************************
+* @brief Get the peer type
+*
+* @return			Peer type
+*
+* @details
+* Send NOT_IN_BG if peer is not in a broadcast group
+* Send SUCCESS if the changing was success
+********************************************************************************************/
+	const PeerType peerType() const;
 /*******************************************************************************************
 * @brief Get the total Global Peer count
 ********************************************************************************************/
-	int getPeerCount();
+	int getPeerCount() const;
 /*******************************************************************************************
 * @brief Disconnect the peer and delete the object
 ********************************************************************************************/
@@ -57,6 +70,29 @@ public:
 * @param[in]			Response
 ********************************************************************************************/
 	void respondWith(const Response);
+/*******************************************************************************************
+* @brief Start listening to a brodcast group
+*
+* @param[in]			Broadcast Group ID
+* @param[in]			Broadcast Group Tag
+*
+* @details
+* Send WAIT_RETRY if peer failed to join the broadcast group
+* Send SUCCESS if the joining was success
+* All group members are notified
+********************************************************************************************/
+	void listenTo(const std::string_view&, const std::string_view&);
+/*******************************************************************************************
+* @brief Leave the brodcast group
+********************************************************************************************/
+	void leaveBG();
+/*******************************************************************************************
+* @brief Broadcast a message to the group
+*
+* @param[in]			Message
+* @param[in]			Broadcast Group Tag
+********************************************************************************************/
+	void broadcastTo(const std::string_view&, const std::string_view&);
 };
 
 #endif

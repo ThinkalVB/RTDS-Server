@@ -118,7 +118,8 @@ enum class PeerType
 {
 	TCP,
 	UDP,
-	SSL
+	SSL,
+	NONE
 };
 
 #endif

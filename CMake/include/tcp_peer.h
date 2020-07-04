@@ -2,13 +2,12 @@
 #define TCP_PEER_H
 
 #include <asio/ip/tcp.hpp>
-#include <shared_mutex>
-#include "message.h"
 #include "stream_peer.h"
 
 class TCPpeer : public StreamPeer
 {		
 	asio::ip::tcp::socket* mPeerSocket;		// Socket handling the data from peer system
+
 /*******************************************************************************************
 * @brief Shedule a send for dataBuffer contents to the peer system
 *
@@ -51,7 +50,7 @@ class TCPpeer : public StreamPeer
 /*******************************************************************************************
 * @brief This callback function will be called after sending message
 *
-* @param[in] ec					Asio error code
+* @param[in] ec			Asio error code
 *
 * @details
 * If ec state a error in connection, signal peer object to be deleted.
@@ -88,41 +87,6 @@ public:
 * The callback function will be called even if thier is a error in tcp connection.
 ********************************************************************************************/
 	void sendMessage(const Message*);
-
-/*******************************************************************************************
-* @brief Start listening to a brodcast group
-*
-* @param[in]			Broadcast Group ID
-* @param[in]			Broadcast Group Tag
-*
-* @details
-* Send WAIT_RETRY if peer failed to join the broadcast group
-* Send SUCCESS if the joining was success 
-* All group members are notified
-********************************************************************************************/
-	void listenTo(const std::string_view&, const std::string_view&);
-/*******************************************************************************************
-* @brief Start hearing to a brodcast group
-*
-* @param[in]			Broadcast Group ID
-* @param[in]			Broadcast Group Tag
-*
-* @details
-* Send WAIT_RETRY if peer failed to join the broadcast group
-* Send SUCCESS if the joining was success
-********************************************************************************************/
-	void hearTo(const std::string_view&, const std::string_view&);
-/*******************************************************************************************
-* @brief Leave the brodcast group
-********************************************************************************************/
-	void leaveBG();
-/*******************************************************************************************
-* @brief Broadcast a message to the group
-*
-* @param[in]			Message
-* @param[in]			Broadcast Group Tag
-********************************************************************************************/
-	void broadcastTo(const std::string_view&, const std::string_view&);
 };
 
 #endif

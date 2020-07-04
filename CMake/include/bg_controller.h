@@ -1,21 +1,16 @@
 #ifndef BG_CONTROLLER_H
 #define BG_CONTROLLER_H
 
-#include <shared_mutex>
 #include <vector>
 #include <map>
-
-#include "tcp_peer.h"
-#include "udp_peer.h"
-#include "message.h"
+#include "stream_peer.h"
 
 class BGroupUnrestricted
 {
 protected:
 	std::string mBgID;								// Broadcast Group ID
-
 	std::shared_mutex mTCPpeerListLock;				// Peer list lock
-	std::vector<TCPpeer*> mTCPpeerList;				// Peers in the Broadcast group
+	std::vector<StreamPeer*> mTCPpeerList;			// Peers in the Broadcast group
 
 public:
 /*******************************************************************************************
@@ -23,13 +18,13 @@ public:
 *
 * @param[in]			Pointer to the peer
 ********************************************************************************************/
-	void addPeer(TCPpeer*);
+	void addPeer(StreamPeer*);
 /*******************************************************************************************
 * @brief Remove a peer from the peer list
 *
 * @param[in]			Pointer to the peer
 ********************************************************************************************/
-	void removePeer(TCPpeer*);
+	void removePeer(StreamPeer*);
 /*******************************************************************************************
 * @brief Constructor
 *
@@ -60,7 +55,7 @@ public:
 * @param[in]			Message
 * @param[in]			Broadcast Group Tag (for tag specific broadcast)
 ********************************************************************************************/
-	void broadcast(TCPpeer*, const Message*);
+	void broadcast(StreamPeer*, const Message*);
 };
 
 class BGcontroller
@@ -78,14 +73,14 @@ public:
 * @details
 * Return null pointer if the operation fails
 ********************************************************************************************/
-	static BGroup* addToBG(TCPpeer*, const BGID&);
+	static BGroup* addToBG(StreamPeer*, const BGID&);
 /*******************************************************************************************
 * @brief Remove a peer from the broadcast group
 *
 * @param[in]			Peer
 * @param[in]			Broadcast Group ID
 ********************************************************************************************/
-	static void removeFromBG(TCPpeer*, const BGID&);
+	static void removeFromBG(StreamPeer*, const BGID&);
 /*******************************************************************************************
 * @brief Broadcast a message to all peers in the peer list
 *
