@@ -30,9 +30,7 @@ mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v4(), ccmPort), m
 
 RTDS::~RTDS()
 {
-	if (mServerRunning)
-		mStopServer();
-	mCloseSockets();
+	mStopServer();
 	mIOcontext.stop();
 	do {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -64,9 +62,21 @@ void RTDS::mStartServer()
 void RTDS::mStopServer()
 {
 	mServerRunning = false;
-	mStopTCPserver();
-	mStopUDPserver();
-	mStopCCMserver();
+	DEBUG_LOG(Log::log("Server stopping, canceling and closing sockets...");)
+		try {
+		mUDPsock.cancel();
+		mUDPsock.close();
+		DEBUG_LOG(Log::log("UDP socket closed");)
+		mTCPacceptor.cancel();
+		mTCPacceptor.close();
+		DEBUG_LOG(Log::log("TCP acceptor closed");)
+		mCCMacceptor.cancel();
+		mCCMacceptor.close();
+		DEBUG_LOG(Log::log("CCM acceptor closed");)
+	}
+	catch (const asio::error_code ec)
+	{	DEBUG_LOG(Log::log("Failed to close sockets - ", ec.message());)	}
+	DEBUG_LOG(Log::log("Server sockets closed");)
 }
 
 void RTDS::mConfigTCPserver()
@@ -179,20 +189,20 @@ void RTDS::mTCPacceptRoutine()
 			mTCPacceptor.accept(*peerSocket);
 			DEBUG_LOG(Log::log("TCP socket accepted connection");)
 			peerSocket->set_option(keepAlive);
-			DEBUG_LOG(Log::log("CCM socket option keepAlive set");)
+			DEBUG_LOG(Log::log("TCP socket option keepAlive set");)
 			peerSocket->set_option(connAbortSignal);
-			DEBUG_LOG(Log::log("CCM socket option connAbortSignal set");)
+			DEBUG_LOG(Log::log("TCP socket option connAbortSignal set");)
 			new TCPpeer(peerSocket);
-			DEBUG_LOG(Log::log("CCM peer created");)
+			DEBUG_LOG(Log::log("TCP peer created");)
 		}
 		catch (const std::runtime_error& ec)
 		{
-			DEBUG_LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
+			DEBUG_LOG(Log::log("Cannot allocate TCP peer/socket - ", ec.what());)
 			peerIsGood = false;
 		}
 		catch (const asio::error_code& ec)
 		{
-			DEBUG_LOG(Log::log("Failed to configure CCM peer - ", ec.message());)
+			DEBUG_LOG(Log::log("Failed to configure TCP peer - ", ec.message());)
 			peerIsGood = false;
 		}
 
@@ -227,92 +237,41 @@ void RTDS::mUDPlistenRoutine()
 void RTDS::mCCMacceptRoutine()
 {
 	mThreadCount++;
+	asio::socket_base::keep_alive keepAlive(true);
+	asio::socket_base::enable_connection_aborted connAbortSignal(true);
+
 	while (mServerRunning)
 	{
-
-
-		auto peerSocket = new (std::nothrow) SSLsocket(mIOcontext, mCCMcontext);
-		if (peerSocket == nullptr)
+		SSLsocket* peerSocket = nullptr;
+		bool peerIsGood = true;
+		try
 		{
-			LOG(Log::log("CCM Peer socket bad allocation");)
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-			continue;
+			auto peerSocket = new SSLsocket(mIOcontext, mCCMcontext);
+			DEBUG_LOG(Log::log("CCM socket created");)
+			mCCMacceptor.accept(peerSocket->lowest_layer());
+			DEBUG_LOG(Log::log("CCM socket accepted connection");)
+			peerSocket->lowest_layer().set_option(keepAlive);
+			DEBUG_LOG(Log::log("CCM socket option keepAlive set");)
+			peerSocket->lowest_layer().set_option(connAbortSignal);
+			DEBUG_LOG(Log::log("CCM socket option connAbortSignal set");)
+			peerSocket->handshake(asio::ssl::stream_base::server);
+			DEBUG_LOG(Log::log("CCM socket handshake success");)
+			new SSLccm(peerSocket);
+			DEBUG_LOG(Log::log("CCM peer created");)
+		}
+		catch (const std::runtime_error& ec)
+		{
+			DEBUG_LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
+			peerIsGood = false;
+		}
+		catch (const asio::error_code& ec)
+		{
+			DEBUG_LOG(Log::log("Failed to configure CCM peer - ", ec.message());)
+			peerIsGood = false;
 		}
 
-		asio::error_code ec;
-		mCCMacceptor.accept(peerSocket->lowest_layer(), ec);
-		if (ec)
-		{
-			if (mServerRunning) { DEBUG_LOG(Log::log("CCM Acceptor failed - ", ec.message());)	}
+		if (!peerIsGood && peerSocket != nullptr)
 			delete peerSocket;
-		}
-		else
-		{
-			peerSocket->handshake(asio::ssl::stream_base::server, ec);
-			if (ec)
-			{	
-				DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)
-				delete peerSocket;
-			}
-			else
-			{
-				asio::socket_base::keep_alive keepAlive(true);
-				asio::socket_base::enable_connection_aborted connAbortSignal(true);
-				try {
-					peerSocket->lowest_layer().set_option(keepAlive);
-					peerSocket->lowest_layer().set_option(connAbortSignal);
-				}
-				catch (asio::error_code& ec)
-				{	DEBUG_LOG(Log::log("CCM set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
-
-				auto peer = new (std::nothrow) SSLccm(peerSocket);
-				if (peer == nullptr)
-				{
-					LOG(Log::log("Peer memmory bad allocation");)
-					delete peerSocket;
-				}
-			}
-		}
 	}
 	mThreadCount--;
-}
-
-void RTDS::mStopUDPserver()
-{
-	asio::error_code ec;
-	mUDPsock.cancel(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("UDP socket cannot cancel - ", ec.message());)	}
-}
-
-void RTDS::mStopTCPserver()
-{
-	asio::error_code ec;
-	mTCPacceptor.cancel(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("TCP acceptor cannot cancel - ", ec.message());)	}
-}
-
-void RTDS::mStopCCMserver()
-{
-	asio::error_code ec;
-	mCCMacceptor.cancel(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("SSL acceptor cannot cancel - ", ec.message());)	}
-}
-
-void RTDS::mCloseSockets()
-{
-	asio::error_code ec;
-	mUDPsock.close(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	}
-
-	mTCPacceptor.close(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	}
-
-	mCCMacceptor.close(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("SSL socket cannot close - ", ec.message());)	}
 }

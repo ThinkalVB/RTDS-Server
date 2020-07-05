@@ -38,11 +38,6 @@ class RTDS
 	void mUDPlistenRoutine();
 	void mCCMacceptRoutine();
 
-	void mStopUDPserver();
-	void mStopTCPserver();
-	void mStopCCMserver();
-	void mCloseSockets();
-
 	void mStartServer();
 	void mStopServer();
 
