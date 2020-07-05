@@ -54,7 +54,7 @@ void RTDS::mStartServer()
 		ioThreadSR.detach();
 		DEBUG_LOG(Log::log("New thread to UDP, TCP & CCM routines");)
 	}
-	catch (std::runtime_error& ec)
+	catch (const std::runtime_error& ec)
 	{
 		LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
 		exit(0);
@@ -80,7 +80,7 @@ void RTDS::mConfigTCPserver()
 		mTCPacceptor.listen(asio::socket_base::max_listen_connections);
 		DEBUG_LOG(Log::log("TCP acceptor started listening");)
 	}
-	catch (asio::error_code ec)
+	catch (const asio::error_code ec)
 	{
 		LOG(Log::log("Failed to configure TCP server - ", ec.message());)
 		exit(0);
@@ -97,7 +97,7 @@ void RTDS::mConfigUDPserver()
 		mUDPsock.bind(mUDPep);
 		DEBUG_LOG(Log::log("UDP acceptor bound to endpoint");)
 	}
-	catch (asio::error_code& ec)
+	catch (const asio::error_code& ec)
 	{
 		LOG(Log::log("Failed to configure UDP server - ", ec.message());)
 		exit(0);
@@ -125,7 +125,7 @@ void RTDS::mConfigCCMserver()
 		mCCMacceptor.listen(asio::socket_base::max_listen_connections);
 		DEBUG_LOG(Log::log("CCM acceptor started listening");)
 	}
-	catch (asio::error_code ec)
+	catch (const asio::error_code ec)
 	{
 		LOG(Log::log("Failed to configure CCM server - ", ec.message());)
 		exit(0);
@@ -154,7 +154,7 @@ void RTDS::mAddthread(int threadCount)
 			ioThread.detach();
 			DEBUG_LOG(Log::log("New thread added to ioContext");)
 		}
-		catch (std::runtime_error& ec)
+		catch (const std::runtime_error& ec)
 		{
 			LOG(Log::log("Cannot spawn IO Thread - ", ec.what());)
 			exit(0);
@@ -165,42 +165,39 @@ void RTDS::mAddthread(int threadCount)
 void RTDS::mTCPacceptRoutine()
 {
 	mThreadCount++;
+	asio::socket_base::keep_alive keepAlive(true);
+	asio::socket_base::enable_connection_aborted connAbortSignal(true);
+
 	while (mServerRunning)
 	{
-		auto peerSocket = new (std::nothrow) asio::ip::tcp::socket(mIOcontext);
-		if (peerSocket == nullptr)
+		asio::ip::tcp::socket* peerSocket = nullptr;
+		bool peerIsGood = true;
+		try
 		{
-			LOG(Log::log("TCP Peer socket bad allocation");)
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-			continue;
+			peerSocket = new asio::ip::tcp::socket(mIOcontext);
+			DEBUG_LOG(Log::log("TCP socket created");)
+			mTCPacceptor.accept(*peerSocket);
+			DEBUG_LOG(Log::log("TCP socket accepted connection");)
+			peerSocket->set_option(keepAlive);
+			DEBUG_LOG(Log::log("CCM socket option keepAlive set");)
+			peerSocket->set_option(connAbortSignal);
+			DEBUG_LOG(Log::log("CCM socket option connAbortSignal set");)
+			new TCPpeer(peerSocket);
+			DEBUG_LOG(Log::log("CCM peer created");)
+		}
+		catch (const std::runtime_error& ec)
+		{
+			DEBUG_LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
+			peerIsGood = false;
+		}
+		catch (const asio::error_code& ec)
+		{
+			DEBUG_LOG(Log::log("Failed to configure CCM peer - ", ec.message());)
+			peerIsGood = false;
 		}
 
-		asio::error_code ec;
-		mTCPacceptor.accept(*peerSocket, ec);
-		if (ec)
-		{
-			if (mServerRunning) { DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)	}
+		if (!peerIsGood && peerSocket != nullptr)
 			delete peerSocket;
-		}
-		else
-		{
-			asio::socket_base::keep_alive keepAlive(true);
-			asio::socket_base::enable_connection_aborted connAbortSignal(true);
-			try {
-				peerSocket->set_option(keepAlive);
-				peerSocket->set_option(connAbortSignal);
-			}
-			catch (asio::error_code& ec)
-			{	DEBUG_LOG(Log::log("TCP set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
-
-			auto peer = new (std::nothrow) TCPpeer(peerSocket);
-			if (peer == nullptr)
-			{
-				LOG(Log::log("TCP Peer memmory bad allocation");)
-				peerSocket->close();
-				delete peerSocket;
-			}
-		}
 	}
 	mThreadCount--;
 }
@@ -232,45 +229,46 @@ void RTDS::mCCMacceptRoutine()
 	mThreadCount++;
 	while (mServerRunning)
 	{
+
+
 		auto peerSocket = new (std::nothrow) SSLsocket(mIOcontext, mCCMcontext);
 		if (peerSocket == nullptr)
 		{
-			LOG(Log::log("SSL Peer socket bad allocation");)
+			LOG(Log::log("CCM Peer socket bad allocation");)
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 			continue;
 		}
 
 		asio::error_code ec;
-		mCCMacceptor.accept((*peerSocket).lowest_layer(), ec);
+		mCCMacceptor.accept(peerSocket->lowest_layer(), ec);
 		if (ec)
 		{
-			if (mServerRunning) {
-				DEBUG_LOG(Log::log("SSL Acceptor failed - ", ec.message());)
-			}
+			if (mServerRunning) { DEBUG_LOG(Log::log("CCM Acceptor failed - ", ec.message());)	}
 			delete peerSocket;
 		}
 		else
 		{
-			asio::socket_base::keep_alive keepAlive(true);
-			asio::socket_base::enable_connection_aborted connAbortSignal(true);
-			peerSocket->lowest_layer().set_option(keepAlive, ec);
-			if (ec)
-			{	DEBUG_LOG(Log::log("SSL set_option(keepAlive) failed - ", ec.message());)	}
-
-			peerSocket->lowest_layer().set_option(connAbortSignal, ec);
-			if (ec)
-			{	DEBUG_LOG(Log::log("SSL set_option(connAbortSignal) failed - ", ec.message());)	}
-
 			peerSocket->handshake(asio::ssl::stream_base::server, ec);
 			if (ec)
-			{	DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)	}
+			{	
+				DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)
+				delete peerSocket;
+			}
 			else
 			{
+				asio::socket_base::keep_alive keepAlive(true);
+				asio::socket_base::enable_connection_aborted connAbortSignal(true);
+				try {
+					peerSocket->lowest_layer().set_option(keepAlive);
+					peerSocket->lowest_layer().set_option(connAbortSignal);
+				}
+				catch (asio::error_code& ec)
+				{	DEBUG_LOG(Log::log("CCM set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
+
 				auto peer = new (std::nothrow) SSLccm(peerSocket);
 				if (peer == nullptr)
 				{
 					LOG(Log::log("Peer memmory bad allocation");)
-						peerSocket->shutdown();
 					delete peerSocket;
 				}
 			}
