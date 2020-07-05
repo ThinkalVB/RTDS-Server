@@ -3,6 +3,7 @@
 
 #include "peer.h"
 #include <asio/error_code.hpp>
+#include <asio/ip/tcp.hpp>
 #include <atomic>
 #include <shared_mutex>
 #include "message.h"
@@ -24,8 +25,20 @@ protected:
 	bool mPeerIsActive;								// True if the peer socket is operational
 	bool mIsInBG;									// True if this peer is in Broadcast Group
 
+/*******************************************************************************************
+* @brief Constructor [Increment global peer count]
+********************************************************************************************/
 	StreamPeer();
+/*******************************************************************************************
+* @brief Distructor [Decrement the global peer count]
+********************************************************************************************/
 	~StreamPeer();
+/*******************************************************************************************
+* @brief Make the socket stable (signal keep_alive and connection_aborted)
+*
+* @param[in]			Pointer to the peer's socket
+********************************************************************************************/
+	void mMakeSocketStable(asio::ip::tcp::socket*);
 
 public:
 	virtual void sendMessage(const Message*) = 0;
@@ -43,6 +56,7 @@ public:
 * @brief Get the total Global Peer count
 ********************************************************************************************/
 	int getPeerCount() const;
+
 /*******************************************************************************************
 * @brief Disconnect the peer and delete the object
 ********************************************************************************************/
@@ -93,6 +107,13 @@ public:
 * @param[in]			Broadcast Group Tag
 ********************************************************************************************/
 	void broadcastTo(const std::string_view&, const std::string_view&);
+/*******************************************************************************************
+* @brief Message to a group (with SAP string)
+*
+* @param[in]			Message
+* @param[in]			Broadcast Group Tag
+********************************************************************************************/
+	void messageTo(const std::string_view&, const std::string_view&);
 };
 
 #endif

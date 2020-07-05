@@ -6,8 +6,9 @@
 
 TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr)
 {
-	mSApair = CmdProcessor::getSAPstring(socketPtr->remote_endpoint());
 	mPeerSocket = socketPtr;
+	mMakeSocketStable(socketPtr);
+	mSApair = CmdProcessor::getSAPstring(socketPtr->remote_endpoint());
 	mPeerType = PeerType::TCP;
 
 	DEBUG_LOG(Log::log(mSApair," TCP Peer Connected");)

@@ -8,9 +8,9 @@
 
 #define RTDS_DUAL_STACK					// Enable IPV6 support (use ::1 for local host)
 #define RDTS_DEF_PORT 321				// Default RTDS port number
-#define RTDS_DEF_CCM_PORT 322			// Default CCM port number
+#define RTDS_DEF_CCM_PORT 333			// Default CCM port number
 #define MAX_THREAD_COUNT 28				// Maximum Thread Count
-#define MIN_THREAD_COUNT 4				// Minimum Thread Count
+#define MIN_THREAD_COUNT 2				// Minimum Thread Count
 #define MAX_PORT_NUM_VALUE 65535		// Maximum value for port number
 
 #ifndef NDEBUG
@@ -86,6 +86,7 @@ enum class Response
 enum class Command
 {
 	BROADCAST,
+	MESSAGE,
 	PING,
 	LISTEN,
 	LEAVE,

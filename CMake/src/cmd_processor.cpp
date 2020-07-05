@@ -15,6 +15,7 @@ const std::string CmdProcessor::RESP[] =
 const std::string CmdProcessor::COMM[] =
 {
 	"broadcast",
+	"message",
 	"ping",
 	"listen",
 	"leave",
@@ -155,16 +156,19 @@ void CmdProcessor::processCommand(TCPpeer& peer)
 {
 	auto commandStr = peer.getCommandString();
 	auto command = extractElement(commandStr);
-	if (command == COMM[(short)Command::PING])
-		mTCP_ping(peer, commandStr);
+
+	if (command == COMM[(short)Command::BROADCAST])
+		mTCP_broadcast(peer, commandStr);
+	else if (command == COMM[(short)Command::MESSAGE])
+		mTCP_message(peer, commandStr);
+	else if (command == COMM[(short)Command::CHANGE])
+		mTCP_change(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
 		mTCP_listen(peer, commandStr);
 	else if (command == COMM[(short)Command::LEAVE])
 		mTCP_leave(peer, commandStr);
-	else if (command == COMM[(short)Command::CHANGE])
-		mTCP_change(peer, commandStr);
-	else if (command == COMM[(short)Command::BROADCAST])
-		mTCP_broadcast(peer, commandStr);
+	else if (command == COMM[(short)Command::PING])
+		mTCP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::EXIT])
 		mTCP_exit(peer, commandStr);
 	else
@@ -187,6 +191,21 @@ void CmdProcessor::mTCP_broadcast(TCPpeer& peer, std::string_view& commandStr)
 	{
 		if (isBroadcastTag(bgTag))
 			peer.broadcastTo(message, bgTag);
+		else
+			peer.respondWith(Response::BAD_PARAM);
+	}
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::mTCP_message(TCPpeer& peer, std::string_view& commandStr)
+{
+	auto message = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
+	if (isBmessage(message) && commandStr.empty())
+	{
+		if (isBroadcastTag(bgTag))
+			peer.messageTo(message, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
 	}
@@ -234,10 +253,13 @@ void CmdProcessor::processCommand(UDPpeer& peer)
 {
 	auto commandStr = peer.getCommandString();
 	auto command = extractElement(commandStr);
-	if (command == COMM[(short)Command::PING])
-		mUDP_ping(peer, commandStr);
-	else if (command == COMM[(short)Command::BROADCAST])
+	
+	if (command == COMM[(short)Command::BROADCAST])
 		mUDP_broadcast(peer, commandStr);
+	else if (command == COMM[(short)Command::MESSAGE])
+		mUDP_message(peer, commandStr);
+	else if (command == COMM[(short)Command::PING])
+		mUDP_ping(peer, commandStr);
 	else if (command == COMM[(short)Command::LISTEN])
 		peer.respondWith(Response::NOT_ALLOWED);
 	else if (command == COMM[(short)Command::LEAVE])
@@ -267,7 +289,24 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr)
 	if (isBmessage(message) && commandStr.empty())
 	{
 		if (isUDPcompatibleTag(bgTag) && isBGID(bgID))
-			peer.broadcast(message, bgID, bgTag);
+			peer.broadcastTo(message, bgID, bgTag);
+		else
+			peer.respondWith(Response::BAD_PARAM);
+	}
+	else
+		peer.respondWith(Response::BAD_PARAM);
+}
+
+void CmdProcessor::mUDP_message(UDPpeer& peer, std::string_view& commandStr)
+{
+	auto message = extractElement(commandStr);
+	auto bgID = extractElement(commandStr);
+	auto bgTag = extractElement(commandStr);
+
+	if (isBmessage(message) && commandStr.empty())
+	{
+		if (isUDPcompatibleTag(bgTag) && isBGID(bgID))
+			peer.messageTo(message, bgID, bgTag);
 		else
 			peer.respondWith(Response::BAD_PARAM);
 	}

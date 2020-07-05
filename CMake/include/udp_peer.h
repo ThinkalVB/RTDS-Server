@@ -37,8 +37,6 @@ public:
 /*******************************************************************************************
 * @brief Print the source address pair info to the buffer
 *
-* @param[in]			Response Buffer
-*
 * @details
 * Print Version, IP address and port number
 ********************************************************************************************/
@@ -47,7 +45,6 @@ public:
 * @brief Send response to the peer
 *
 * @param[in]			Response
-* @param[in]			Response Buffer
 ********************************************************************************************/
 	void respondWith(const Response);
 /*******************************************************************************************
@@ -56,9 +53,16 @@ public:
 * @param[in]			Message
 * @param[in]			Broadcast Group ID
 * @param[in]			Broadcast Group Tag
-* @param[in]			Replay Buffer
 ********************************************************************************************/
-	void broadcast(const std::string_view&, const std::string_view&, const std::string_view&);
+	void broadcastTo(const std::string_view&, const std::string_view&, const std::string_view&);
+/*******************************************************************************************
+* @brief Broadcast a message to the group (with sap string)
+*
+* @param[in]			Message
+* @param[in]			Broadcast Group ID
+* @param[in]			Broadcast Group Tag
+********************************************************************************************/
+	void messageTo(const std::string_view&, const std::string_view&, const std::string_view&);
 };
 
 #endif

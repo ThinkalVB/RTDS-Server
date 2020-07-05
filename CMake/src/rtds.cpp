@@ -1,30 +1,30 @@
 ﻿#include "rtds.h"
 #include <thread>
-#include "udp_peer.h"
 #include "cmd_processor.h"
-#include "advanced_buffer.h"
+#include "log.h"
+
+#include "udp_peer.h"
 #include "tcp_peer.h"
 #include "ssl_ccm.h"
-#include "log.h"
 
 #ifdef RTDS_DUAL_STACK
 RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v6(), portNumber),
-mUDPep(asio::ip::udp::v6(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
-mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v6(), ccmPort), mSSLacceptor(mIOcontext)
+mUDPep(asio::ip::udp::v6(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mIOworker(mIOcontext), 
+mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v6(), ccmPort), mCCMacceptor(mIOcontext)
 #else 
 RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v4(), portNumber),
 mUDPep(asio::ip::udp::v4(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
-mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v4(), ccmPort), mSSLacceptor(mIOcontext)
+mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v4(), ccmPort), mCCMacceptor(mIOcontext)
 #endif
 {
 	START_LOG
 	DEBUG_LOG(Log::log("............... RTDS Log ..............");)
 	DEBUG_LOG(Log::log("RTDS Port : ", portNumber);)
 	mThreadCount = 0;
-	mAddthread(threadCount - 3);
+	mAddthread(threadCount);
 	mConfigTCPserver();
 	mConfigUDPserver();
-	mConfigSSLserver();
+	mConfigCCMserver();
 	mStartServer();
 }
 
@@ -48,11 +48,11 @@ void RTDS::mStartServer()
 	try {
 		std::thread ioThreadLR(&RTDS::mUDPlistenRoutine, this);
 		std::thread ioThreadAR(&RTDS::mTCPacceptRoutine, this);
-		std::thread ioThreadSR(&RTDS::mSSLacceptRoutine, this);
+		std::thread ioThreadSR(&RTDS::mCCMacceptRoutine, this);
 		ioThreadLR.detach();
 		ioThreadAR.detach();
 		ioThreadSR.detach();
-		DEBUG_LOG(Log::log("New thread to UDP, TCP & SSL routines");)
+		DEBUG_LOG(Log::log("New thread to UDP, TCP & CCM routines");)
 	}
 	catch (std::runtime_error& ec)
 	{
@@ -66,115 +66,71 @@ void RTDS::mStopServer()
 	mServerRunning = false;
 	mStopTCPserver();
 	mStopUDPserver();
-	mStopSSLserver();
+	mStopCCMserver();
 }
 
 void RTDS::mConfigTCPserver()
 {
-	asio::error_code ec;
-	mTCPacceptor.open(mTCPep.protocol(), ec);
-	if (ec)
+	DEBUG_LOG(Log::log("TCP server configuring...");)
+	try {
+		mTCPacceptor.open(mTCPep.protocol());
+		DEBUG_LOG(Log::log("TCP acceptor open");)
+		mTCPacceptor.bind(mTCPep);
+		DEBUG_LOG(Log::log("TCP acceptor bound to endpoint");)
+		mTCPacceptor.listen(asio::socket_base::max_listen_connections);
+		DEBUG_LOG(Log::log("TCP acceptor started listening");)
+	}
+	catch (asio::error_code ec)
 	{
-		LOG(Log::log("Failed to open TCP acceptor - ", ec.message());)
+		LOG(Log::log("Failed to configure TCP server - ", ec.message());)
 		exit(0);
 	}
-	DEBUG_LOG(Log::log("TCP acceptor open");)
-
-	mTCPacceptor.bind(mTCPep, ec);
-	if (ec)
-	{
-		mTCPacceptor.close();
-		LOG(Log::log("Failed to bind TCP acceptor - ", ec.message());)
-	}
-	DEBUG_LOG(Log::log("TCP acceptor binded to endpoint");)
-
-	mTCPacceptor.listen(asio::socket_base::max_listen_connections, ec);
-	if (ec)
-	{
-		mTCPacceptor.close();
-		LOG(Log::log("TCP acceptor cannot listen to port - ", ec.message());)
-		exit(0);
-	}
-	DEBUG_LOG(Log::log("TCP acceptor listening to port");)
+	DEBUG_LOG(Log::log("TCP server configured");)
 }
 
 void RTDS::mConfigUDPserver()
 {
-	asio::error_code ec;
-	mUDPsock.open(mUDPep.protocol(), ec);
-	if (ec)
+	DEBUG_LOG(Log::log("UDP socket configuring...");)
+	try {
+		mUDPsock.open(mUDPep.protocol());
+		DEBUG_LOG(Log::log("UDP acceptor open");)
+		mUDPsock.bind(mUDPep);
+		DEBUG_LOG(Log::log("UDP acceptor bound to endpoint");)
+	}
+	catch (asio::error_code& ec)
 	{
-		LOG(Log::log("Failed to open UDP acceptor - ", ec.message());)
+		LOG(Log::log("Failed to configure UDP server - ", ec.message());)
 		exit(0);
 	}
-	DEBUG_LOG(Log::log("UDP sock open");)
-
-	mUDPsock.bind(mUDPep, ec);
-	if (ec)
-	{
-		mUDPsock.close();
-		LOG(Log::log("Failed to bind UDP socket - ", ec.message());)
-		exit(0);
-	}
-	DEBUG_LOG(Log::log("UDP socket binded to endpoint");)
+	DEBUG_LOG(Log::log("UDP socket configured");)
 }
 
-void RTDS::mConfigSSLserver()
+void RTDS::mConfigCCMserver()
 {
-	asio::error_code ec;
-	mSSLcontext.set_options(asio::ssl::context::default_workarounds
-		| asio::ssl::context::no_sslv2 | asio::ssl::context::single_dh_use, ec);
-	if (ec)
+	DEBUG_LOG(Log::log("CCM server configuring...");)
+		try {
+		mCCMcontext.set_options(asio::ssl::context::default_workarounds
+			| asio::ssl::context::no_sslv2 | asio::ssl::context::single_dh_use);
+		DEBUG_LOG(Log::log("CCM context options configured");)
+		mCCMcontext.use_certificate_file("server_cert.pem", asio::ssl::context::pem);
+		DEBUG_LOG(Log::log("CCM SSL certificate loaded");)
+		mCCMcontext.use_private_key_file("server_cert.pem", asio::ssl::context::pem);
+		DEBUG_LOG(Log::log("CCM SSL private key loaded");)
+		mCCMcontext.use_tmp_dh_file("dh2048.pem");
+		DEBUG_LOG(Log::log("CCM SSL DH files loaded");)
+		mCCMacceptor.open(mCCMep.protocol());
+		DEBUG_LOG(Log::log("CCM acceptor open");)
+		mCCMacceptor.bind(mCCMep);
+		DEBUG_LOG(Log::log("CCM acceptor bound to endpoint");)
+		mCCMacceptor.listen(asio::socket_base::max_listen_connections);
+		DEBUG_LOG(Log::log("CCM acceptor started listening");)
+	}
+	catch (asio::error_code ec)
 	{
-		LOG(Log::log("Failed to set SSL options - ", ec.message());)
+		LOG(Log::log("Failed to configure CCM server - ", ec.message());)
 		exit(0);
 	}
-
-	mSSLcontext.use_certificate_file("server_cert.pem", asio::ssl::context::pem, ec);
-	if (ec)
-	{
-		LOG(Log::log("Failed to use SSL certificate - ", ec.message());)
-		exit(0);
-	}
-
-	mSSLcontext.use_private_key_file("server_cert.pem", asio::ssl::context::pem, ec);
-	if (ec)
-	{
-		LOG(Log::log("Failed to set SSL Private key - ", ec.message());)
-		exit(0);
-	}
-
-	mSSLcontext.use_tmp_dh_file("dh2048.pem", ec);
-	if (ec)
-	{
-		LOG(Log::log("Failed to DH512 - ", ec.message());)
-		exit(0);
-	}
-
-	mSSLacceptor.open(mTCPep.protocol(), ec);
-	if (ec)
-	{
-		LOG(Log::log("Failed to open SSL acceptor - ", ec.message());)
-		exit(0);
-	}
-	DEBUG_LOG(Log::log("SSL acceptor open");)
-
-	mSSLacceptor.bind(mSSLep, ec);
-	if (ec)
-	{
-		mTCPacceptor.close();
-		LOG(Log::log("Failed to bind SSL acceptor - ", ec.message());)
-	}
-	DEBUG_LOG(Log::log("SSL acceptor binded to endpoint");)
-
-	mSSLacceptor.listen(asio::socket_base::max_listen_connections, ec);
-	if (ec)
-	{
-		mSSLacceptor.close();
-		LOG(Log::log("SSL acceptor cannot listen to port - ", ec.message());)
-		exit(0);
-	}
-	DEBUG_LOG(Log::log("SSL acceptor listening to port");)
+	DEBUG_LOG(Log::log("CCM server configured");)
 }
 
 void RTDS::mIOthreadJob()
@@ -230,22 +186,11 @@ void RTDS::mTCPacceptRoutine()
 		}
 		else
 		{
-			asio::socket_base::keep_alive keepAlive(true);
-			asio::socket_base::enable_connection_aborted connAbortSignal(true);
-			peerSocket->set_option(keepAlive, ec);
-			if (ec)
-			{	DEBUG_LOG(Log::log("TCP set_option(keepAlive) failed - ", ec.message());)	}
-
-			peerSocket->set_option(connAbortSignal, ec);
-			if (ec)
-			{	DEBUG_LOG(Log::log("TCP set_option(connAbortSignal) failed - ", ec.message());)	}
-
 			auto peer = new (std::nothrow) TCPpeer(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("TCP Peer memmory bad allocation");)
 				peerSocket->close();
-				delete peerSocket;
 			}
 		}
 	}
@@ -262,11 +207,7 @@ void RTDS::mUDPlistenRoutine()
 	{
 		auto dataSize = mUDPsock.receive_from(udpPeer.getReadBuffer(), udpPeer.getRefToEndpoint(), 0, ec);
 		if (ec)
-		{	
-			if (mServerRunning) {
-				DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)
-			}
-		}
+		{	if (mServerRunning) { DEBUG_LOG(Log::log("UDP receive failed - ", ec.message());)	}}
 		else
 		{
 			if (udpPeer.cookString(dataSize))
@@ -278,12 +219,12 @@ void RTDS::mUDPlistenRoutine()
 	mThreadCount--;
 }
 
-void RTDS::mSSLacceptRoutine()
+void RTDS::mCCMacceptRoutine()
 {
 	mThreadCount++;
 	while (mServerRunning)
 	{
-		auto peerSocket = new (std::nothrow) SSLsocket(mIOcontext, mSSLcontext);
+		auto peerSocket = new (std::nothrow) SSLsocket(mIOcontext, mCCMcontext);
 		if (peerSocket == nullptr)
 		{
 			LOG(Log::log("SSL Peer socket bad allocation");)
@@ -292,7 +233,7 @@ void RTDS::mSSLacceptRoutine()
 		}
 
 		asio::error_code ec;
-		mSSLacceptor.accept((*peerSocket).lowest_layer(), ec);
+		mCCMacceptor.accept((*peerSocket).lowest_layer(), ec);
 		if (ec)
 		{
 			if (mServerRunning) {
@@ -308,7 +249,7 @@ void RTDS::mSSLacceptRoutine()
 			if (ec)
 			{	DEBUG_LOG(Log::log("SSL set_option(keepAlive) failed - ", ec.message());)	}
 
-			peerSocket->lowest_layer().set_option(connAbortSignal, ec);;
+			peerSocket->lowest_layer().set_option(connAbortSignal, ec);
 			if (ec)
 			{	DEBUG_LOG(Log::log("SSL set_option(connAbortSignal) failed - ", ec.message());)	}
 
@@ -344,10 +285,10 @@ void RTDS::mStopTCPserver()
 	{	DEBUG_LOG(Log::log("TCP acceptor cannot cancel - ", ec.message());)	}
 }
 
-void RTDS::mStopSSLserver()
+void RTDS::mStopCCMserver()
 {
 	asio::error_code ec;
-	mSSLacceptor.cancel(ec);
+	mCCMacceptor.cancel(ec);
 	if (ec)
 	{	DEBUG_LOG(Log::log("SSL acceptor cannot cancel - ", ec.message());)	}
 }
@@ -363,7 +304,7 @@ void RTDS::mCloseSockets()
 	if (ec)
 	{	DEBUG_LOG(Log::log("UDP socket cannot close - ", ec.message());)	}
 
-	mSSLacceptor.close(ec);
+	mCCMacceptor.close(ec);
 	if (ec)
 	{	DEBUG_LOG(Log::log("SSL socket cannot close - ", ec.message());)	}
 }

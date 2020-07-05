@@ -29,19 +29,17 @@ class Message
 * @details
 * Initialize the values of createdTime, message, tags, peer type.
 ********************************************************************************************/
-	template<typename MessageStr, typename BGTstrT1, typename BGTstrT2>
-	Message(const MessageStr& mssgStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType& pType)
+	template<typename MessageStr, typename BGTstr>
+	Message(const MessageStr& mssgStr, const BGTstr& rTag, const PeerType& pType)
 	{
 		mCreatedTime = std::chrono::system_clock::now();
 		messageBuf = mssgStr;
 		peerType = pType;
-		senderTag = sTag;
 		recverTag = rTag;
 	}
 public:
 
 	std::string messageBuf;						// Message string buffer
-	BGT senderTag;								// Senders tag value
 	BGT recverTag;								// Receivers tag
 	PeerType peerType;							// Type of peer generating this message
 /*******************************************************************************************
@@ -59,8 +57,8 @@ public:
 * @param[in]		Peer Type.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	template<typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeAddMsg(const SAP& sapStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	template<typename BGTstr>
+	static const Message* makeAddMsg(const SAP& sapStr, const BGTstr& rTag, const PeerType pType)
 	{
 		std::string addMssg;
 		if (pType == PeerType::TCP)
@@ -71,7 +69,7 @@ public:
 			addMssg = "[CU]";
 
 		addMssg += "\t" + sapStr + "\n";
-		auto message = new (std::nothrow) Message(addMssg, sTag, rTag, pType);
+		auto message = new (std::nothrow) Message(addMssg, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
 		else
@@ -89,8 +87,8 @@ public:
 * @param[in]		Peers Tag.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	template<typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeRemMsg(const SAP& sapStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	template<typename BGTstr>
+	static const Message* makeRemMsg(const SAP& sapStr, const BGTstr& rTag, const PeerType pType)
 	{
 		std::string remMssg;
 		if (pType == PeerType::TCP)
@@ -101,7 +99,7 @@ public:
 			remMssg = "[DU]";
 
 		remMssg += "\t" + sapStr + "\n";
-		auto message = new (std::nothrow) Message(remMssg, sTag, rTag, pType);
+		auto message = new (std::nothrow) Message(remMssg, rTag, pType);
 		if (message == nullptr)
 				return nullptr;
 		else
@@ -121,23 +119,55 @@ public:
 * @param[in]		Receivers Tag.
 * @return			Constant pointer to the message or nullptr.
 ********************************************************************************************/
-	template<typename MessageStr, typename BGTstrT1, typename BGTstrT2>
-	static const Message* makeBrdMsg(const SAP& sapStr, const MessageStr& mssgStr, const BGTstrT1& sTag, const BGTstrT2& rTag, const PeerType pType)
+	template<typename MessageStr, typename BGTstr>
+	static const Message* makeMsg(const SAP& sapStr, const MessageStr& mssgStr, const BGTstr& rTag, const PeerType pType)
 	{
 		std::string brdMssg;
 		if (pType == PeerType::TCP)
-			brdMssg = "[MT]";
+			brdMssg = "[BT]";
 		else if (pType == PeerType::SSL)
-			brdMssg = "[MS]";
+			brdMssg = "[BS]";
 		else
-			brdMssg = "[MU]";
+			brdMssg = "[BU]";
 
 		brdMssg += "\t" + sapStr + "\t";
 		brdMssg += mssgStr;
 		brdMssg += "\n";
 
-		Message* message;
-		message = new (std::nothrow) Message(brdMssg, sTag, rTag, pType);
+		auto message = new (std::nothrow) Message(brdMssg, rTag, pType);
+		if (message == nullptr)
+			return nullptr;
+		else
+		{
+			if (!insertMssg2Q(message))
+				return nullptr;
+			else
+				return message;
+		}
+	}
+/*******************************************************************************************
+* @brief Make a new Message
+*
+* @param[in]		Message.
+* @param[in]		Senders Tag.
+* @param[in]		Receivers Tag.
+* @return			Constant pointer to the message or nullptr.
+********************************************************************************************/
+	template<typename MessageStr, typename BGTstr>
+	static const Message* makeBrdMsg(const MessageStr& mssgStr, const BGTstr& rTag, const PeerType pType)
+	{
+		std::string brdMssg;
+		if (pType == PeerType::TCP)
+			brdMssg = "[BT]";
+		else if (pType == PeerType::SSL)
+			brdMssg = "[BS]";
+		else
+			brdMssg = "[BU]";
+		brdMssg += "\t";
+		brdMssg += mssgStr;
+		brdMssg += "\n";
+
+		auto message = new (std::nothrow) Message(brdMssg, rTag, pType);
 		if (message == nullptr)
 			return nullptr;
 		else

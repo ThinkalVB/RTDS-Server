@@ -43,10 +43,32 @@ void UDPpeer::respondWith(const Response resp)
 	mSendPeerBufferData();
 }
 
-void UDPpeer::broadcast(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
+void UDPpeer::broadcastTo(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, UDP_TAG, bgTag, PeerType::UDP);
+	auto message = Message::makeBrdMsg(messageStr, bgTag, PeerType::UDP);
+
+	if (message != nullptr)
+	{
+		BGcontroller::broadcast(message, std::string(bgID));
+		response += CmdProcessor::RESP[(short)Response::SUCCESS];
+		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
+	}
+	else
+	{
+		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+		LOG(Log::log("Failed to create UDP message!");)
+	}
+
+	response += "\n";
+	mDataBuffer = response;
+	mSendPeerBufferData();
+}
+
+void UDPpeer::messageTo(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
+{
+	std::string response = "[R]\t";
+	auto message = Message::makeMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, bgTag, PeerType::UDP);
 
 	if (message != nullptr)
 	{

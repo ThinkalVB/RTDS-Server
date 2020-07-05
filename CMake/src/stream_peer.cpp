@@ -19,6 +19,18 @@ StreamPeer::~StreamPeer()
 	mGlobalPeerCount--;
 }
 
+void StreamPeer::mMakeSocketStable(asio::ip::tcp::socket* peerSocket)
+{
+	asio::socket_base::keep_alive keepAlive(true);
+	asio::socket_base::enable_connection_aborted connAbortSignal(true);
+	try	{
+		peerSocket->lowest_layer().set_option(keepAlive);
+		peerSocket->lowest_layer().set_option(connAbortSignal);
+	}
+	catch (asio::error_code& ec)
+	{	DEBUG_LOG(Log::log("set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
+}
+
 const PeerType StreamPeer::peerType() const
 {
 	return mPeerType;
@@ -87,7 +99,7 @@ void StreamPeer::listenTo(const std::string_view& bgID, const std::string_view& 
 			mIsInBG = true;
 			mPeerMode = PeerMode::LISTEN;
 
-			auto message = Message::makeAddMsg(mSApair, mBgTag, mBgTag, mPeerType);
+			auto message = Message::makeAddMsg(mSApair, mBgTag, mPeerType);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 
@@ -114,7 +126,7 @@ void StreamPeer::leaveBG()
 
 		if (mPeerMode == PeerMode::LISTEN)
 		{
-			auto message = Message::makeRemMsg(mSApair, mBgTag, mBgTag, mPeerType);
+			auto message = Message::makeRemMsg(mSApair, mBgTag, mPeerType);
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 			else
@@ -138,7 +150,41 @@ void StreamPeer::broadcastTo(const std::string_view& messageStr, const std::stri
 	std::string response = "[R]\t";
 	if (mIsInBG)
 	{
-		auto message = Message::makeBrdMsg(mSApair, messageStr, mBgTag, bgTag, mPeerType);
+		const Message* message;
+		if (bgTag == OWN_TAG)
+			message = Message::makeBrdMsg(messageStr, mBgTag, mPeerType);
+		else
+			message = Message::makeBrdMsg(messageStr, bgTag, mPeerType);
+
+		if (message != nullptr)
+		{
+			mBgPtr->broadcast(this, message);
+			response += CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
+		}
+		else
+		{
+			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			LOG(Log::log(mSApair, " Failed to create message!");)
+		}
+	}
+	else
+		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	response += "\n";
+	mDataBuffer = response;
+}
+
+void StreamPeer::messageTo(const std::string_view& messageStr, const std::string_view& bgTag)
+{
+	std::string response = "[R]\t";
+	if (mIsInBG)
+	{
+		const Message* message;
+		if (bgTag == OWN_TAG)
+			message = Message::makeMsg(mSApair, messageStr, mBgTag, mPeerType);
+		else
+			message = Message::makeMsg(mSApair, messageStr, bgTag, mPeerType);
+
 		if (message != nullptr)
 		{
 			mBgPtr->broadcast(this, message);

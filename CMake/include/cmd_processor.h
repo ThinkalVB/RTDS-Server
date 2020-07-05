@@ -156,6 +156,7 @@ private:
 ********************************************************************************************/
 	static void mTCP_ping(TCPpeer&, std::string_view&);
 	static void mTCP_broadcast(TCPpeer&, std::string_view&);
+	static void mTCP_message(TCPpeer&, std::string_view&);
 	static void mTCP_exit(TCPpeer&, std::string_view&);
 	static void mTCP_listen(TCPpeer&, std::string_view&);
 	static void mTCP_change(TCPpeer&, std::string_view&);
@@ -172,6 +173,7 @@ private:
 ********************************************************************************************/
 	static void mUDP_ping(UDPpeer&, std::string_view&);
 	static void mUDP_broadcast(UDPpeer&, std::string_view&);
+	static void mUDP_message(UDPpeer&, std::string_view&);
 
 /*******************************************************************************************
 * @brief Respond to the ping request

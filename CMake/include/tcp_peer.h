@@ -1,7 +1,6 @@
 #ifndef TCP_PEER_H
 #define TCP_PEER_H
 
-#include <asio/ip/tcp.hpp>
 #include "stream_peer.h"
 
 class TCPpeer : public StreamPeer
