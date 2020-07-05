@@ -33,12 +33,6 @@ protected:
 * @brief Distructor [Decrement the global peer count]
 ********************************************************************************************/
 	~StreamPeer();
-/*******************************************************************************************
-* @brief Make the socket stable (signal keep_alive and connection_aborted)
-*
-* @param[in]			Pointer to the peer's socket
-********************************************************************************************/
-	void mMakeSocketStable(asio::ip::tcp::socket*);
 
 public:
 	virtual void sendMessage(const Message*) = 0;

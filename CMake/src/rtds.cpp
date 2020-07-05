@@ -179,18 +179,26 @@ void RTDS::mTCPacceptRoutine()
 		mTCPacceptor.accept(*peerSocket, ec);
 		if (ec)
 		{
-			if (mServerRunning) {
-				DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)
-			}
+			if (mServerRunning) { DEBUG_LOG(Log::log("TCP Acceptor failed - ", ec.message());)	}
 			delete peerSocket;
 		}
 		else
 		{
+			asio::socket_base::keep_alive keepAlive(true);
+			asio::socket_base::enable_connection_aborted connAbortSignal(true);
+			try {
+				peerSocket->set_option(keepAlive);
+				peerSocket->set_option(connAbortSignal);
+			}
+			catch (asio::error_code& ec)
+			{	DEBUG_LOG(Log::log("TCP set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
+
 			auto peer = new (std::nothrow) TCPpeer(peerSocket);
 			if (peer == nullptr)
 			{
 				LOG(Log::log("TCP Peer memmory bad allocation");)
 				peerSocket->close();
+				delete peerSocket;
 			}
 		}
 	}
@@ -256,13 +264,15 @@ void RTDS::mCCMacceptRoutine()
 			peerSocket->handshake(asio::ssl::stream_base::server, ec);
 			if (ec)
 			{	DEBUG_LOG(Log::log("SSL handshake failed - ", ec.message());)	}
-
-			auto peer = new (std::nothrow) SSLccm(peerSocket);
-			if (peer == nullptr)
+			else
 			{
-				LOG(Log::log("Peer memmory bad allocation");)
-				peerSocket->shutdown();
-				delete peerSocket;
+				auto peer = new (std::nothrow) SSLccm(peerSocket);
+				if (peer == nullptr)
+				{
+					LOG(Log::log("Peer memmory bad allocation");)
+						peerSocket->shutdown();
+					delete peerSocket;
+				}
 			}
 		}
 	}

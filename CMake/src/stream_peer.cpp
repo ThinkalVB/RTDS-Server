@@ -19,28 +19,17 @@ StreamPeer::~StreamPeer()
 	mGlobalPeerCount--;
 }
 
-void StreamPeer::mMakeSocketStable(asio::ip::tcp::socket* peerSocket)
-{
-	asio::socket_base::keep_alive keepAlive(true);
-	asio::socket_base::enable_connection_aborted connAbortSignal(true);
-	try	{
-		peerSocket->lowest_layer().set_option(keepAlive);
-		peerSocket->lowest_layer().set_option(connAbortSignal);
-	}
-	catch (asio::error_code& ec)
-	{	DEBUG_LOG(Log::log("set_option(keepAlive | connectionAbort) failed - ", ec.message());)	}
-}
 
 const PeerType StreamPeer::peerType() const
 {
 	return mPeerType;
 }
 
-
 int StreamPeer::getPeerCount() const
 {
 	return mGlobalPeerCount;
 }
+
 
 void StreamPeer::disconnect()
 {
