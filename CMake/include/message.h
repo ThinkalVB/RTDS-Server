@@ -37,7 +37,7 @@ class Message
 		messageBuf = mssgStr;
 		peerType = pType;
 		recverTag = rTag;
-		asioBuffer = asio::mutable_buffer(messageBuf.data(), messageBuf.size())
+		asioBuffer = asio::mutable_buffer(messageBuf.data(), messageBuf.size());
 	}
 public:
 

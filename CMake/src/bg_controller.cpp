@@ -15,13 +15,10 @@ void BGroupUnrestricted::addPeer(StreamPeer* peer)
 
 void BGroupUnrestricted::removePeer(StreamPeer* peer)
 {
-	if (peer->peerType() == PeerType::TCP)
-	{
-		std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
-		auto itr = std::find(mTCPpeerList.begin(), mTCPpeerList.end(), peer);
-		std::iter_swap(itr, mTCPpeerList.end() - 1);
-		mTCPpeerList.pop_back();
-	}
+	std::lock_guard<std::shared_mutex> writeLock(mTCPpeerListLock);
+	auto itr = std::find(mTCPpeerList.begin(), mTCPpeerList.end(), peer);
+	std::iter_swap(itr, mTCPpeerList.end() - 1);
+	mTCPpeerList.pop_back();
 }
 
 bool BGroupUnrestricted::isEmpty() const
@@ -60,25 +57,22 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 	auto bGroupItr = mBGmap.find(bgID);
 	if (bGroupItr == mBGmap.end())
 	{
-		auto bGroup = new (std::nothrow) BGroupUnrestricted(bgID);
-		if (bGroup == nullptr)
-		{
-			LOG(Log::log("Failed to create BG: ", bgID);)
-			return nullptr;
+		BGroupUnrestricted* bGroup = nullptr;
+		try {
+			auto bGroup = new BGroupUnrestricted(bgID);
+			DEBUG_LOG(Log::log("Created BG: ", bgID);)
+			bGroup->addPeer(peer);
+			DEBUG_LOG(Log::log("Added peer to BG: ", bgID);)
+			mBGmap.insert(std::pair(bgID, bGroup));
+			DEBUG_LOG(Log::log("Added BG to map: ", bgID);)
+			return (BGroup*)bGroup;
 		}
-		else
+		catch (const std::runtime_error& ec)
 		{
-			try {
-				bGroup->addPeer(peer);
-				mBGmap.insert(std::pair(bgID, bGroup));
-				DEBUG_LOG(Log::log("Added BG: ", bgID);)
-				return (BGroup*)bGroup;
-			}
-			catch (...) {
-				LOG(Log::log("Failed to add peer to BG!");)
+			DEBUG_LOG(Log::log("Failed to create BG: ", bgID);)
+			if (bGroup != nullptr)
 				delete bGroup;
-				return nullptr;
-			}
+			return nullptr;
 		}
 	}
 	else
@@ -86,10 +80,12 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 		try {
 			auto bGroup = bGroupItr->second;
 			bGroup->addPeer(peer);
+			DEBUG_LOG(Log::log("Added peer to BG: ", bgID);)
 			return (BGroup*)bGroup;
 		}
-		catch (...) {
-			LOG(Log::log("Failed to add peer to BG! ");)
+		catch (const std::runtime_error& ec)
+		{
+			DEBUG_LOG(Log::log("Failed to add peer to BG: ", bgID);)
 			return nullptr;
 		}
 	}
@@ -108,10 +104,6 @@ void BGcontroller::removeFromBG(StreamPeer* peer, const BGID& bgID)
 			mBGmap.erase(bGroupItr);
 			DEBUG_LOG(Log::log(bgID, " Deleted BG: ", bgID);)
 		}
-	}
-	else
-	{	
-		LOG(Log::log("Peer must be in map, but not found");)
 	}
 }
 
