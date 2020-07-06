@@ -4,6 +4,7 @@
 #include <chrono>
 #include <queue>
 #include <mutex>
+#include <asio/buffer.hpp>
 #include "common.h"
 
 typedef std::chrono::time_point<std::chrono::system_clock> TimePoint;
@@ -36,12 +37,14 @@ class Message
 		messageBuf = mssgStr;
 		peerType = pType;
 		recverTag = rTag;
+		asioBuffer = asio::mutable_buffer(messageBuf.data(), messageBuf.size())
 	}
 public:
 
 	std::string messageBuf;						// Message string buffer
 	BGT recverTag;								// Receivers tag
 	PeerType peerType;							// Type of peer generating this message
+	asio::mutable_buffer asioBuffer;
 /*******************************************************************************************
 * @brief Return true if the message have expired
 *

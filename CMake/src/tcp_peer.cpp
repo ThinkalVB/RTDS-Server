@@ -92,7 +92,6 @@ void TCPpeer::sendMessage(const Message* message)
 	std::shared_lock<std::shared_mutex> readLock(mPeerResourceMtx);
 	if (mPeerIsActive && (message->recverTag == ALL_TAG || message->recverTag == mBgTag))
 	{
-		mPeerSocket->async_send(asio::buffer(message->messageBuf.data(), message->messageBuf.size()),
-			std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
+		mPeerSocket->async_send(message->asioBuffer, std::bind(&TCPpeer::mSendMssgFuncFeedbk, this, std::placeholders::_1));
 	}
 }

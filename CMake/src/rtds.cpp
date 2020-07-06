@@ -63,7 +63,7 @@ void RTDS::mStopServer()
 {
 	mServerRunning = false;
 	DEBUG_LOG(Log::log("Server stopping, canceling and closing sockets...");)
-		try {
+	try {
 		mUDPsock.cancel();
 		mUDPsock.close();
 		DEBUG_LOG(Log::log("UDP socket closed");)
@@ -74,7 +74,7 @@ void RTDS::mStopServer()
 		mCCMacceptor.close();
 		DEBUG_LOG(Log::log("CCM acceptor closed");)
 	}
-	catch (const asio::error_code ec)
+	catch (const asio::error_code& ec)
 	{	DEBUG_LOG(Log::log("Failed to close sockets - ", ec.message());)	}
 	DEBUG_LOG(Log::log("Server sockets closed");)
 }
@@ -90,7 +90,7 @@ void RTDS::mConfigTCPserver()
 		mTCPacceptor.listen(asio::socket_base::max_listen_connections);
 		DEBUG_LOG(Log::log("TCP acceptor started listening");)
 	}
-	catch (const asio::error_code ec)
+	catch (const asio::error_code& ec)
 	{
 		LOG(Log::log("Failed to configure TCP server - ", ec.message());)
 		exit(0);
@@ -135,7 +135,7 @@ void RTDS::mConfigCCMserver()
 		mCCMacceptor.listen(asio::socket_base::max_listen_connections);
 		DEBUG_LOG(Log::log("CCM acceptor started listening");)
 	}
-	catch (const asio::error_code ec)
+	catch (const asio::error_code& ec)
 	{
 		LOG(Log::log("Failed to configure CCM server - ", ec.message());)
 		exit(0);
