@@ -69,7 +69,7 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 		}
 		catch (const std::runtime_error& ec)
 		{
-			DEBUG_LOG(Log::log("Failed to create BG: ", bgID);)
+			LOG(Log::log("Failed to create BG: ", bgID);)
 			if (bGroup != nullptr)
 				delete bGroup;
 			return nullptr;
@@ -85,7 +85,7 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 		}
 		catch (const std::runtime_error& ec)
 		{
-			DEBUG_LOG(Log::log("Failed to add peer to BG: ", bgID);)
+			LOG(Log::log("Failed to add peer to BG - ", ec.what());)
 			return nullptr;
 		}
 	}
@@ -102,7 +102,7 @@ void BGcontroller::removeFromBG(StreamPeer* peer, const BGID& bgID)
 		if (bGroup->isEmpty())
 		{
 			mBGmap.erase(bGroupItr);
-			DEBUG_LOG(Log::log(bgID, " Deleted BG: ", bgID);)
+			DEBUG_LOG(Log::log("Deleted BG: ", bgID);)
 		}
 	}
 }

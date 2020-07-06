@@ -111,7 +111,7 @@ void StreamPeer::leaveBG()
 	if (mIsInBG)
 	{
 		DEBUG_LOG(Log::log(mSApair, " Peer leavig BG ", mBgID);)
-			BGcontroller::removeFromBG(this, mBgID);
+		BGcontroller::removeFromBG(this, mBgID);
 
 		if (mPeerMode == PeerMode::LISTEN)
 		{
@@ -119,9 +119,7 @@ void StreamPeer::leaveBG()
 			if (message != nullptr)
 				mBgPtr->broadcast(this, message);
 			else
-			{
-				LOG(Log::log(mSApair, " Failed to create leaving message!");)
-			}
+			{	LOG(Log::log(mSApair, " Failed to create leaving message!");)	}
 		}
 
 		mIsInBG = false;

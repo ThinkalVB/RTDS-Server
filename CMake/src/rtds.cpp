@@ -197,7 +197,7 @@ void RTDS::mTCPacceptRoutine()
 		}
 		catch (const std::runtime_error& ec)
 		{
-			DEBUG_LOG(Log::log("Cannot allocate TCP peer/socket - ", ec.what());)
+			LOG(Log::log("Cannot allocate TCP peer/socket - ", ec.what());)
 			peerIsGood = false;
 		}
 		catch (const asio::error_code& ec)
@@ -261,7 +261,7 @@ void RTDS::mCCMacceptRoutine()
 		}
 		catch (const std::runtime_error& ec)
 		{
-			DEBUG_LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
+			LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
 			peerIsGood = false;
 		}
 		catch (const asio::error_code& ec)
