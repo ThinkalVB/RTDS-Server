@@ -10,11 +10,13 @@
 #ifdef RTDS_DUAL_STACK
 RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v6(), portNumber),
 mUDPep(asio::ip::udp::v6(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mIOworker(mIOcontext), 
-mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v6(), ccmPort), mCCMacceptor(mIOcontext)
+mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v6(), ccmPort), mCCMacceptor(mIOcontext), 
+mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v6(), portNumber + 1), mSSLacceptor(mIOcontext)
 #else 
 RTDS::RTDS(const unsigned short portNumber, const unsigned short ccmPort, short threadCount) : mTCPep(asio::ip::tcp::v4(), portNumber),
-mUDPep(asio::ip::udp::v4(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mTCPworker(mIOcontext), 
-mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v4(), ccmPort), mCCMacceptor(mIOcontext)
+mUDPep(asio::ip::udp::v4(), portNumber), mUDPsock(mIOcontext), mTCPacceptor(mIOcontext), mIOworker(mIOcontext), 
+mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v4(), ccmPort), mCCMacceptor(mIOcontext), 
+mSSLcontext(asio::ssl::context::sslv23), mSSLep(asio::ip::tcp::v4(), portNumber + 1), mSSLacceptor(mIOcontext)
 #endif
 {
 	START_LOG
@@ -24,6 +26,7 @@ mCCMcontext(asio::ssl::context::sslv23), mCCMep(asio::ip::tcp::v4(), ccmPort), m
 	mAddthread(threadCount);
 	mConfigTCPserver();
 	mConfigUDPserver();
+	mConfigSSLserver();
 	mConfigCCMserver();
 	mStartServer();
 }
@@ -46,11 +49,13 @@ void RTDS::mStartServer()
 	try {
 		std::thread ioThreadLR(&RTDS::mUDPlistenRoutine, this);
 		std::thread ioThreadAR(&RTDS::mTCPacceptRoutine, this);
-		std::thread ioThreadSR(&RTDS::mCCMacceptRoutine, this);
+		std::thread ioThreadCR(&RTDS::mCCMacceptRoutine, this);
+		std::thread ioThreadSR(&RTDS::mSSLacceptRoutine, this);
 		ioThreadLR.detach();
 		ioThreadAR.detach();
+		ioThreadCR.detach();
 		ioThreadSR.detach();
-		DEBUG_LOG(Log::log("New thread to UDP, TCP & CCM routines");)
+		DEBUG_LOG(Log::log("New thread to UDP, TCP, SSL & CCM routines");)
 	}
 	catch (const std::runtime_error& ec)
 	{
@@ -69,6 +74,9 @@ void RTDS::mStopServer()
 		DEBUG_LOG(Log::log("UDP socket closed");)
 		mTCPacceptor.cancel();
 		mTCPacceptor.close();
+		DEBUG_LOG(Log::log("TCP acceptor closed");)
+		mSSLacceptor.cancel();
+		mSSLacceptor.close();
 		DEBUG_LOG(Log::log("TCP acceptor closed");)
 		mCCMacceptor.cancel();
 		mCCMacceptor.close();
@@ -141,6 +149,34 @@ void RTDS::mConfigCCMserver()
 		exit(0);
 	}
 	DEBUG_LOG(Log::log("CCM server configured");)
+}
+
+void RTDS::mConfigSSLserver()
+{
+	DEBUG_LOG(Log::log("SSL server configuring...");)
+		try {
+		mSSLcontext.set_options(asio::ssl::context::default_workarounds
+			| asio::ssl::context::no_sslv2 | asio::ssl::context::single_dh_use);
+		DEBUG_LOG(Log::log("SSL context options configured");)
+		mSSLcontext.use_certificate_file("server_cert.pem", asio::ssl::context::pem);
+		DEBUG_LOG(Log::log("SSL certificate loaded");)
+		mSSLcontext.use_private_key_file("server_cert.pem", asio::ssl::context::pem);
+		DEBUG_LOG(Log::log("SSL private key loaded");)
+		mSSLcontext.use_tmp_dh_file("dh2048.pem");
+		DEBUG_LOG(Log::log("SSL DH files loaded");)
+		mSSLacceptor.open(mSSLep.protocol());
+		DEBUG_LOG(Log::log("SSL acceptor open");)
+		mSSLacceptor.bind(mSSLep);
+		DEBUG_LOG(Log::log("SSL acceptor bound to endpoint");)
+		mSSLacceptor.listen(asio::socket_base::max_listen_connections);
+		DEBUG_LOG(Log::log("SSL acceptor started listening");)
+	}
+	catch (const asio::error_code& ec)
+	{
+		LOG(Log::log("Failed to configure SSL server - ", ec.message());)
+		exit(0);
+	}
+	DEBUG_LOG(Log::log("SSL server configured");)
 }
 
 void RTDS::mIOthreadJob()
@@ -267,6 +303,48 @@ void RTDS::mCCMacceptRoutine()
 		catch (const asio::error_code& ec)
 		{
 			DEBUG_LOG(Log::log("Failed to configure CCM peer - ", ec.message());)
+			peerIsGood = false;
+		}
+
+		if (!peerIsGood && peerSocket != nullptr)
+			delete peerSocket;
+	}
+	mThreadCount--;
+}
+
+void RTDS::mSSLacceptRoutine()
+{
+	mThreadCount++;
+	asio::socket_base::keep_alive keepAlive(true);
+	asio::socket_base::enable_connection_aborted connAbortSignal(true);
+
+	while (mServerRunning)
+	{
+		SSLsocket* peerSocket = nullptr;
+		bool peerIsGood = true;
+		try
+		{
+			peerSocket = new SSLsocket(mIOcontext, mSSLcontext);
+			DEBUG_LOG(Log::log("New SSL socket created");)
+			mSSLacceptor.accept(peerSocket->lowest_layer());
+			DEBUG_LOG(Log::log("SSL socket accepted connection");)
+			peerSocket->lowest_layer().set_option(keepAlive);
+			DEBUG_LOG(Log::log("SSL socket option keepAlive set");)
+			peerSocket->lowest_layer().set_option(connAbortSignal);
+			DEBUG_LOG(Log::log("SSL socket option connAbortSignal set");)
+			peerSocket->handshake(asio::ssl::stream_base::server);
+			DEBUG_LOG(Log::log("SSL socket handshake success");)
+			new SSLpeer(peerSocket);
+			DEBUG_LOG(Log::log("SSL peer created");)
+		}
+		catch (const std::runtime_error& ec)
+		{
+			LOG(Log::log("Cannot allocate SSL peer/socket - ", ec.what());)
+			peerIsGood = false;
+		}
+		catch (const asio::error_code& ec)
+		{
+			DEBUG_LOG(Log::log("Failed to configure SSL peer - ", ec.message());)
 			peerIsGood = false;
 		}
 

@@ -46,18 +46,29 @@ void UDPpeer::respondWith(const Response resp)
 void UDPpeer::broadcastTo(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
-	auto message = Message::makeBrdMsg(messageStr, bgTag, PeerType::UDP);
+	const Message* message = nullptr;
+	auto tagType = CmdProcessor::getTagType(bgTag);
 
-	if (message != nullptr)
-	{
-		BGcontroller::broadcast(message, std::string(bgID));
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
-	}
+	if (tagType == TagType::ERR || tagType == TagType::OWN)
+		response += CmdProcessor::RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-		LOG(Log::log("Failed to create UDP message!");)
+		if (tagType == TagType::EMPTY)
+			message = Message::makeBrdMsg(messageStr, "*", PeerType::UDP);
+		else if (tagType == TagType::GENERAL || tagType == TagType::ALL)
+			message = Message::makeBrdMsg(messageStr, bgID, PeerType::UDP);
+
+		if (message != nullptr)
+		{
+			BGcontroller::broadcast(message, std::string(bgID));
+			response += CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
+		}
+		else
+		{
+			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			LOG(Log::log("Failed to create UDP message!");)
+		}
 	}
 
 	response += "\n";
@@ -68,18 +79,29 @@ void UDPpeer::broadcastTo(const std::string_view& messageStr, const std::string_
 void UDPpeer::messageTo(const std::string_view& messageStr, const std::string_view& bgID, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
-	auto message = Message::makeMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, bgTag, PeerType::UDP);
+	const Message* message = nullptr;
+	auto tagType = CmdProcessor::getTagType(bgTag);
 
-	if (message != nullptr)
-	{
-		BGcontroller::broadcast(message, std::string(bgID));
-		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
-	}
+	if (tagType == TagType::ERR || tagType == TagType::OWN)
+		response += CmdProcessor::RESP[(short)Response::BAD_PARAM];
 	else
 	{
-		response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-		LOG(Log::log("Failed to create UDP message!");)
+		if (tagType == TagType::EMPTY)
+			message = Message::makeMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, "*", PeerType::UDP);
+		else
+			message = Message::makeMsg(CmdProcessor::getSAPstring(mUDPep), messageStr, bgTag, PeerType::UDP);
+
+		if (message != nullptr)
+		{
+			BGcontroller::broadcast(message, std::string(bgID));
+			response += CmdProcessor::RESP[(short)Response::SUCCESS];
+			DEBUG_LOG(Log::log("Peer broadcasting: ", messageStr);)
+		}
+		else
+		{
+			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+			LOG(Log::log("Failed to create UDP message!");)
+		}
 	}
 
 	response += "\n";

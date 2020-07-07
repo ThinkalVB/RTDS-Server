@@ -20,9 +20,9 @@ class RTDS
 	asio::ip::tcp::endpoint mCCMep;				// SSL endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
 	asio::ip::tcp::acceptor mCCMacceptor;		// SSL acceptor socket that accept incoming tcp connections	
 
-	//asio::ssl::context mSSLcontext;			// SSL context
-	//asio::ip::tcp::endpoint mSSLep;			// SSL endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
-	//asio::ip::tcp::acceptor mSSLacceptor;		// SSL acceptor socket that accept incoming tcp connections	
+	asio::ssl::context mSSLcontext;				// SSL context
+	asio::ip::tcp::endpoint mSSLep;				// SSL endpoint that describe the IPaddr ,Port and Protocol for the acceptor socket
+	asio::ip::tcp::acceptor mSSLacceptor;		// SSL acceptor socket that accept incoming tcp connections	
 
 	int mThreadCount;							// Keep account of number of threads running ioContex.run()
 	std::atomic_bool mServerRunning;			// True if the server is running
@@ -30,6 +30,7 @@ class RTDS
 	void mConfigTCPserver();
 	void mConfigUDPserver();
 	void mConfigCCMserver();
+	void mConfigSSLserver();
 	
 	void mIOthreadJob();
 	void mAddthread(const int);
@@ -37,6 +38,7 @@ class RTDS
 	void mTCPacceptRoutine();
 	void mUDPlistenRoutine();
 	void mCCMacceptRoutine();
+	void mSSLacceptRoutine();
 
 	void mStartServer();
 	void mStopServer();

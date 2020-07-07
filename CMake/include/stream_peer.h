@@ -2,11 +2,13 @@
 #define STREAM_PEER_H
 
 #include "peer.h"
-#include <asio/error_code.hpp>
 #include <asio/ip/tcp.hpp>
+#include <asio/ssl.hpp>
 #include <atomic>
 #include <shared_mutex>
 #include "message.h"
+
+typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
 class BGroup;
 class StreamPeer : public Peer

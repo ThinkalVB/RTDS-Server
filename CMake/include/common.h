@@ -111,18 +111,41 @@ enum class PeerMode
 };
 
 /*******************************************************************************************
-* @brief Enum class pEER TYPE
+* @brief Enum class Peer Type
 *
 * @details
-* TCP				Listening to the activities in a Broadcast Group.
-* UDP				Hearing the activities in a Broadcast Group.
+* TCP				TCP peer
+* UDP				UDP peer
+* SSL				SSL peer
+* NONE				Undefined (error)
 ********************************************************************************************/
 enum class PeerType
 {
 	TCP,
 	UDP,
 	SSL,
-	NONE
+	ERR
 };
+
+/*******************************************************************************************
+* @brief Enum class Tag Type
+*
+* @details
+* OWN				All members of the sub-group
+* ALL				All members of the subgroup
+* GENERAL			General Tag
+* EMPTY				Empty Tag
+* ERR				Undefined (error)
+********************************************************************************************/
+enum class TagType
+{
+	OWN,
+	ALL,
+	GENERAL,
+	EMPTY,
+	ERR
+};
+
+
 
 #endif

@@ -135,28 +135,36 @@ void StreamPeer::leaveBG()
 void StreamPeer::broadcastTo(const std::string_view& messageStr, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
+	const Message* message;
+
 	if (mIsInBG)
 	{
-		const Message* message;
-		if (bgTag == OWN_TAG)
-			message = Message::makeBrdMsg(messageStr, mBgTag, mPeerType);
+		auto tagType = CmdProcessor::getTagType(bgTag);
+		if (tagType == TagType::ERR)
+			response += CmdProcessor::RESP[(short)Response::BAD_PARAM];
 		else
-			message = Message::makeBrdMsg(messageStr, bgTag, mPeerType);
+		{
+			if (tagType == TagType::EMPTY || tagType == TagType::OWN)
+				message = Message::makeBrdMsg(messageStr, mBgTag, mPeerType);
+			else
+				message = Message::makeBrdMsg(messageStr, bgTag, mPeerType);
 
-		if (message != nullptr)
-		{
-			mBgPtr->broadcast(this, message);
-			response += CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
-		}
-		else
-		{
-			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-			LOG(Log::log(mSApair, " Failed to create message!");)
+			if (message != nullptr)
+			{
+				mBgPtr->broadcast(this, message);
+				response += CmdProcessor::RESP[(short)Response::SUCCESS];
+				DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
+			}
+			else
+			{
+				response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+				LOG(Log::log(mSApair, " Failed to create message!");)
+			}
 		}
 	}
 	else
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+	
 	response += "\n";
 	mDataBuffer = response;
 }
@@ -164,28 +172,36 @@ void StreamPeer::broadcastTo(const std::string_view& messageStr, const std::stri
 void StreamPeer::messageTo(const std::string_view& messageStr, const std::string_view& bgTag)
 {
 	std::string response = "[R]\t";
+	const Message* message;
+
 	if (mIsInBG)
 	{
-		const Message* message;
-		if (bgTag == OWN_TAG)
-			message = Message::makeMsg(mSApair, messageStr, mBgTag, mPeerType);
+		auto tagType = CmdProcessor::getTagType(bgTag);
+		if (tagType == TagType::ERR)
+			response += CmdProcessor::RESP[(short)Response::BAD_PARAM];
 		else
-			message = Message::makeMsg(mSApair, messageStr, bgTag, mPeerType);
+		{
+			if (tagType == TagType::EMPTY || tagType == TagType::OWN)
+				message = Message::makeMsg(mSApair, messageStr, mBgTag, mPeerType);
+			else
+				message = Message::makeMsg(mSApair, messageStr, bgTag, mPeerType);
 
-		if (message != nullptr)
-		{
-			mBgPtr->broadcast(this, message);
-			response += CmdProcessor::RESP[(short)Response::SUCCESS];
-			DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
-		}
-		else
-		{
-			response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
-			LOG(Log::log(mSApair, " Failed to create message!");)
+			if (message != nullptr)
+			{
+				mBgPtr->broadcast(this, message);
+				response += CmdProcessor::RESP[(short)Response::SUCCESS];
+				DEBUG_LOG(Log::log(mSApair, " Peer broadcasting: ", messageStr);)
+			}
+			else
+			{
+				response += CmdProcessor::RESP[(short)Response::WAIT_RETRY];
+				LOG(Log::log(mSApair, " Failed to create message!");)
+			}
 		}
 	}
 	else
 		response += CmdProcessor::RESP[(short)Response::NOT_IN_BG];
+
 	response += "\n";
 	mDataBuffer = response;
 }

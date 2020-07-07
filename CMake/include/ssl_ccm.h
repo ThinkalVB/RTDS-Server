@@ -37,7 +37,7 @@ class SSLccm : public Peer
 *
 * @details
 * The callback function _sendFeedback() will be invoked after the data is send.
-* The callback function will be called even if thier is a error in tcp connection.
+* The callback function will be called even if thier is a error in ssl connection.
 ********************************************************************************************/
 	void mSendPeerBufferData();
 /*******************************************************************************************

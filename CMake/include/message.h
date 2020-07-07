@@ -127,11 +127,11 @@ public:
 	{
 		std::string brdMssg;
 		if (pType == PeerType::TCP)
-			brdMssg = "[BT]";
+			brdMssg = "[MT]";
 		else if (pType == PeerType::SSL)
-			brdMssg = "[BS]";
+			brdMssg = "[MS]";
 		else
-			brdMssg = "[BU]";
+			brdMssg = "[MU]";
 
 		brdMssg += "\t" + sapStr + "\t";
 		brdMssg += mssgStr;
