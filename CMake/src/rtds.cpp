@@ -246,8 +246,8 @@ void RTDS::mCCMacceptRoutine()
 		bool peerIsGood = true;
 		try
 		{
-			auto peerSocket = new SSLsocket(mIOcontext, mCCMcontext);
-			DEBUG_LOG(Log::log("CCM socket created");)
+			peerSocket = new SSLsocket(mIOcontext, mCCMcontext);
+			DEBUG_LOG(Log::log("New CCM socket created");)
 			mCCMacceptor.accept(peerSocket->lowest_layer());
 			DEBUG_LOG(Log::log("CCM socket accepted connection");)
 			peerSocket->lowest_layer().set_option(keepAlive);

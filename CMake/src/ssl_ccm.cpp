@@ -11,39 +11,41 @@ SSLccm::SSLccm(SSLsocket* socketPtr)
 	mIsAdmin = false;
 	mPeerIsActive = true;
 
-	DEBUG_LOG(Log::log("SSL Peer Connected");)
+	DEBUG_LOG(Log::log("CCM Peer Connected");)
 	mPeerReceiveData();
 }
 
 SSLccm::~SSLccm()
 {
-	asio::error_code ec;
-	mPeerSocket->shutdown(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("SSL socket cannot shutdown - ", ec.message());)	}
-	mPeerSocket->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("SSL lowest layer cannot shutdown - ", ec.message());)	}
-	mPeerSocket->lowest_layer().close(ec);
-	if (ec)
-	{	DEBUG_LOG(Log::log("SSL socket cannot close - ", ec.message());)	}
-
 	delete mPeerSocket;
-	DEBUG_LOG(Log::log("SSL Peer Disconnected");)
+	DEBUG_LOG(Log::log("CCM Peer Disconnected");)
 }
 
-std::string_view SSLccm::getCommandString()
+
+void SSLccm::mSendFuncFeedbk(const asio::error_code& ec)
 {
-	return mDataBuffer.getStringView();
+	if (ec)
+	{
+		DEBUG_LOG(Log::log( "CCM Peer socket sendPeerBufferData() failed", ec.message());)
+		delete this;
+	}
+	else
+		mPeerReceiveData();
 }
 
+
+void SSLccm::mSendPeerBufferData()
+{
+	mPeerSocket->async_write_some(mDataBuffer.getSendBuffer(), 
+		std::bind(&SSLccm::mSendFuncFeedbk, this, std::placeholders::_1));
+}
 
 void SSLccm::mPeerReceiveData()
 {
 	if (mPeerIsActive)
 	{
-		mPeerSocket->async_read_some(mDataBuffer.getReadBuffer(), std::bind(&SSLccm::mProcessData,
-			this, std::placeholders::_1, std::placeholders::_2));
+		mPeerSocket->async_read_some(mDataBuffer.getReadBuffer(), 
+			std::bind(&SSLccm::mProcessData, this, std::placeholders::_1, std::placeholders::_2));
 	}
 	else
 		delete this;
@@ -53,8 +55,8 @@ void SSLccm::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 {
 	if (ec)
 	{
-		DEBUG_LOG(Log::log("SSL Peer socket _processData() failed ", ec.message());)
-			delete this;
+		DEBUG_LOG(Log::log("CCM Peer socket processData() failed ", ec.message());)
+		delete this;
 	}
 	else
 	{
@@ -68,23 +70,6 @@ void SSLccm::mProcessData(const asio::error_code& ec, std::size_t dataSize)
 		else
 			delete this;
 	}
-}
-
-void SSLccm::mSendPeerBufferData()
-{
-	mPeerSocket->async_write_some(mDataBuffer.getSendBuffer(), std::bind(&SSLccm::mSendFuncFeedbk,
-		this, std::placeholders::_1));
-}
-
-void SSLccm::mSendFuncFeedbk(const asio::error_code& ec)
-{
-	if (ec)
-	{
-		DEBUG_LOG(Log::log("SSL Peer socket _sendMessage() failed", ec.message());)
-			mPeerIsActive = false;
-	}
-	else
-		mPeerReceiveData();
 }
 
 
@@ -104,7 +89,7 @@ void SSLccm::abort()
 
 void SSLccm::disconnect()
 {
-	DEBUG_LOG(Log::log("SSL Peer Disconnecting");)
+	DEBUG_LOG(Log::log("CCM Peer Disconnecting");)
 	mPeerIsActive = false;
 }
 
@@ -113,7 +98,7 @@ void SSLccm::status()
 	std::string response = "[R]\t";
 	if (mIsAdmin)
 	{
-		DEBUG_LOG(Log::log("RTDS requesting status");)
+		DEBUG_LOG(Log::log("CCM requesting status");)
 		response += Settings::generateStatus();
 	}
 	else
@@ -130,7 +115,7 @@ void SSLccm::login(const std::string_view& usr, const std::string_view& pass)
 	{
 		mIsAdmin = true;
 		response += CmdProcessor::RESP[(short)Response::SUCCESS];
-		DEBUG_LOG(Log::log("SSL peer authenticated");)
+		DEBUG_LOG(Log::log("CCM peer authenticated");)
 	}
 	else
 		response += CmdProcessor::RESP[(short)Response::NOT_ALLOWED];
@@ -141,7 +126,7 @@ void SSLccm::login(const std::string_view& usr, const std::string_view& pass)
 void SSLccm::respondWith(const Response resp)
 {
 	std::string response = "[R]\t";
-	DEBUG_LOG(Log::log("SSL Peer responding: ", CmdProcessor::RESP[(short)resp]);)
+	DEBUG_LOG(Log::log("CCM Peer responding: ", CmdProcessor::RESP[(short)resp]);)
 	response += CmdProcessor::RESP[(short)resp];
 	response += "\n";
 	mDataBuffer = response;

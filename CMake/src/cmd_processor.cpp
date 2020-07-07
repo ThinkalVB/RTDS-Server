@@ -50,7 +50,7 @@ bool CmdProcessor::isUDPcompatibleTag(const std::string_view& tag)
 
 bool CmdProcessor::isBroadcastTag(const std::string_view& tag)
 {
-	if (tag == "+" || isUDPcompatibleTag(tag))
+	if (tag == OWN_TAG || isUDPcompatibleTag(tag))
 		return true;
 	return false;
 }

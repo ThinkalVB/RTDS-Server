@@ -54,12 +54,12 @@ std::shared_mutex BGcontroller::mBgLock;
 BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 {
 	std::lock_guard<std::shared_mutex> writeLock(mBgLock);
+	BGroupUnrestricted* bGroup = nullptr;
 	auto bGroupItr = mBGmap.find(bgID);
 	if (bGroupItr == mBGmap.end())
 	{
-		BGroupUnrestricted* bGroup = nullptr;
 		try {
-			auto bGroup = new BGroupUnrestricted(bgID);
+			bGroup = new BGroupUnrestricted(bgID);
 			DEBUG_LOG(Log::log("Created BG: ", bgID);)
 			bGroup->addPeer(peer);
 			DEBUG_LOG(Log::log("Added peer to BG: ", bgID);)
@@ -69,7 +69,7 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 		}
 		catch (const std::runtime_error& ec)
 		{
-			LOG(Log::log("Failed to create BG: ", bgID);)
+			LOG(Log::log("Failed to create BG - ", ec.what());)
 			if (bGroup != nullptr)
 				delete bGroup;
 			return nullptr;
@@ -78,7 +78,7 @@ BGroup* BGcontroller::addToBG(StreamPeer* peer, const BGID& bgID)
 	else
 	{
 		try {
-			auto bGroup = bGroupItr->second;
+			bGroup = bGroupItr->second;
 			bGroup->addPeer(peer);
 			DEBUG_LOG(Log::log("Added peer to BG: ", bgID);)
 			return (BGroup*)bGroup;

@@ -3,12 +3,11 @@
 
 #include <asio/ip/tcp.hpp>
 #include <asio/ssl.hpp>
-#include "advanced_buffer.h"
+#include "peer.h"
 typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
-class SSLccm
+class SSLccm : public Peer
 {
-	AdancedBuffer mDataBuffer;				// Buffer to which the commands are received
 	SSLsocket* mPeerSocket;					// Socket handling the data from peer system
 	bool mPeerIsActive;						// True if the peer socket is operational
 	bool mIsAdmin;							// True if have admin privileage
@@ -66,12 +65,6 @@ public:
 * @param[in]			Pointer to the newly accepted socket
 ********************************************************************************************/
 	SSLccm(SSLsocket*);
-/*******************************************************************************************
-* @brief Return the string view of the received command
-*
-* @return				Return peer count
-********************************************************************************************/
-	std::string_view getCommandString();
 
 /*******************************************************************************************
 * @brief Terminate the RTDS server
