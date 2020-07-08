@@ -55,6 +55,5 @@ std::string Settings::generateStatus()
 	statusStr = std::to_string(RTDS_MAJOR) + "." + std::to_string(RTDS_MINOR) + "." + std::to_string(RTDS_PATCH) + "\t";
 	statusStr += std::to_string(mRTDSportNo) + "\t";
 	statusStr += std::to_string(mRTDSccmPortNo) + "\t";
-	statusStr += std::to_string(mRTDSthreadCount) + "\t";
 	return statusStr;
 }

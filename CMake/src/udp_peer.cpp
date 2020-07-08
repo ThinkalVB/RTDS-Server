@@ -56,7 +56,7 @@ void UDPpeer::broadcastTo(const std::string_view& messageStr, const std::string_
 		if (tagType == TagType::EMPTY)
 			message = Message::makeBrdMsg(messageStr, "*", PeerType::UDP);
 		else if (tagType == TagType::GENERAL || tagType == TagType::ALL)
-			message = Message::makeBrdMsg(messageStr, bgID, PeerType::UDP);
+			message = Message::makeBrdMsg(messageStr, bgTag, PeerType::UDP);
 
 		if (message != nullptr)
 		{

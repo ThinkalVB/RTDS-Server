@@ -202,7 +202,7 @@ void CmdProcessor::mUDP_broadcast(UDPpeer& peer, std::string_view& commandStr)
 	auto bgTag = extractElement(commandStr);
 
 	if (isBmessage(message) && commandStr.empty() && isBGID(bgID))
-		peer.messageTo(message, bgID, bgTag);
+		peer.broadcastTo(message, bgID, bgTag);
 	else
 		peer.respondWith(Response::BAD_PARAM);
 }
