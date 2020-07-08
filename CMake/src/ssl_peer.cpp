@@ -1,7 +1,6 @@
 #include "ssl_peer.h"
 #include <functional>
 #include "cmd_processor.h"
-#include "bg_controller.h"
 #include "log.h"
 
 SSLpeer::SSLpeer(SSLsocket* socketPtr)

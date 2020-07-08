@@ -3,7 +3,7 @@
 #include "rtds_settings.h"
 #include <functional>
 #include "log.h"
-#include "rtds.h"
+//#include "rtds.h"
 
 SSLccm::SSLccm(SSLsocket* socketPtr)
 {

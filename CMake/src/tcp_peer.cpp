@@ -1,7 +1,6 @@
 #include "tcp_peer.h"
 #include <functional>
 #include "cmd_processor.h"
-#include "bg_controller.h"
 #include "log.h"
 
 TCPpeer::TCPpeer(asio::ip::tcp::socket* socketPtr)
