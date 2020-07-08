@@ -1,5 +1,6 @@
 ﻿#include "rtds.h"
 #include <thread>
+#include <functional>
 #include "cmd_processor.h"
 #include "log.h"
 
@@ -290,14 +291,12 @@ void RTDS::mCCMacceptRoutine()
 			DEBUG_LOG(Log::log("CCM socket option keepAlive set");)
 			peerSocket->lowest_layer().set_option(connAbortSignal);
 			DEBUG_LOG(Log::log("CCM socket option connAbortSignal set");)
-			peerSocket->handshake(asio::ssl::stream_base::server);
-			DEBUG_LOG(Log::log("CCM socket handshake success");)
-			new SSLccm(peerSocket);
-			DEBUG_LOG(Log::log("CCM peer created");)
+			peerSocket->async_handshake(asio::ssl::stream_base::server,
+				std::bind(&RTDS::mCCMhandshakeHandler, this, std::placeholders::_1, peerSocket));
 		}
 		catch (const std::runtime_error& ec)
 		{
-			LOG(Log::log("Cannot allocate CCM peer/socket - ", ec.what());)
+			LOG(Log::log("Cannot allocate CCM socket - ", ec.what());)
 			peerIsGood = false;
 		}
 		catch (const asio::error_code& ec)
@@ -332,10 +331,8 @@ void RTDS::mSSLacceptRoutine()
 			DEBUG_LOG(Log::log("SSL socket option keepAlive set");)
 			peerSocket->lowest_layer().set_option(connAbortSignal);
 			DEBUG_LOG(Log::log("SSL socket option connAbortSignal set");)
-			peerSocket->handshake(asio::ssl::stream_base::server);
-			DEBUG_LOG(Log::log("SSL socket handshake success");)
-			new SSLpeer(peerSocket);
-			DEBUG_LOG(Log::log("SSL peer created");)
+			peerSocket->async_handshake(asio::ssl::stream_base::server,
+				std::bind(&RTDS::mSSLhandshakeHandler, this, std::placeholders::_1, peerSocket));
 		}
 		catch (const std::runtime_error& ec)
 		{
@@ -352,4 +349,46 @@ void RTDS::mSSLacceptRoutine()
 			delete peerSocket;
 	}
 	mThreadCount--;
+}
+
+void RTDS::mSSLhandshakeHandler(const asio::error_code& ec, SSLsocket* peerSocket)
+{
+	if (ec)
+	{
+		DEBUG_LOG(Log::log("SSL socket handshake failed");)
+		delete peerSocket;
+	}
+	else
+	{
+		try {
+			new SSLpeer(peerSocket);
+		}
+		catch (const std::runtime_error& ec)
+		{
+			LOG(Log::log("Cannot allocate SSL peer - ", ec.what());)
+			delete peerSocket;
+		}
+		DEBUG_LOG(Log::log("SSL peer created");)
+	}
+}
+
+void RTDS::mCCMhandshakeHandler(const asio::error_code& ec, SSLsocket* peerSocket)
+{
+	if (ec)
+	{
+		DEBUG_LOG(Log::log("CCM socket handshake failed");)
+		delete peerSocket;
+	}
+	else
+	{
+		try	{	
+			new SSLccm(peerSocket);
+		}
+		catch (const std::runtime_error& ec)
+		{
+			LOG(Log::log("Cannot allocate CCM peer - ", ec.what());)
+			delete peerSocket;
+		}
+		DEBUG_LOG(Log::log("CCM peer created");)
+	}
 }

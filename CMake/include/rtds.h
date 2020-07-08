@@ -4,6 +4,7 @@
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 #include <asio/ssl.hpp>
+typedef asio::ssl::stream<asio::ip::tcp::socket> SSLsocket;
 
 class RTDS
 {
@@ -39,6 +40,9 @@ class RTDS
 	void mUDPlistenRoutine();
 	void mCCMacceptRoutine();
 	void mSSLacceptRoutine();
+
+	void mSSLhandshakeHandler(const asio::error_code&, SSLsocket*);
+	void mCCMhandshakeHandler(const asio::error_code&, SSLsocket*);
 
 	void mStartServer();
 	void mStopServer();
